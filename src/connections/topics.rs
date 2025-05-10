@@ -6,7 +6,7 @@ use crate::connections::types::GossipBehaviour;
 
 lazy_static! {
     static ref TOPICS: HashMap<&'static str, IdentTopic> = {
-        let all_topics = vec!["operations"];
+        let all_topics = ["operations"];
 
         let mut m = HashMap::new();
         for topic_name in all_topics.iter() {

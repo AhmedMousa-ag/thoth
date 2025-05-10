@@ -63,7 +63,7 @@ pub async fn p2pconnect() -> Result<(), Box<dyn Error>> {
     // Create a Gossipsub topics
     for topic in get_topics().iter() {
         // subscribes to our topic
-        swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
+        swarm.behaviour_mut().gossipsub.subscribe(topic)?;
     }
 
     // Listen on all interfaces and whatever port the OS assigns
