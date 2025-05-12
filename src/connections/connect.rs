@@ -1,65 +1,43 @@
-use std::{
-    collections::hash_map::DefaultHasher,
-    error::Error,
-    hash::{Hash, Hasher},
-    time::Duration,
-};
+use std::error::Error;
 
 use crate::connections::{
-    topics::get_topics,
-    types::{GossipBehaviour, GossipBehaviourEvent},
+    config::create_fucking_swarm,
+    topics::{get_topic, get_topics},
+    types::{GossipBehaviour, GossipBehaviourEvent, Messages},
 };
 use futures::stream::StreamExt;
 use libp2p::{
-    gossipsub, mdns, noise,
-    swarm::{self, SwarmEvent},
-    tcp, yamux,
+    gossipsub::{self},
+    mdns,
+    swarm::{self, Swarm, SwarmEvent},
 };
-use tokio::{io, select};
-use tracing_subscriber::EnvFilter;
 
-pub async fn p2pconnect() -> Result<(), Box<dyn Error>> {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env())
-        .try_init();
+use super::types::EncodingDecoding;
+use tokio::select;
+use tokio::sync::mpsc::{self, Sender, Receiver};
+// use std::sync::mpsc::{ Sender, Receiver};
+use lazy_static::lazy_static;
+use std::sync::RwLock;
 
-    let mut swarm: swarm::Swarm<GossipBehaviour> = libp2p::SwarmBuilder::with_new_identity()
-        .with_tokio()
-        .with_tcp(
-            tcp::Config::default(),
-            noise::Config::new,
-            yamux::Config::default,
-        )?
-        .with_quic()
-        .with_behaviour(|key| {
-            // To content-address message, we can take the hash of message and use it as an ID.
-            let message_id_fn = |message: &gossipsub::Message| {
-                let mut s = DefaultHasher::new();
-                message.data.hash(&mut s);
-                gossipsub::MessageId::from(s.finish().to_string())
-            };
 
-            // Set a custom gossipsub configuration
-            let gossipsub_config = gossipsub::ConfigBuilder::default()
-                .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
-                .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message
-                // signing)
-                .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
-                .build()
-                .map_err(io::Error::other)?; // Temporary hack because `build` does not return a proper `std::error::Error`.
+lazy_static! {
+    static ref CHANNEL: ( RwLock<Sender<Messages>>,  RwLock<Receiver<Messages>>) = {
+        let (tx, rx) = mpsc::channel(100);
+        (RwLock::new(tx), RwLock::new(rx))
+    };
+    
+}
 
-            // build a gossipsub network behaviour
-            let gossipsub = gossipsub::Behaviour::new(
-                gossipsub::MessageAuthenticity::Signed(key.clone()),
-                gossipsub_config,
-            )?;
+// Accessor functions to get the TX and RX parts
+fn get_sender_tx() -> &'static RwLock<Sender<Messages>> {
+    &CHANNEL.0
+}
 
-            let mdns =
-                mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())?;
-            Ok(GossipBehaviour { gossipsub, mdns })
-        })?
-        .build();
-
+fn get_reciver_rx() -> &'static RwLock<Receiver<Messages>> {
+    &CHANNEL.1
+}
+pub async fn p2pconnect<'a>() -> Result<(), Box<dyn Error + Send + Sync>> {
+    let mut swarm: Swarm<GossipBehaviour> = create_fucking_swarm();
     // Create a Gossipsub topics
     for topic in get_topics().iter() {
         // subscribes to our topic
@@ -70,15 +48,38 @@ pub async fn p2pconnect() -> Result<(), Box<dyn Error>> {
     swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
-    println!("Enter messages via STDIN and they will be sent to connected peers using Gossipsub");
 
-    listen_messages(&mut swarm).await;
+    listen_messages(&mut swarm).await
 }
 
-async fn listen_messages(swarm: &mut swarm::Swarm<GossipBehaviour>) -> ! {
-    // Kick it off
+pub async fn send_messages(message: Messages) {
+    let tx = get_sender_tx().write().unwrap();
+    if let Err(e)=tx.send(message).await{println!("Error sending message: {:?}",e);};
+}
+async fn recieve_messages() -> Option<Messages> {
+     let mut rx = get_reciver_rx().write().unwrap(); 
+    rx.recv().await
+}
+
+async fn listen_messages<'a>(
+    swarm: &'a mut swarm::Swarm<GossipBehaviour>,
+    // rx: &mut Receiver<Messages>,
+) -> ! {
     loop {
         select! {
+            (rec_message)=recieve_messages()=>{
+                if rec_message.is_some() {
+                    let message = rec_message.unwrap();
+                    let rec_topic = get_topic(message.topic_name.as_str());
+                    if rec_topic.is_some(){
+                        let topic = rec_topic.unwrap().clone();
+                        if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic, message.encode_bytes()){
+                            println!("Error publishing message: {:?}",e);
+                        };
+                    }
+                }
+            },
+
             event = swarm.select_next_some() => match event {
                 SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
                     for (peer_id, _multiaddr) in list {

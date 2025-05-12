@@ -1,8 +1,6 @@
 use lazy_static::lazy_static;
-use libp2p::{gossipsub::IdentTopic, swarm};
+use libp2p::gossipsub::IdentTopic;
 use std::collections::HashMap;
-
-use crate::connections::types::GossipBehaviour;
 
 lazy_static! {
     static ref TOPICS: HashMap<&'static str, IdentTopic> = {
@@ -24,23 +22,6 @@ pub fn get_topics<'a>() -> Vec<&'a IdentTopic> {
     topics
 }
 
-pub fn send_message(
-    swarm: &mut swarm::Swarm<GossipBehaviour>,
-    message: String,
-    topic_name: &str,
-) -> bool {
-    // let topic = get_topics().read().unwrap().clone().into_iter().nth(0);
-    match TOPICS.get(topic_name) {
-        Some(topic) => {
-            if let Err(e) = swarm
-                .behaviour_mut()
-                .gossipsub
-                .publish(topic.clone(), message.as_bytes())
-            {
-                println!("Publish error: {e:?}");
-            };
-            true
-        }
-        _ => false,
-    }
+pub fn get_topic(topic_name: &str) -> Option<&IdentTopic> {
+    TOPICS.get(topic_name)
 }
