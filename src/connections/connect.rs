@@ -14,18 +14,17 @@ use libp2p::{
 
 use super::types::EncodingDecoding;
 use tokio::select;
-use tokio::sync::mpsc::{self, Sender, Receiver};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 // use std::sync::mpsc::{ Sender, Receiver};
 use lazy_static::lazy_static;
-use std::sync::RwLock;
-
+// use std::sync::RwLock;
+use tokio::sync::RwLock;
 
 lazy_static! {
-    static ref CHANNEL: ( RwLock<Sender<Messages>>,  RwLock<Receiver<Messages>>) = {
+    static ref CHANNEL: (RwLock<Sender<Messages>>, RwLock<Receiver<Messages>>) = {
         let (tx, rx) = mpsc::channel(100);
         (RwLock::new(tx), RwLock::new(rx))
     };
-    
 }
 
 // Accessor functions to get the TX and RX parts
@@ -36,7 +35,7 @@ fn get_sender_tx() -> &'static RwLock<Sender<Messages>> {
 fn get_reciver_rx() -> &'static RwLock<Receiver<Messages>> {
     &CHANNEL.1
 }
-pub async fn p2pconnect<'a>() -> Result<(), Box<dyn Error + Send + Sync>> {
+pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut swarm: Swarm<GossipBehaviour> = create_fucking_swarm();
     // Create a Gossipsub topics
     for topic in get_topics().iter() {
@@ -48,26 +47,25 @@ pub async fn p2pconnect<'a>() -> Result<(), Box<dyn Error + Send + Sync>> {
     swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
-
     listen_messages(&mut swarm).await
 }
 
 pub async fn send_messages(message: Messages) {
-    let tx = get_sender_tx().write().unwrap();
-    if let Err(e)=tx.send(message).await{println!("Error sending message: {:?}",e);};
+    if let Err(e) = get_sender_tx().write().await.send(message).await {
+        println!("Error sending message: {:?}", e);
+    };
 }
 async fn recieve_messages() -> Option<Messages> {
-     let mut rx = get_reciver_rx().write().unwrap(); 
-    rx.recv().await
+    get_reciver_rx().write().await.recv().await
 }
 
-async fn listen_messages<'a>(
-    swarm: &'a mut swarm::Swarm<GossipBehaviour>,
+async fn listen_messages(
+    swarm: &mut swarm::Swarm<GossipBehaviour>,
     // rx: &mut Receiver<Messages>,
 ) -> ! {
     loop {
         select! {
-            (rec_message)=recieve_messages()=>{
+            rec_message=recieve_messages()=>{
                 if rec_message.is_some() {
                     let message = rec_message.unwrap();
                     let rec_topic = get_topic(message.topic_name.as_str());

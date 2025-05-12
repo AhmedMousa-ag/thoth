@@ -21,16 +21,16 @@ pub struct Messages {
 
 pub trait EncodingDecoding {
     fn encode_bytes(&self) -> Vec<u8>;
-    fn decode_bytes(&self, bytes: &Vec<u8>) -> Self;
+    fn decode_bytes(&self, bytes: &[u8]) -> Self;
 }
 impl EncodingDecoding for Messages {
     fn encode_bytes(&self) -> Vec<u8> {
-        bincode::encode_to_vec(&self, config::standard()).unwrap()
+        bincode::encode_to_vec(self, config::standard()).unwrap()
     }
 
-    fn decode_bytes(&self, bytes: &Vec<u8>) -> Self {
+    fn decode_bytes(&self, bytes: &[u8]) -> Self {
         let (messages, _): (Self, usize) =
-            bincode::decode_from_slice(&bytes[..], config::standard()).unwrap();
+            bincode::decode_from_slice(bytes, config::standard()).unwrap();
         messages
     }
 }
