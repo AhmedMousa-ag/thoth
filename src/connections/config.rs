@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::connections::types::GossipBehaviour;
-use libp2p::{Swarm, gossipsub, mdns, noise, tcp, yamux};
+use libp2p::{Swarm, gossipsub, mdns, noise, tcp, yamux,ping};
 use tokio::io;
 use tracing_subscriber::EnvFilter;
 
@@ -31,6 +31,7 @@ pub fn create_gossip_swarm() -> Swarm<GossipBehaviour> {
             };
             // Set a custom gossipsub configuration
             let gossipsub_config = gossipsub::ConfigBuilder::default()
+                // .heartbeat_initial_delay(Duration::from_secs(5))
                 .heartbeat_interval(Duration::from_secs(1))
                 .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message
                 // signing)
@@ -49,7 +50,7 @@ pub fn create_gossip_swarm() -> Swarm<GossipBehaviour> {
             let mdns =
                 mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())
                     .expect("Error building tokio behavior.");
-            Ok(GossipBehaviour { gossipsub, mdns })
+            Ok(GossipBehaviour { gossipsub, mdns, ping:ping::Behaviour::default() })
         })
         .expect("Error building swarms.")
         .build();

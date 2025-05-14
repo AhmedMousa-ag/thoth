@@ -43,8 +43,8 @@ pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
     let port = 49221;
     // let port=0;
 
-    swarm.listen_on(format!("/ip4/0.0.0.0/udp/{}/quic-v1", port).parse()?)?;
-    swarm.listen_on(format!("/ip4/0.0.0.0/tcp/{:}", port).parse()?)?;
+    // swarm.listen_on(format!("/ip4/0.0.0.0/udp/{}/quic-v1", port).parse()?)?;
+    swarm.listen_on(format!("/ip4/0.0.0.0/tcp/{}", port).parse()?)?;
 
     listen_messages(&mut swarm).await
 }
