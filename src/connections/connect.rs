@@ -1,24 +1,20 @@
-use std::error::Error;
-
+use super::types::EncodingDecoding;
 use crate::connections::{
-    config::create_fucking_swarm,
+    config::create_gossip_swarm,
     topics::{get_topic, get_topics},
     types::{GossipBehaviour, GossipBehaviourEvent, Messages},
 };
 use futures::stream::StreamExt;
+use lazy_static::lazy_static;
 use libp2p::{
     gossipsub::{self},
     mdns,
     swarm::{self, Swarm, SwarmEvent},
 };
-
-use super::types::EncodingDecoding;
+use std::error::Error;
 use tokio::select;
-use tokio::sync::mpsc::{self, Receiver, Sender};
-// use std::sync::mpsc::{ Sender, Receiver};
-use lazy_static::lazy_static;
-// use std::sync::RwLock;
 use tokio::sync::RwLock;
+use tokio::sync::mpsc::{self, Receiver, Sender};
 
 lazy_static! {
     static ref CHANNEL: (RwLock<Sender<Messages>>, RwLock<Receiver<Messages>>) = {
@@ -36,7 +32,7 @@ fn get_reciver_rx() -> &'static RwLock<Receiver<Messages>> {
     &CHANNEL.1
 }
 pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
-    let mut swarm: Swarm<GossipBehaviour> = create_fucking_swarm();
+    let mut swarm: Swarm<GossipBehaviour> = create_gossip_swarm();
     // Create a Gossipsub topics
     for topic in get_topics().iter() {
         // subscribes to our topic
@@ -44,8 +40,11 @@ pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
     }
 
     // Listen on all interfaces and whatever port the OS assigns
-    swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
-    swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
+    let port = 49221;
+    // let port=0;
+
+    swarm.listen_on(format!("/ip4/0.0.0.0/udp/{}/quic-v1", port).parse()?)?;
+    swarm.listen_on(format!("/ip4/0.0.0.0/tcp/{:}", port).parse()?)?;
 
     listen_messages(&mut swarm).await
 }
@@ -64,6 +63,7 @@ async fn listen_messages(
     // rx: &mut Receiver<Messages>,
 ) -> ! {
     loop {
+        // SwarmEvent::IncomingConnection { connection_id: (), local_addr: (), send_back_addr: () }
         select! {
             rec_message=recieve_messages()=>{
                 if rec_message.is_some() {
@@ -101,7 +101,19 @@ async fn listen_messages(
                     ),
                 SwarmEvent::NewListenAddr { address, .. } => {
                     println!("Local node is listening on {address}");
-                }
+                },
+                SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
+                    println!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established)
+                },
+                SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
+                    println!("Connection Closed id: {}, peer id: {}, number of established: {},  due to: {:?}",connection_id,peer_id ,num_established,cause)
+                },
+                SwarmEvent::IncomingConnection{connection_id,local_addr,send_back_addr}=>{
+                    println!("Incomming connection id: {}, local address: {} send back address: {}",connection_id,local_addr,send_back_addr)
+                },
+                SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
+                    println!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
+            },
                 _ => {println!("None of these options: {:?}",event)}
             }
         }

@@ -1,0 +1,14 @@
+services:
+  base_node:
+    build: .
+    volumes:
+      - $PWD:/home/thoth/app
+  node-1:
+    extends: base_node
+    ports:
+      - 49221:49221
+  node-2:
+    extends: base_node
+    ports:
+      - 49222:49221
+    

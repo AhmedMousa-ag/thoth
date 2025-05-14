@@ -23,6 +23,7 @@ pub trait EncodingDecoding {
     fn encode_bytes(&self) -> Vec<u8>;
     fn decode_bytes(&self, bytes: &[u8]) -> Self;
 }
+
 impl EncodingDecoding for Messages {
     fn encode_bytes(&self) -> Vec<u8> {
         bincode::encode_to_vec(self, config::standard()).unwrap()
