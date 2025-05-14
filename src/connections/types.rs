@@ -1,5 +1,5 @@
 use bincode::{Decode, Encode, config};
-use libp2p::{gossipsub, mdns, swarm::NetworkBehaviour,ping};
+use libp2p::{gossipsub, mdns, ping, swarm::NetworkBehaviour};
 
 // We create a custom network behaviour that combines Gossipsub and Mdns.
 #[derive(NetworkBehaviour)]

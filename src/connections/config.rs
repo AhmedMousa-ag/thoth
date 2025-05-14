@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::connections::types::GossipBehaviour;
-use libp2p::{Swarm, gossipsub, mdns, noise, tcp, yamux,ping};
+use libp2p::{Swarm, gossipsub, mdns, noise, ping, tcp, yamux};
 use tokio::io;
 use tracing_subscriber::EnvFilter;
 
@@ -50,7 +50,11 @@ pub fn create_gossip_swarm() -> Swarm<GossipBehaviour> {
             let mdns =
                 mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())
                     .expect("Error building tokio behavior.");
-            Ok(GossipBehaviour { gossipsub, mdns, ping:ping::Behaviour::default() })
+            Ok(GossipBehaviour {
+                gossipsub,
+                mdns,
+                ping: ping::Behaviour::default(),
+            })
         })
         .expect("Error building swarms.")
         .build();
