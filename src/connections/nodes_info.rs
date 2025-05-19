@@ -1,26 +1,63 @@
 use lazy_static::lazy_static;
 use tokio::sync::RwLock;
 // use tokio::sync::mpsc::{self, Receiver, Sender};
-
-#[derive(Clone)]
-pub struct NodeInfo{
-    pub id:String,
-    pub ip:String,
+use tokio::runtime::Runtime;
+#[derive(Clone, PartialEq)]
+pub struct NodeInfo {
+    pub id: String,
+    pub ip: String,
     pub av_threads: i32,
-    pub av_ram:i64, //MB
+    pub av_ram: i64, //MB
 }
+
 lazy_static! {
-    static ref NODES_INFO: RwLock<Vec<NodeInfo>> = {
-        Vec::new().into()
-    };
+    static ref NODES_INFO: RwLock<Vec<NodeInfo>> = { Vec::new().into() };
 }
 
+pub trait NodeInfoTrait {
+    fn add_node(node: &NodeInfo) {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(async { NODES_INFO.write().await.push(node.clone()) })
+    }
+    fn new(&self, id: String, ip: String, av_threads: i32, av_ram: i64) -> NodeInfo {
+        let node = NodeInfo {
+            id,
+            ip,
+            av_threads,
+            av_ram,
+        };
+        Self::add_node(&node);
+        node
+    }
+    fn destruct_me(&self);
 
-pub async fn add_node(node:NodeInfo){
-    NODES_INFO.write().await.push(node);
+    fn remove_node(node_to_remove: &NodeInfo) {
+        let rt = Runtime::new().unwrap();
+        let node_pos = rt.block_on(async {
+            NODES_INFO
+                .read()
+                .await
+                .iter()
+                .position(|n| n == node_to_remove)
+        });
+        if let Some(pos) = node_pos {
+            rt.block_on(async { NODES_INFO.write().await.remove(pos) });
+        }
+    }
 }
 
+impl NodeInfoTrait for NodeInfo {
+    fn destruct_me(&self) {
+        let rt = Runtime::new().unwrap();
+        let node_pos =
+            rt.block_on(async { NODES_INFO.read().await.iter().position(|n| n == self) });
 
-pub async fn get_nodes_info()->Vec<NodeInfo>{
+        if let Some(pos) = node_pos {
+            rt.block_on(async { NODES_INFO.write().await.remove(pos) });
+        }
+    }
+}
+
+pub async fn get_nodes_info() -> Vec<NodeInfo> {
     NODES_INFO.read().await.clone()
 }
