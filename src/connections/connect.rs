@@ -114,7 +114,7 @@ async fn listen_messages(
                 SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
                     println!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
             },
-                _ => {println!("None of these options: {:?}",event)}
+                _ => {}//{println!("None of these options: {:?}",event)}
             }
         }
     }
