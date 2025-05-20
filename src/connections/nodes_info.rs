@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use tokio::sync::RwLock;
 // use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::runtime::Runtime;
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct NodeInfo {
     pub id: String,
     pub ip: String,
