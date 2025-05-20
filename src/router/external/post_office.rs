@@ -10,9 +10,9 @@ use tokio::spawn;
 
 // Send and recieve messages about nodes information
 
-pub struct InternalExternalOffic {}
+pub struct ExternalOffic {}
 
-impl PostOfficeTrait<Vec<NodeInfo>> for InternalExternalOffic {
+impl PostOfficeTrait<Vec<NodeInfo>> for ExternalOffic {
     //TODO So far we only have one channel of communication, therefore we don't need to check all types and parties...etc
     fn send_message(message: Vec<NodeInfo>) {
         let rt = Runtime::new().unwrap();
