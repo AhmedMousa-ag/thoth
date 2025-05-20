@@ -7,7 +7,7 @@ use tokio::sync::{
 use lazy_static::lazy_static;
 
 pub struct LoggingMessage {
-    log: String,
+    pub log: String,
 }
 lazy_static! {
     static ref CHANNEL: (

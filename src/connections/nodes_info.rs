@@ -11,7 +11,7 @@ pub struct NodeInfo {
 }
 
 lazy_static! {
-    static ref NODES_INFO: RwLock<Vec<NodeInfo>> = { Vec::new().into() };
+    static ref NODES_INFO: RwLock<Vec<NodeInfo>> = Vec::new().into();
 }
 
 pub trait NodeInfoTrait {
@@ -19,7 +19,7 @@ pub trait NodeInfoTrait {
         let rt = Runtime::new().unwrap();
         rt.block_on(async { NODES_INFO.write().await.push(node.clone()) })
     }
-    fn new(&self, id: String, ip: String, av_threads: i32, av_ram: i64) -> NodeInfo {
+    fn new(id: String, ip: String, av_threads: i32, av_ram: i64) -> NodeInfo {
         let node = NodeInfo {
             id,
             ip,

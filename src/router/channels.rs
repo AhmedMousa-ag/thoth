@@ -5,12 +5,14 @@ use tokio::sync::{
     Mutex,
     mpsc::{self, Receiver, Sender},
 };
+
+type NodesInfoMessagesType = Message<Vec<NodeInfo>>;
 lazy_static! {
     static ref INTER_REQ_NODE: (
-        Mutex<Sender<Message<Vec<NodeInfo>>>>,
-        Mutex<Receiver<Message<Vec<NodeInfo>>>>
+        Mutex<Sender<NodesInfoMessagesType>>,
+        Mutex<Receiver<NodesInfoMessagesType>>
     ) = {
-        let (tx, rx) = mpsc::channel::<Message<Vec<NodeInfo>>>(500);
+        let (tx, rx) = mpsc::channel::<NodesInfoMessagesType>(500);
         (Mutex::new(tx), Mutex::new(rx))
     };
 }
@@ -23,15 +25,15 @@ pub struct InternalExternal {}
 
 impl
     SenderReciverTrait<
-        &'static Mutex<Sender<Message<Vec<NodeInfo>>>>,
-        &'static Mutex<Receiver<Message<Vec<NodeInfo>>>>,
+        &'static Mutex<Sender<NodesInfoMessagesType>>,
+        &'static Mutex<Receiver<NodesInfoMessagesType>>,
     > for InternalExternal
 {
-    fn get_sender_tx() -> &'static Mutex<Sender<Message<Vec<NodeInfo>>>> {
+    fn get_sender_tx() -> &'static Mutex<Sender<NodesInfoMessagesType>> {
         &INTER_REQ_NODE.0
     }
 
-    fn get_reciver_rx() -> &'static Mutex<Receiver<Message<Vec<NodeInfo>>>> {
+    fn get_reciver_rx() -> &'static Mutex<Receiver<NodesInfoMessagesType>> {
         &INTER_REQ_NODE.1
     }
 }

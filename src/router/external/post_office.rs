@@ -9,6 +9,7 @@ use tokio::runtime::Runtime;
 use tokio::spawn;
 
 // Send and recieve messages about nodes information
+
 pub struct InternalExternalOffic {}
 
 impl PostOfficeTrait<Vec<NodeInfo>> for InternalExternalOffic {
