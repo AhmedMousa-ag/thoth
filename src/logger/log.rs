@@ -1,19 +1,25 @@
 use tokio::sync::mpsc;
-use tokio::sync::{mpsc::{ Receiver, Sender},RwLock};
+use tokio::sync::{
+    RwLock,
+    mpsc::{Receiver, Sender},
+};
 
 use lazy_static::lazy_static;
 
-pub struct LoggingMessage{
-    log:String,
+pub struct LoggingMessage {
+    pub log: String,
 }
 lazy_static! {
-    static ref CHANNEL: (RwLock<Sender<LoggingMessage>>, RwLock<Receiver<LoggingMessage>>) = {
+    static ref CHANNEL: (
+        RwLock<Sender<LoggingMessage>>,
+        RwLock<Receiver<LoggingMessage>>
+    ) = {
         let (tx, rx) = mpsc::channel(10000);
         (RwLock::new(tx), RwLock::new(rx))
     };
 }
 
-pub trait SendMessages{
+pub trait SendMessages {
     // Accessor functions to get the TX and RX parts
     fn get_sender_tx() -> &'static RwLock<Sender<LoggingMessage>> {
         &CHANNEL.0
@@ -23,4 +29,3 @@ pub trait SendMessages{
         &CHANNEL.1
     }
 }
-
