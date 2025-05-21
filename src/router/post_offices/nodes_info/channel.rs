@@ -1,5 +1,5 @@
-use super::super::{traits::SenderReciverTrait,configs::config::CONFIGS,messages::Message};
-use crate::connections::channels_node_info::NodeInfo;
+
+use crate::{router::{messages::Message,traits::SenderReciverTrait,configs::config::CONFIGS},connections::channels_node_info::NodeInfo};
 use lazy_static::lazy_static;
 use tokio::sync::{
     Mutex,

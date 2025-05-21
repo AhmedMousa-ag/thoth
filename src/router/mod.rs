@@ -1,5 +1,4 @@
-pub mod channels;
-pub mod communications;
+pub mod post_offices;
 pub mod messages;
 pub mod rest_api;
 pub mod traits;

@@ -1,8 +1,8 @@
 //Nodes Information
-use super::super::traits::{PostOfficeTrait,SenderReciverTrait};
+use super::channel::InternalNodesInfoCh;
 use crate::connections::channels_node_info::{NodeInfo, get_nodes_info};
 use crate::router::{
-    channels::nodes_info::{InternalNodesInfoCh},
+    traits::{PostOfficeTrait,SenderReciverTrait},
     messages::{Message, MessageParties, RequestsTypes},
 };
 use tokio::runtime::Runtime;
