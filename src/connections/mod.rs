@@ -1,5 +1,4 @@
-pub mod config;
+pub mod channels_node_info;
+pub mod configs;
 pub mod connect;
-pub mod nodes_info;
-pub mod topics;
 pub mod types;

@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageParties {
-    ExternalInternal,
+    InternalComponents,
+    NodesToNodes,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub enum RequestsTypes {

@@ -1,28 +1,26 @@
 //Nodes Information
-use super::super::traits::PostOfficeTrait;
-use crate::connections::nodes_info::{NodeInfo, get_nodes_info};
+use super::super::traits::{PostOfficeTrait,SenderReciverTrait};
+use crate::connections::channels_node_info::{NodeInfo, get_nodes_info};
 use crate::router::{
-    channels::{InternalExternal, SenderReciverTrait},
+    channels::nodes_info::{InternalNodesInfoCh},
     messages::{Message, MessageParties, RequestsTypes},
 };
 use tokio::runtime::Runtime;
 use tokio::spawn;
 
-// Send and recieve messages about nodes information
 
-pub struct ExternalOffic {}
+pub struct CommunicationOffic {}
 
-impl PostOfficeTrait<Vec<NodeInfo>> for ExternalOffic {
-    //TODO So far we only have one channel of communication, therefore we don't need to check all types and parties...etc
+impl PostOfficeTrait<Vec<NodeInfo>> for CommunicationOffic {
     fn send_message(message: Vec<NodeInfo>) {
         let rt = Runtime::new().unwrap();
         rt.block_on(async {
             let rep_message = Message {
-                parties: MessageParties::ExternalInternal,
+                parties: MessageParties::InternalComponents,
                 request: RequestsTypes::ReplyNodeInfoUpdate,
                 message: Some(message),
             };
-            if let Err(e) = InternalExternal::get_sender_tx()
+            if let Err(e) = InternalNodesInfoCh::get_sender_tx()
                 .lock()
                 .await
                 .send(Box::new(rep_message.clone()))
@@ -37,7 +35,7 @@ impl PostOfficeTrait<Vec<NodeInfo>> for ExternalOffic {
         // Watch for internal communication requests
         spawn(async {
             loop {
-                if let Some(message) = InternalExternal::get_reciver_rx().lock().await.recv().await
+                if let Some(message) = InternalNodesInfoCh::get_reciver_rx().lock().await.recv().await
                 {
                     if message.request == RequestsTypes::RequestNodeInfo {
                         let nodes_info = get_nodes_info().await;

@@ -1,5 +1,5 @@
-use super::messages::Message;
-use crate::connections::nodes_info::NodeInfo;
+use super::super::{traits::SenderReciverTrait,configs::config::CONFIGS,messages::Message};
+use crate::connections::channels_node_info::NodeInfo;
 use lazy_static::lazy_static;
 use tokio::sync::{
     Mutex,
@@ -12,22 +12,16 @@ lazy_static! {
         Mutex<Sender<NodesInfoMessagesType>>,
         Mutex<Receiver<NodesInfoMessagesType>>
     ) = {
-        let (tx, rx) = mpsc::channel::<NodesInfoMessagesType>(500);
+        let (tx, rx) = mpsc::channel::<NodesInfoMessagesType>(CONFIGS.max_ch_buff);
         (Mutex::new(tx), Mutex::new(rx))
     };
 }
-pub trait SenderReciverTrait<S, R> {
-    fn get_sender_tx() -> S;
-    fn get_reciver_rx() -> R;
-}
-
-pub struct InternalExternal {}
-
+pub struct InternalNodesInfoCh {}
 impl
     SenderReciverTrait<
         &'static Mutex<Sender<NodesInfoMessagesType>>,
         &'static Mutex<Receiver<NodesInfoMessagesType>>,
-    > for InternalExternal
+    > for InternalNodesInfoCh
 {
     fn get_sender_tx() -> &'static Mutex<Sender<NodesInfoMessagesType>> {
         &INTER_REQ_NODE.0
