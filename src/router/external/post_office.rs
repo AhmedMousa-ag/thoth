@@ -25,7 +25,7 @@ impl PostOfficeTrait<Vec<NodeInfo>> for ExternalOffic {
             if let Err(e) = InternalExternal::get_sender_tx()
                 .lock()
                 .await
-                .send(rep_message.clone())
+                .send(Box::new(rep_message.clone()))
                 .await
             {
                 println!("Error Sending Message: {:?} , Error: {}", &rep_message, e);

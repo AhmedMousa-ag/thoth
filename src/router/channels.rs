@@ -6,7 +6,7 @@ use tokio::sync::{
     mpsc::{self, Receiver, Sender},
 };
 
-type NodesInfoMessagesType = Message<Vec<NodeInfo>>;
+type NodesInfoMessagesType = Box<Message<Vec<NodeInfo>>>;
 lazy_static! {
     static ref INTER_REQ_NODE: (
         Mutex<Sender<NodesInfoMessagesType>>,
