@@ -2,12 +2,11 @@
 use super::channel::InternalNodesInfoCh;
 use crate::connections::channels_node_info::{NodeInfo, get_nodes_info};
 use crate::router::{
-    traits::{PostOfficeTrait,SenderReciverTrait},
     messages::{Message, MessageParties, RequestsTypes},
+    traits::{PostOfficeTrait, SenderReciverTrait},
 };
 use tokio::runtime::Runtime;
 use tokio::spawn;
-
 
 pub struct CommunicationOffic {}
 
@@ -35,7 +34,11 @@ impl PostOfficeTrait<Vec<NodeInfo>> for CommunicationOffic {
         // Watch for internal communication requests
         spawn(async {
             loop {
-                if let Some(message) = InternalNodesInfoCh::get_reciver_rx().lock().await.recv().await
+                if let Some(message) = InternalNodesInfoCh::get_reciver_rx()
+                    .lock()
+                    .await
+                    .recv()
+                    .await
                 {
                     if message.request == RequestsTypes::RequestNodeInfo {
                         let nodes_info = get_nodes_info().await;
