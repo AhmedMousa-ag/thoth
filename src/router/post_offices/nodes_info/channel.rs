@@ -1,5 +1,5 @@
 use crate::{
-    connections::channels_node_info::NodeInfo,
+    connections::types::NodeInfo,
     router::{configs::config::CONFIGS, messages::Message, traits::SenderReciverTrait},
 };
 use lazy_static::lazy_static;

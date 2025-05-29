@@ -1,6 +1,6 @@
 //Nodes Information
 use super::channel::InternalNodesInfoCh;
-use crate::connections::channels_node_info::{NodeInfo, get_nodes_info};
+use crate::connections::{types::NodeInfo,channels_node_info:: get_nodes_info};
 use crate::router::{
     messages::{Message, MessageParties, RequestsTypes},
     traits::{PostOfficeTrait, SenderReciverTrait},

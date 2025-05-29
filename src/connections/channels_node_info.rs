@@ -2,14 +2,7 @@ use lazy_static::lazy_static;
 use tokio::sync::RwLock;
 // use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::runtime::Runtime;
-#[derive(Clone, PartialEq, Debug)]
-pub struct NodeInfo {
-    pub id: String,
-    pub ip: String,
-    pub av_threads: i32,
-    pub av_ram: i64, //MB
-}
-
+use super::types::NodeInfo;
 lazy_static! {
     static ref NODES_INFO: RwLock<Vec<NodeInfo>> = Vec::new().into();
 }
