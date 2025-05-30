@@ -1,8 +1,8 @@
 use lazy_static::lazy_static;
 use tokio::sync::RwLock;
 // use tokio::sync::mpsc::{self, Receiver, Sender};
-use tokio::runtime::Runtime;
 use super::types::NodeInfo;
+use tokio::runtime::Runtime;
 lazy_static! {
     static ref NODES_INFO: RwLock<Vec<NodeInfo>> = Vec::new().into();
 }

@@ -7,7 +7,7 @@ pub struct GossipBehaviour {
     pub mdns: mdns::tokio::Behaviour,
     pub ping: ping::Behaviour,
 }
-#[derive(Clone, PartialEq, Debug,Encode,Decode)]
+#[derive(Clone, PartialEq, Debug, Encode, Decode)]
 pub struct NodeInfo {
     pub id: String,
     pub ip: String,
@@ -42,8 +42,6 @@ impl EncodingDecoding for Messages<String> {
         messages
     }
 }
-
-
 
 impl EncodingDecoding for Messages<NodeInfo> {
     fn encode_bytes(&self) -> Vec<u8> {

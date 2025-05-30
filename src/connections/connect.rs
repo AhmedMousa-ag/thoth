@@ -2,7 +2,7 @@ use super::types::EncodingDecoding;
 use crate::connections::{
     configs::config::CONFIGS,
     configs::topics::{get_topic, get_topics},
-    types::{GossipBehaviour, GossipBehaviourEvent, Messages,NodeInfo},
+    types::{GossipBehaviour, GossipBehaviourEvent, Messages, NodeInfo},
 };
 use std::{
     collections::hash_map::DefaultHasher,
@@ -26,7 +26,10 @@ use tokio::sync::RwLock;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 lazy_static! {
-    static ref CHANNEL: (RwLock<Sender<Messages<NodeInfo>>>, RwLock<Receiver<Messages<NodeInfo>>>) = {
+    static ref CHANNEL: (
+        RwLock<Sender<Messages<NodeInfo>>>,
+        RwLock<Receiver<Messages<NodeInfo>>>
+    ) = {
         let (tx, rx) = mpsc::channel(100);
         (RwLock::new(tx), RwLock::new(rx))
     };
