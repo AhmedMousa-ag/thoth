@@ -15,6 +15,7 @@ struct IDXRes {
 }
 
 pub fn multiply(x: Vec<Vec<f64>>, y: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    // Naive implementation of matrix multipication.
     /*
         3*2      2*2
         [1 2]    [1 2]
