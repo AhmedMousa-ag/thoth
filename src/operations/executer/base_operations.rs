@@ -16,9 +16,14 @@ pub enum OperationTypes {
     TANH,
 }
 pub struct Numeric {
-    pub x: f64,
-    pub y: Option<f64>,
-    pub op_type: OperationTypes,
+    x: f64,
+    y: Option<f64>,
+    op_type: OperationTypes,
+}
+impl Numeric {
+    pub fn new(x: f64, y: Option<f64>, op_type: OperationTypes) -> Self {
+        Self { x, y, op_type }
+    }
 }
 
 pub trait Operations {
