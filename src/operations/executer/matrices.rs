@@ -54,15 +54,18 @@ pub fn multiply(x: Vec<Vec<f64>>, y: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
         }
     });
 
-    let mut result: Vec<Vec<f64>> = Vec::from(Vec::new());
+    let mut result: Vec<Vec<f64>> = Vec::new();
+    let mut icounter = 0;
     for msg in res_reciever {
-        if let None=result.get(msg.i){
-        result.push(vec![0.0]);
-        };
-        if let None=result[msg.i].get(msg.j){
-        result[msg.i].push(0.0);
-        };
-        print!("{} {}",msg.i,msg.j);
+        while icounter <= msg.i {
+            // println!("Pushed i");
+            result.push(vec![0.0]);
+            icounter += 1;
+        }
+        while result[msg.i].get(msg.j).is_none() {
+            result[msg.i].push(0.0);
+        }
+
         result[msg.i][msg.j] += msg.res;
     }
     result
