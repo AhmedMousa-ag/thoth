@@ -1,11 +1,11 @@
 //Nodes Information
 use super::channel::InternalNodesInfoCh;
 use crate::connections::{channels_node_info::get_nodes_info, types::NodeInfo};
-use crate::{err, info};
 use crate::router::{
     messages::{Message, MessageParties, RequestsTypes},
     traits::{PostOfficeTrait, SenderReciverTrait},
 };
+use crate::{err, info};
 use tokio::runtime::Runtime;
 use tokio::spawn;
 

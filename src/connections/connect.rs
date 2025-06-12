@@ -4,16 +4,16 @@ use crate::connections::{
     configs::topics::{get_topic, get_topics},
     types::{GossipBehaviour, GossipBehaviourEvent, Messages, NodeInfo},
 };
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-    time::Duration,
-};
-use crate::{err,info,warn};
+use crate::{err, info, warn};
 use libp2p::{
     Swarm, gossipsub, mdns, noise, ping,
     swarm::{self, SwarmEvent},
     tcp, yamux,
+};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    time::Duration,
 };
 use tokio::io;
 use tracing_subscriber::EnvFilter;
@@ -104,9 +104,7 @@ impl GossibConnection {
         swarm
     }
 
-    async fn listen_messages(
-        swarm: &mut swarm::Swarm<GossipBehaviour>,
-    ) -> ! {
+    async fn listen_messages(swarm: &mut swarm::Swarm<GossipBehaviour>) -> ! {
         loop {
             select! {
                 rec_message=recieve_messages()=>{
