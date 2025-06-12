@@ -118,8 +118,8 @@ impl LogFileManager {
                         }
                     }
                     None => {
-                        println!(
-                            "Log receiver for {} disconnected. Stopping task.",
+                        eprintln!(
+                            "\x1b[0m:\x1b[31m[ERROR IN LOGS WRITER]\x1b[0m: Log receiver for {} disconnected. Stopping task.",
                             file_type.as_str()
                         );
                         break;

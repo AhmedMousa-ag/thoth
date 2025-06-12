@@ -9,7 +9,7 @@ use std::{
     hash::{Hash, Hasher},
     time::Duration,
 };
-
+use crate::{err,info,warn};
 use libp2p::{
     Swarm, gossipsub, mdns, noise, ping,
     swarm::{self, SwarmEvent},
@@ -106,10 +106,8 @@ impl GossibConnection {
 
     async fn listen_messages(
         swarm: &mut swarm::Swarm<GossipBehaviour>,
-        // rx: &mut Receiver<Messages>,
     ) -> ! {
         loop {
-            // SwarmEvent::IncomingConnection { connection_id: (), local_addr: (), send_back_addr: () }
             select! {
                 rec_message=recieve_messages()=>{
                     if rec_message.is_some() {
@@ -118,7 +116,7 @@ impl GossibConnection {
                         if rec_topic.is_some(){
                             let topic = rec_topic.unwrap().clone();
                             if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic, message.encode_bytes()){
-                                println!("Error publishing message: {:?}",e);
+                                err!("Error publishing message: {:?}",e);
                             };
                         }
                     }
@@ -127,13 +125,13 @@ impl GossibConnection {
                 event = swarm.select_next_some() => match event {
                     SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
                         for (peer_id, _multiaddr) in list {
-                            println!("mDNS discovered a new peer: {peer_id}");
+                            info!("mDNS discovered a new peer: {peer_id}");
                             swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
                         }
                     },
                     SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
                         for (peer_id, _multiaddr) in list {
-                            println!("mDNS discover peer has expired: {peer_id}");
+                            info!("mDNS discover peer has expired: {}",peer_id);
                             swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
                         }
                     },
@@ -141,26 +139,26 @@ impl GossibConnection {
                         propagation_source: peer_id,
                         message_id: id,
                         message,
-                    })) => println!(
-                            "Got message: '{}' with id: {id} from peer: {peer_id}",
-                            String::from_utf8_lossy(&message.data),
+                    })) => info!(
+                            "Got message: '{}' with id: {} from peer: {}",
+                            String::from_utf8_lossy(&message.data),id,peer_id
                         ),
                     SwarmEvent::NewListenAddr { address, .. } => {
-                        println!("Local node is listening on {address}");
+                        info!("Local node is listening on {}",address);
                     },
                     SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
-                        println!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established)
+                        info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established)
                     },
                     SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
-                        println!("Connection Closed id: {}, peer id: {}, number of established: {},  due to: {:?}",connection_id,peer_id ,num_established,cause)
+                        warn!("Connection Closed id: {}, peer id: {}, number of established: {},  due to: {:?}",connection_id,peer_id ,num_established,cause)
                     },
                     SwarmEvent::IncomingConnection{connection_id,local_addr,send_back_addr}=>{
-                        println!("Incomming connection id: {}, local address: {} send back address: {}",connection_id,local_addr,send_back_addr)
+                        info!("Incomming connection id: {}, local address: {} send back address: {}",connection_id,local_addr,send_back_addr)
                     },
                     SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
-                        println!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
+                        warn!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
                 },
-                    _ => {}//{println!("None of these options: {:?}",event)}
+                    _ => {warn!("None of these options: {:?}",event)}
                 }
             }
         }
@@ -178,7 +176,7 @@ fn get_reciver_rx() -> &'static RwLock<Receiver<Messages<NodeInfo>>> {
 
 pub async fn send_messages(message: Messages<NodeInfo>) {
     if let Err(e) = get_sender_tx().write().await.send(message).await {
-        println!("Error sending message: {:?}", e);
+        err!("Error sending message: {:?}", e);
     };
 }
 async fn recieve_messages() -> Option<Messages<NodeInfo>> {

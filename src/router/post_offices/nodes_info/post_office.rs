@@ -1,6 +1,7 @@
 //Nodes Information
 use super::channel::InternalNodesInfoCh;
 use crate::connections::{channels_node_info::get_nodes_info, types::NodeInfo};
+use crate::{err, info};
 use crate::router::{
     messages::{Message, MessageParties, RequestsTypes},
     traits::{PostOfficeTrait, SenderReciverTrait},
@@ -25,7 +26,7 @@ impl PostOfficeTrait<Vec<NodeInfo>> for CommunicationOffic {
                 .send(Box::new(rep_message.clone()))
                 .await
             {
-                println!("Error Sending Message: {:?} , Error: {}", &rep_message, e);
+                err!("Error Sending Message: {:?} , Error: {}", &rep_message, e);
             }
         });
     }
@@ -43,7 +44,7 @@ impl PostOfficeTrait<Vec<NodeInfo>> for CommunicationOffic {
                     if message.request == RequestsTypes::RequestNodeInfo {
                         let nodes_info = get_nodes_info().await;
                         Self::send_message(nodes_info);
-                        println!("{:?}", message)
+                        info!("{:?}", message);
                     }
                 }
             }

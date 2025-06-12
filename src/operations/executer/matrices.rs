@@ -47,7 +47,6 @@ pub fn multiply(x: Vec<Vec<f64>>, y: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
                         let res = xarc[i][k] * yarc[k][j];
                         //TODO log error. and Handle it.
                         let _ = res_sender.send(IDXRes { i, j, res });
-                        // println!("indexes: {} {}", i, j);
                     });
                 }
             }
@@ -59,7 +58,6 @@ pub fn multiply(x: Vec<Vec<f64>>, y: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     //TODO raise an error when the matrix dimensions can't be multiplied.
     for msg in res_reciever {
         while icounter <= msg.i {
-            // println!("Pushed i");
             result.push(vec![0.0]);
             icounter += 1;
         }

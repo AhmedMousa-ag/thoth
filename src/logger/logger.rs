@@ -1,3 +1,5 @@
+use crate::info;
+
 use super::writters::writter::{FileTypes, LogFileManager};
 use lazy_static::lazy_static;
 use std::sync::Arc;
@@ -23,7 +25,6 @@ impl LoggerWritter {
         LogFileManager::start(DEBUG_WRITER.clone()).await;
         LogFileManager::start(WARNING_WRITER.clone()).await;
         LogFileManager::start(ERROR_WRITER.clone()).await;
-
-        println!("All log writers started successfully!");
+        info!("All log writers started successfully!");
     }
 }
