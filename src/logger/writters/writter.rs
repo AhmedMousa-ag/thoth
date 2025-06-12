@@ -58,7 +58,9 @@ impl LogFileManager {
         })
     }
     fn generate_file_name(start_time: DateTime<Utc>, file_type: &FileTypes) -> PathBuf {
-        Path::new("logs").join(file_type.as_str()).join(start_time.to_string())
+        Path::new("logs")
+            .join(file_type.as_str())
+            .join(start_time.to_string())
     }
     pub fn read(&mut self, max_lines: u64) -> Result<String, io::Error> {
         let mut contents = vec![];
@@ -91,7 +93,7 @@ impl LogFileManager {
     fn is_file_limit(&self) -> bool {
         self.current_lint >= self.max_lines
     }
-    
+
     pub async fn start(manager: Arc<Mutex<Self>>) {
         let file_type = {
             let guard = manager.lock().await;
