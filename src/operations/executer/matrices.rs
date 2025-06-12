@@ -30,7 +30,6 @@ pub fn multiply(x: Vec<Vec<f64>>, y: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
         [24 33]
         [39 54]
     */
-
     let (res_sender, res_reciever) = mpsc::channel();
     let res_sender: Arc<Sender<IDXRes>> = Arc::new(res_sender);
 
@@ -57,6 +56,7 @@ pub fn multiply(x: Vec<Vec<f64>>, y: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
 
     let mut result: Vec<Vec<f64>> = Vec::new();
     let mut icounter = 0;
+    //TODO raise an error when the matrix dimensions can't be multiplied.
     for msg in res_reciever {
         while icounter <= msg.i {
             // println!("Pushed i");
