@@ -1,0 +1,25 @@
+syntax = "proto3";
+package mathop;
+
+service MathOps {
+    // rpc SayHello (HelloRequest) returns (HelloReply);
+    rpc MatrixMultiply (MatrixOperationRequest) returns (MatrixOperationReply);
+}
+
+message MatrixRow {
+  repeated double values = 1;
+}
+
+message Matrix {
+  repeated MatrixRow rows = 1;
+}
+
+message MatrixOperationRequest {
+  Matrix matrix_a = 1;
+  Matrix matrix_b = 2;
+}
+
+message MatrixOperationReply {
+  Matrix result_matrix = 1;
+  string status_message = 2; // e.g., "Success", "Matrices have incompatible dimensions"
+}
