@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! info {
-    ($fmt:expr) => {
+    ($fmt:expr) => {{
         let timestamp = chrono::Utc::now();
         let colored_msg = format!(
             "\x1b[90m{}\x1b[0m:\x1b[32m[INFO]\x1b[0m: {}",
@@ -10,7 +10,7 @@ macro_rules! info {
         let plain_msg = format!("{}:[INFO]: {}", timestamp, $fmt);
         println!("{}", colored_msg);
         let _ = $crate::logger::channels::get_info_sender().send(plain_msg);
-    };
+     } };
     ($fmt:expr, $($args:expr),*) => {{
         let timestamp =  chrono::Utc::now();
         let message = format!($fmt, $($args),*);
@@ -27,7 +27,7 @@ macro_rules! info {
 
 #[macro_export]
 macro_rules! debug {
-    ($fmt:expr) => {
+    ($fmt:expr) => {{
         let timestamp =  chrono::Utc::now();
         let colored_msg = format!(
             "\x1b[90m{}\x1b[0m:\x1b[36m[DEBUG]\x1b[0m: {}",
@@ -37,7 +37,7 @@ macro_rules! debug {
         let plain_msg = format!("{}:[DEBUG]: {}", timestamp, $fmt);
         println!("{}", colored_msg);
         let _ = $crate::logger::channels::get_debug_sender().send(plain_msg);
-    };
+    }};
     ($fmt:expr, $($args:expr),*) => {{
         let timestamp = chrono::Utc::now();
         let message = format!($fmt, $($args),*);
@@ -54,7 +54,7 @@ macro_rules! debug {
 
 #[macro_export]
 macro_rules! warn {
-    ($fmt:expr) => {
+    ($fmt:expr) => {{
         let timestamp =  chrono::Utc::now();
         let colored_msg = format!(
             "\x1b[90m{}\x1b[0m:\x1b[33m[WARNING]\x1b[0m: {}",
@@ -64,7 +64,7 @@ macro_rules! warn {
         let plain_msg = format!("{}:[WARNING]: {}", timestamp, $fmt);
         println!("{}", colored_msg);
         let _ = $crate::logger::channels::get_warn_sender().send(plain_msg);
-    };
+    }};
     ($fmt:expr, $($args:expr),*) => {{
         let timestamp = chrono::Utc::now();
         let message = format!($fmt, $($args),*);
@@ -81,7 +81,7 @@ macro_rules! warn {
 
 #[macro_export]
 macro_rules! err {
-    ($fmt:expr) => {
+    ($fmt:expr) => {{
         let timestamp = chrono::Utc::now();
         let colored_msg = format!(
             "\x1b[90m{}\x1b[0m:\x1b[31m[ERROR]\x1b[0m: {}",
@@ -91,7 +91,7 @@ macro_rules! err {
         let plain_msg = format!("{}:[ERROR]: {}", timestamp, $fmt);
         println!("{}", colored_msg);
         let _ = $crate::logger::channels::get_err_sender().send(plain_msg);
-    };
+    }};
     ($fmt:expr, $($args:expr),*) => {{
         let timestamp = chrono::Utc::now();
         let message = format!($fmt, $($args),*);
