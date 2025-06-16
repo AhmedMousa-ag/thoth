@@ -10,7 +10,6 @@ async fn test_multipy() {
     // assert_eq!(strassen_res,expected_result)
 }
 
-
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_add() {
     let x = vec![vec![1.0, 2.0], vec![4.0, 5.0]];
@@ -20,15 +19,11 @@ async fn test_add() {
     assert_eq!(add_res, expected_result);
 }
 
-
-
-
 #[tokio::test(flavor = "multi_thread", worker_threads = 10)]
 async fn test_sub() {
     let x = vec![vec![1.0, 2.0], vec![4.0, 5.0]];
     let y = vec![vec![7.0, 2.0], vec![6.0, 5.0]];
-    let expected_result =  vec![vec![-6.0, 0.0], vec![-2.0, 0.0]];
+    let expected_result = vec![vec![-6.0, 0.0], vec![-2.0, 0.0]];
     let sub_res = matrices::sub(x, y);
     assert_eq!(sub_res, expected_result);
 }
-
