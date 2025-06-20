@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     connections::types::NodeInfo,
     router::{configs::config::CONFIGS, messages::Message, traits::SenderReciverTrait},
@@ -8,7 +10,7 @@ use tokio::sync::{
     mpsc::{self, Receiver, Sender},
 };
 
-type NodesInfoMessagesType = Box<Message<Vec<NodeInfo>>>;
+type NodesInfoMessagesType = Box<Message<HashMap<String, NodeInfo>>>;
 lazy_static! {
     static ref INTER_REQ_NODE: (
         Mutex<Sender<NodesInfoMessagesType>>,

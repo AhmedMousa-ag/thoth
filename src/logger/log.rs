@@ -10,6 +10,7 @@ macro_rules! info {
         let plain_msg = format!("{}:[INFO]: {}", timestamp, $fmt);
         println!("{}", colored_msg);
         let _ = $crate::logger::channels::get_info_sender().send(plain_msg);
+
      } };
     ($fmt:expr, $($args:expr),*) => {{
         let timestamp =  chrono::Utc::now();

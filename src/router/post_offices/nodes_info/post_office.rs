@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 //Nodes Information
 use super::channel::InternalNodesInfoCh;
 use crate::connections::{channels_node_info::get_nodes_info, types::NodeInfo};
@@ -6,28 +8,30 @@ use crate::router::{
     traits::{PostOfficeTrait, SenderReciverTrait},
 };
 use crate::{err, info};
-use tokio::runtime::Runtime;
+use tokio::runtime::Handle;
 use tokio::spawn;
+use tokio::task::block_in_place;
 
 pub struct CommunicationOffic {}
 
-impl PostOfficeTrait<Vec<NodeInfo>> for CommunicationOffic {
-    fn send_message(message: Vec<NodeInfo>) {
-        let rt = Runtime::new().unwrap();
-        rt.block_on(async {
-            let rep_message = Message {
-                parties: MessageParties::InternalComponents,
-                request: RequestsTypes::ReplyNodeInfoUpdate,
-                message: Some(message),
-            };
-            if let Err(e) = InternalNodesInfoCh::get_sender_tx()
-                .lock()
-                .await
-                .send(Box::new(rep_message.clone()))
-                .await
-            {
-                err!("Error Sending Message: {:?} , Error: {}", &rep_message, e);
-            }
+impl PostOfficeTrait<HashMap<String, NodeInfo>> for CommunicationOffic {
+    fn send_message(message: HashMap<String, NodeInfo>) {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let rep_message = Message {
+                    parties: MessageParties::InternalComponents,
+                    request: RequestsTypes::ReplyNodeInfoUpdate,
+                    message: Some(message),
+                };
+                if let Err(e) = InternalNodesInfoCh::get_sender_tx()
+                    .lock()
+                    .await
+                    .send(Box::new(rep_message.clone()))
+                    .await
+                {
+                    err!("Error Sending Message: {:?} , Error: {}", &rep_message, e);
+                }
+            })
         });
     }
 

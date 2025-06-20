@@ -4,7 +4,7 @@ use mathop::{
 };
 use tonic::{Request, Response, Status, transport::Server};
 
-use crate::{err, info};
+use crate::info;
 pub mod mathop {
     tonic::include_proto!("mathop");
 }
@@ -30,18 +30,17 @@ impl MathOps for MatrixOperations {
     }
 }
 
-pub async fn start_server() {
+pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     info!("Start of gRPC server");
     let addr = "[::1]:50051".parse().unwrap();
     let matrix_ops: MatrixOperations = MatrixOperations::default();
     let mathops_server: MathOpsServer<MatrixOperations> = MathOpsServer::new(matrix_ops);
     info!("Will start gRPC server now");
-    match Server::builder()
+    Server::builder()
         .add_service(mathops_server)
         .serve(addr)
-        .await
-    {
-        Ok(_) => info!("Established gRPC server."),
-        Err(e) => err!("Failed to establish gRPC server due to: {}", e),
-    }
+        .await?;
+
+    info!("Established gRPC server.");
+    Ok(())
 }
