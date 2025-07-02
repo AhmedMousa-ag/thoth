@@ -1,7 +1,10 @@
 use super::charts::plans::{NodesOpsMsg, Steps};
+use crate::connections::configs::topics::TopicsEnums;
 use crate::operations::executer::base_operations::OperationTypes;
 use crate::operations::planner::charts::plans::Numeric;
-use crate::structs::structs::NodeInfo;
+use crate::router::post_offices::external_com_ch::ExternalComm;
+use crate::structs::structs::{Message, NodeInfo, RequestsTypes};
+use crate::structs::traits::EncodingDecoding;
 use crate::{connections::channels_node_info::get_nodes_info_cloned, info};
 use std::collections::HashMap;
 
@@ -16,7 +19,15 @@ impl Planner {
             nodes_info: get_nodes_info_cloned(),
         }
     }
-    pub fn send_message(&self, msg: &NodesOpsMsg) {}
+    pub fn send_message(&self, msg: &NodesOpsMsg) {
+        let nodes_msg = Box::new(Message {
+            topic_name: TopicsEnums::OPERATIONS.to_string(),
+            request: RequestsTypes::PlansToExecute,
+            message: Some(msg.encode_bytes()),
+        });
+        ExternalComm::send_message(nodes_msg);
+        info!("Sent plans to be executed.")
+    }
     pub fn plan_matrix_multiply(&self, x: Vec<Vec<f64>>, y: Vec<Vec<f64>>) {
         //TODO
         // debug!("Will start multiply");
@@ -34,6 +45,7 @@ impl Planner {
     pub fn plan_average(&self, x: Vec<f64>) {
         let data_size = x.len();
         let nodes_num = self.nodes_info.keys().len(); //It shall never be zero as the current node is one.
+        //TODO if nodes_num==1 then send it to the executre and return.
         let ops_slice_size = data_size / nodes_num;
         let mut idx = 0;
         let mut nodes_keys = self.nodes_info.keys();
