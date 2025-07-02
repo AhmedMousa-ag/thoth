@@ -2,14 +2,13 @@ use thoth::connections::connect::GossibConnection;
 use thoth::grpc::grpc_server;
 use thoth::logger::logger::LoggerWritter;
 use thoth::operations::planner::organizer::Planner;
-use thoth::router::post_offices::nodes_info::post_office::CommunicationOffic;
-use thoth::router::traits::PostOfficeTrait;
+use thoth::router::post_offices::back_office::start_back_office;
 use thoth::{debug, err};
 use tokio::spawn;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     LoggerWritter::start().await;
-    CommunicationOffic::start_back_office();
+    start_back_office();
     let x: Vec<f64> = vec![1.0, 2.0, 3.5, 7.5]; //, vec![4.0, 5.0]];
     let y: Vec<Vec<f64>> = vec![vec![1.0, 2.0], vec![4.0, 5.0]];
 

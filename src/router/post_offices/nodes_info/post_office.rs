@@ -35,24 +35,4 @@ impl PostOfficeTrait<NodeInfo> for CommunicationOffic {
         });
     }
 
-    fn start_back_office() {
-        // Watch for internal communication requests
-        spawn(async {
-            info!("Started Communications back office");
-            loop {
-                if let Some(message) = InternalCommunications::get_reciver_rx()
-                    .lock()
-                    .await
-                    .recv()
-                    .await
-                {
-                    if message.request == RequestsTypes::RequestNodeInfo {
-                        let nodes_info = NodeInfo::update_current_node_info();
-                        Self::send_message(Box::new(nodes_info));
-                        info!("{:?}", message);
-                    }
-                }
-            }
-        });
-    }
 }
