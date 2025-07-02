@@ -18,7 +18,7 @@ pub struct NodesInfoOffice {}
 impl PostOfficeTrait<NodeInfo> for NodesInfoOffice {
     fn send_message(message: Box<NodeInfo>) {
         let rep_message = Box::new(Message {
-            topic_name: TopicsEnums::NodesInfo.as_str().to_string(),
+            topic_name: TopicsEnums::NodesInfo.to_string(),
             request: RequestsTypes::ReplyNodeInfoUpdate,
             message: Some(message.encode_bytes()),
         });
@@ -32,7 +32,7 @@ impl PostOfficeTrait<NodeInfo> for NodesInfoOffice {
         //     .lock()
         //     .await
         //     .send(Box::new(Message {
-        //         topic_name: TopicsEnums::NodesInfo.as_str().to_string(),
+        //         topic_name: TopicsEnums::NodesInfo.to_string(),
         //         request: RequestsTypes::ReplyNodeInfoUpdate,
         //         message: Some(NodeInfo::encode_bytes(&message)),
         //     }))

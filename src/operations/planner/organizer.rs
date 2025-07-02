@@ -2,22 +2,18 @@ use super::charts::plans::{NodesOpsMsg, Steps};
 use crate::operations::executer::base_operations::OperationTypes;
 use crate::operations::planner::charts::plans::Numeric;
 use crate::structs::structs::NodeInfo;
-use crate::{connections::channels_node_info::get_nodes_info, debug};
+use crate::{connections::channels_node_info::get_nodes_info_cloned, info};
 use std::collections::HashMap;
-use tokio::runtime::Handle;
-use tokio::task::block_in_place;
+
 pub struct Planner {
     nodes_info: HashMap<std::string::String, NodeInfo>,
 }
 
 impl Planner {
     pub fn new() -> Self {
-        debug!("Start new planer");
-
-        let nodes_info: HashMap<std::string::String, NodeInfo> =
-            block_in_place(|| Handle::current().block_on(async { get_nodes_info().await }));
+        info!("Started new planer");
         Self {
-            nodes_info: nodes_info,
+            nodes_info: get_nodes_info_cloned(),
         }
     }
     pub fn send_message(&self, msg: &NodesOpsMsg) {}
@@ -80,7 +76,7 @@ impl Planner {
                 None => break,
             }
         }
-        debug!("Finished planning: {:?}", nodes_msgs);
+        info!("Finished planning: {:?}", nodes_msgs);
         self.send_message(&NodesOpsMsg {
             nodes_duties: nodes_msgs,
         });
