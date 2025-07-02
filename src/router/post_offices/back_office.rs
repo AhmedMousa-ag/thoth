@@ -2,11 +2,10 @@ use crate::{
     connections::channels_node_info::NodeInfoTrait,
     info,
     router::{
-        messages::RequestsTypes,
         post_offices::nodes_info::{channel::InternalCommunications, post_office::NodesOffice},
         traits::{PostOfficeTrait, SenderReciverTrait},
     },
-    structs::structs::NodeInfo,
+    structs::structs::{NodeInfo, RequestsTypes},
     warn,
 };
 use tokio::spawn;

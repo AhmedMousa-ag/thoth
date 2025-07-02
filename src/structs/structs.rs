@@ -10,8 +10,22 @@ pub struct NodeInfo {
 pub struct Topics {
     pub name: String,
 }
-#[derive(Clone, Encode, Decode)]
-pub struct Messages {
+// #[derive(Debug, Clone, PartialEq)]
+// pub enum MessageParties {
+//     InternalComponents,
+//     NodesToNodes,
+// }
+#[derive(Debug, Clone, PartialEq, Encode, Decode)]
+pub enum RequestsTypes {
+    RequestNodeInfo,
+    ReplyNodeInfoUpdate,
+    PlansToExecute,
+}
+
+#[derive(Debug, Clone, PartialEq, Encode, Decode)]
+pub struct Message {
+    // pub parties: MessageParties,
     pub topic_name: String,
-    pub message: Vec<u8>,
+    pub request: RequestsTypes,
+    pub message: Option<Vec<u8>>,
 }

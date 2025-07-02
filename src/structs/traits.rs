@@ -1,4 +1,4 @@
-use super::structs::{Messages, NodeInfo};
+use super::structs::{Message, NodeInfo};
 use crate::operations::planner::charts::plans::NodesOpsMsg;
 use bincode::config;
 
@@ -7,7 +7,7 @@ pub trait EncodingDecoding {
     fn decode_bytes(bytes: &[u8]) -> Self;
 }
 
-impl EncodingDecoding for Messages {
+impl EncodingDecoding for Message {
     fn encode_bytes(&self) -> Vec<u8> {
         bincode::encode_to_vec(self, config::standard()).unwrap()
     }

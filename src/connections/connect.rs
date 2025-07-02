@@ -7,14 +7,18 @@ use crate::{
         },
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
+    err, info,
+    router::{
+        post_offices::external_com_ch::{ExternalComm, NodesMessage},
+        traits::SenderReciverTrait,
+    },
     structs::{
-        structs::{Messages, NodeInfo},
+        structs::{Message, NodeInfo},
         traits::EncodingDecoding,
     },
-    {err, info, warn},
+    warn,
 };
 use futures::stream::StreamExt;
-use lazy_static::lazy_static;
 use libp2p::{
     Swarm, gossipsub, mdns, noise, ping,
     swarm::{self, SwarmEvent},
@@ -34,13 +38,6 @@ use tokio::{
     },
 };
 use tracing_subscriber::EnvFilter;
-
-lazy_static! {
-    static ref CHANNEL: (RwLock<Sender<Messages>>, RwLock<Receiver<Messages>>) = {
-        let (tx, rx) = mpsc::channel(100);
-        (RwLock::new(tx), RwLock::new(rx))
-    };
-}
 
 pub struct GossibConnection {}
 impl GossibConnection {
@@ -116,7 +113,7 @@ impl GossibConnection {
         let node_topic = TopicsEnums::NodesInfo.as_str();
         loop {
             select! {
-                            rec_message=recieve_messages()=>{
+                            rec_message=ExternalComm::recieve_messages()=>{
                                 if rec_message.is_some() {
                                     let message = rec_message.unwrap();
                                     match get_topic(message.topic_name.as_str()){
@@ -154,12 +151,12 @@ impl GossibConnection {
                                     match message.topic.as_str(){
                                         ops_topic=>{
                                             info!("Got Operation Topic"); //message.data
-                                            let ops_msg:Messages=Messages::decode_bytes(&message.data);
+                                            let ops_msg:Message=Message::decode_bytes(&message.data);
 
                                     },
                                         node_topic=>{
                                             info!("Got node exchange Topic");//message.data
-                                            let ops_msg:Messages=Messages::decode_bytes(&message.data);
+                                            let ops_msg:Message=Message::decode_bytes(&message.data);
                                         },
                                         _=>{
                                             warn!("Couldn't find the topic type");
@@ -190,22 +187,4 @@ impl GossibConnection {
                         }
         }
     }
-}
-
-// Accessor functions to get the TX and RX parts
-fn get_sender_tx() -> &'static RwLock<Sender<Messages>> {
-    &CHANNEL.0
-}
-
-fn get_reciver_rx() -> &'static RwLock<Receiver<Messages>> {
-    &CHANNEL.1
-}
-
-pub async fn send_messages(message: Messages) {
-    if let Err(e) = get_sender_tx().write().await.send(message).await {
-        err!("Error sending message: {:?}", e);
-    };
-}
-async fn recieve_messages() -> Option<Messages> {
-    get_reciver_rx().write().await.recv().await
 }

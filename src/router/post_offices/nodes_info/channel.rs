@@ -1,4 +1,7 @@
-use crate::router::{configs::config::CONFIGS, messages::Message, traits::SenderReciverTrait};
+use crate::{
+    router::{configs::config::CONFIGS, traits::SenderReciverTrait},
+    structs::structs::Message,
+};
 use lazy_static::lazy_static;
 use tokio::sync::{
     Mutex,

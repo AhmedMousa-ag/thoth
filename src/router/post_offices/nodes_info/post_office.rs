@@ -1,11 +1,11 @@
 use crate::{
+    connections::configs::topics::TopicsEnums,
     info,
-    router::{
-        messages::{Message, RequestsTypes},
-        post_offices::external_com_ch::ExternalComm,
-        traits::PostOfficeTrait,
+    router::{post_offices::external_com_ch::ExternalComm, traits::PostOfficeTrait},
+    structs::{
+        structs::{Message, NodeInfo, RequestsTypes},
+        traits::EncodingDecoding,
     },
-    structs::{structs::NodeInfo, traits::EncodingDecoding},
 };
 
 pub struct NodesOffice {}
@@ -13,6 +13,7 @@ pub struct NodesOffice {}
 impl PostOfficeTrait<NodeInfo> for NodesOffice {
     fn send_message(message: Box<NodeInfo>) {
         let rep_message = Box::new(Message {
+            topic_name: TopicsEnums::NodesInfo.as_str().to_string(),
             request: RequestsTypes::ReplyNodeInfoUpdate,
             message: Some(message.encode_bytes()),
         });

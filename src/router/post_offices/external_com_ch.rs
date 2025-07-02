@@ -1,6 +1,7 @@
 use crate::{
     err,
-    router::{configs::config::CONFIGS, messages::Message, traits::SenderReciverTrait},
+    router::{configs::config::CONFIGS, traits::SenderReciverTrait},
+    structs::structs::Message,
 };
 use lazy_static::lazy_static;
 use tokio::{
@@ -12,7 +13,7 @@ use tokio::{
     task::block_in_place,
 };
 
-type NodesMessage = Box<Message>;
+pub type NodesMessage = Box<Message>;
 
 lazy_static! {
     static ref INTER_REQ_NODE: (Mutex<Sender<NodesMessage>>, Mutex<Receiver<NodesMessage>>) = {
@@ -48,5 +49,8 @@ impl ExternalComm {
                 }
             })
         })
+    }
+    pub async fn recieve_messages() -> Option<NodesMessage> {
+        ExternalComm::get_reciver_rx().lock().await.recv().await
     }
 }
