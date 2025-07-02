@@ -1,7 +1,7 @@
 use super::charts::plans::{NodesOpsMsg, Steps};
-use crate::connections::types::NodeInfo;
 use crate::operations::executer::base_operations::OperationTypes;
 use crate::operations::planner::charts::plans::Numeric;
+use crate::structs::structs::NodeInfo;
 use crate::{connections::channels_node_info::get_nodes_info, debug};
 use std::collections::HashMap;
 use tokio::runtime::Handle;

@@ -1,5 +1,5 @@
 pub trait PostOfficeTrait<T> {
-    fn send_message(message: T);
+    fn send_message(message: Box<T>);
     fn start_back_office();
 }
 pub trait SenderReciverTrait<S, R> {

@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
-use super::types::NodeInfo;
+use crate::structs::structs::NodeInfo;
 use lazy_static::lazy_static;
 use sysinfo::System;
 use tokio::runtime::Handle;
 use tokio::sync::RwLock;
 use tokio::task::block_in_place;
+use uuid::Uuid;
+
 lazy_static! {
     static ref NODES_INFO: RwLock<HashMap<String, NodeInfo>> = HashMap::new().into();
+    static ref CURR_NODE_INFO: RwLock<NodeInfo> = RwLock::new(NodeInfo::new());
 }
 
 pub trait NodeInfoTrait {
@@ -21,7 +24,9 @@ pub trait NodeInfoTrait {
             })
         });
     }
-    fn new(id: String, av_threads: usize, av_ram: u64) -> NodeInfo {
+    fn new() -> NodeInfo {
+        let id = Uuid::new_v4().to_string();
+        let (av_threads, av_ram) = Self::calc_node_info();
         let node = NodeInfo {
             id,
             av_threads,
@@ -43,9 +48,26 @@ pub trait NodeInfoTrait {
         let available_memory_kb = sys.available_memory();
         (available_threads, available_memory_kb)
     }
+    fn update_current_node_info() -> NodeInfo;
 }
-impl NodeInfoTrait for NodeInfo {}
 
+impl NodeInfoTrait for NodeInfo {
+    fn update_current_node_info() -> NodeInfo {
+        let (av_threads, av_ram) = Self::calc_node_info();
+        let id = get_current_node().id;
+        let updated_node = NodeInfo {
+            id,
+            av_threads,
+            av_ram,
+        };
+        Self::add_node(&updated_node);
+        updated_node
+    }
+}
+
+pub fn get_current_node() -> NodeInfo {
+    block_in_place(|| Handle::current().block_on(async { CURR_NODE_INFO.read().await.clone() }))
+}
 pub async fn get_nodes_info() -> HashMap<std::string::String, NodeInfo> {
     NODES_INFO.read().await.clone()
 }

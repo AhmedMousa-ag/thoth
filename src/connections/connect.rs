@@ -1,4 +1,3 @@
-use super::types::EncodingDecoding;
 use crate::{
     connections::{
         channels_node_info::NodeInfoTrait,
@@ -6,11 +5,16 @@ use crate::{
             config::get_config,
             topics::{TopicsEnums, get_topic, get_topics},
         },
-        types::{GossipBehaviour, GossipBehaviourEvent, Messages, NodeInfo},
+        types::{GossipBehaviour, GossipBehaviourEvent},
     },
-    operations::planner::charts::plans::NodesOpsMsg,
+    structs::{
+        structs::{Messages, NodeInfo},
+        traits::EncodingDecoding,
+    },
+    {err, info, warn},
 };
-use crate::{err, info, warn};
+use futures::stream::StreamExt;
+use lazy_static::lazy_static;
 use libp2p::{
     Swarm, gossipsub, mdns, noise, ping,
     swarm::{self, SwarmEvent},
@@ -18,24 +22,21 @@ use libp2p::{
 };
 use std::{
     collections::hash_map::DefaultHasher,
+    error::Error,
     hash::{Hash, Hasher},
     time::Duration,
 };
-use tokio::io;
+use tokio::{
+    io, select,
+    sync::{
+        RwLock,
+        mpsc::{self, Receiver, Sender},
+    },
+};
 use tracing_subscriber::EnvFilter;
 
-use futures::stream::StreamExt;
-use lazy_static::lazy_static;
-use std::error::Error;
-use tokio::select;
-use tokio::sync::RwLock;
-use tokio::sync::mpsc::{self, Receiver, Sender};
-
 lazy_static! {
-    static ref CHANNEL: (
-        RwLock<Sender<Messages<NodeInfo>>>,
-        RwLock<Receiver<Messages<NodeInfo>>>
-    ) = {
+    static ref CHANNEL: (RwLock<Sender<Messages>>, RwLock<Receiver<Messages>>) = {
         let (tx, rx) = mpsc::channel(100);
         (RwLock::new(tx), RwLock::new(rx))
     };
@@ -55,12 +56,6 @@ impl GossibConnection {
         // Listen on all interfaces and whatever port the OS assigns
         // swarm.listen_on(format!("/ip4/0.0.0.0/udp/{}/quic-v1", port).parse()?)?;
         swarm.listen_on(format!("/ip4/0.0.0.0/tcp/{}", get_config().port).parse()?)?;
-        let (av_threads, av_ram) = NodeInfo::calc_node_info();
-        NodeInfo::add_node(&NodeInfo::new(
-            swarm.local_peer_id().to_string(),
-            av_threads,
-            av_ram,
-        ));
         Self::listen_messages(&mut swarm).await
     }
 
@@ -117,6 +112,8 @@ impl GossibConnection {
     }
 
     async fn listen_messages(swarm: &mut swarm::Swarm<GossipBehaviour>) -> ! {
+        let ops_topic = TopicsEnums::OPERATIONS.as_str();
+        let node_topic = TopicsEnums::NodesInfo.as_str();
         loop {
             select! {
                             rec_message=recieve_messages()=>{
@@ -153,17 +150,16 @@ impl GossibConnection {
                                         "Got message:  with id: {} from peer: {}",
                                         id,peer_id
                                     );
-                                    let ops_topic=TopicsEnums::OPERATIONS.as_str();
-                                    let node_topic=TopicsEnums::NodesInfo.as_str();
+
                                     match message.topic.as_str(){
                                         ops_topic=>{
                                             info!("Got Operation Topic"); //message.data
-                                            let ops_msg:Messages<NodesOpsMsg>=Messages::decode_bytes(&message.data);
-                                            
+                                            let ops_msg:Messages=Messages::decode_bytes(&message.data);
+
                                     },
                                         node_topic=>{
                                             info!("Got node exchange Topic");//message.data
-                                            let ops_msg:Messages<NodeInfo>=Messages::decode_bytes(&message.data);
+                                            let ops_msg:Messages=Messages::decode_bytes(&message.data);
                                         },
                                         _=>{
                                             warn!("Couldn't find the topic type");
@@ -197,19 +193,19 @@ impl GossibConnection {
 }
 
 // Accessor functions to get the TX and RX parts
-fn get_sender_tx() -> &'static RwLock<Sender<Messages<NodeInfo>>> {
+fn get_sender_tx() -> &'static RwLock<Sender<Messages>> {
     &CHANNEL.0
 }
 
-fn get_reciver_rx() -> &'static RwLock<Receiver<Messages<NodeInfo>>> {
+fn get_reciver_rx() -> &'static RwLock<Receiver<Messages>> {
     &CHANNEL.1
 }
 
-pub async fn send_messages(message: Messages<NodeInfo>) {
+pub async fn send_messages(message: Messages) {
     if let Err(e) = get_sender_tx().write().await.send(message).await {
         err!("Error sending message: {:?}", e);
     };
 }
-async fn recieve_messages() -> Option<Messages<NodeInfo>> {
+async fn recieve_messages() -> Option<Messages> {
     get_reciver_rx().write().await.recv().await
 }

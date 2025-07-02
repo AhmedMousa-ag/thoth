@@ -1,32 +1,32 @@
-use std::collections::HashMap;
-
-//Nodes Information
-use super::channel::InternalNodesInfoCh;
-use crate::connections::{channels_node_info::get_nodes_info, types::NodeInfo};
-use crate::router::{
-    messages::{Message, MessageParties, RequestsTypes},
-    traits::{PostOfficeTrait, SenderReciverTrait},
+use crate::{
+    connections::channels_node_info::NodeInfoTrait,
+    err, info,
+    router::{
+        messages::{Message, RequestsTypes},
+        post_offices::nodes_info::channel::InternalCommunications,
+        traits::{PostOfficeTrait, SenderReciverTrait},
+    },
+    structs::{structs::NodeInfo, traits::EncodingDecoding},
 };
-use crate::{err, info};
 use tokio::runtime::Handle;
 use tokio::spawn;
 use tokio::task::block_in_place;
 
 pub struct CommunicationOffic {}
 
-impl PostOfficeTrait<HashMap<String, NodeInfo>> for CommunicationOffic {
-    fn send_message(message: HashMap<String, NodeInfo>) {
+impl PostOfficeTrait<NodeInfo> for CommunicationOffic {
+    fn send_message(message: Box<NodeInfo>) {
+        
         block_in_place(|| {
             Handle::current().block_on(async {
-                let rep_message = Message {
-                    parties: MessageParties::InternalComponents,
+                let rep_message =Box::new( Message {
                     request: RequestsTypes::ReplyNodeInfoUpdate,
-                    message: Some(message),
-                };
-                if let Err(e) = InternalNodesInfoCh::get_sender_tx()
+                    message: Some(message.encode_bytes()),
+                });
+                if let Err(e) = InternalCommunications::get_sender_tx()
                     .lock()
                     .await
-                    .send(Box::new(rep_message.clone()))
+                    .send(Box::clone(&rep_message))
                     .await
                 {
                     err!("Error Sending Message: {:?} , Error: {}", &rep_message, e);
@@ -38,16 +38,17 @@ impl PostOfficeTrait<HashMap<String, NodeInfo>> for CommunicationOffic {
     fn start_back_office() {
         // Watch for internal communication requests
         spawn(async {
+            info!("Started Communications back office");
             loop {
-                if let Some(message) = InternalNodesInfoCh::get_reciver_rx()
+                if let Some(message) = InternalCommunications::get_reciver_rx()
                     .lock()
                     .await
                     .recv()
                     .await
                 {
                     if message.request == RequestsTypes::RequestNodeInfo {
-                        let nodes_info = get_nodes_info().await;
-                        Self::send_message(nodes_info);
+                        let nodes_info = NodeInfo::update_current_node_info();
+                        Self::send_message(Box::new(nodes_info));
                         info!("{:?}", message);
                     }
                 }
