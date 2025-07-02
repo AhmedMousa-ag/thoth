@@ -13,6 +13,12 @@ impl TopicsEnums {
             TopicsEnums::NodesInfo => "NODES_INFO",
         }
     }
+    pub fn to_string(&self) -> String {
+        match self {
+            TopicsEnums::OPERATIONS => String::from("OPERATIONS"),
+            TopicsEnums::NodesInfo => String::from("NODES_INFO"),
+        }
+    }
 }
 
 lazy_static! {

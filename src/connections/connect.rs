@@ -9,8 +9,8 @@ use crate::{
     },
     err, info,
     router::{
-        post_offices::external_com_ch::{ExternalComm, NodesMessage},
-        traits::SenderReciverTrait,
+        post_offices::{external_com_ch::ExternalComm, nodes_info::post_office::NodesInfoOffice},
+        traits::PostOfficeTrait,
     },
     structs::{
         structs::{Message, NodeInfo},
@@ -30,13 +30,7 @@ use std::{
     hash::{Hash, Hasher},
     time::Duration,
 };
-use tokio::{
-    io, select,
-    sync::{
-        RwLock,
-        mpsc::{self, Receiver, Sender},
-    },
-};
+use tokio::{io, select};
 use tracing_subscriber::EnvFilter;
 
 pub struct GossibConnection {}
@@ -155,8 +149,10 @@ impl GossibConnection {
 
                                     },
                                         node_topic=>{
-                                            info!("Got node exchange Topic");//message.data
+                                            info!("Got node info exchange Topic");//message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
+                                            let msg = NodeInfo::decode_bytes(&ops_msg.message.unwrap());
+                                            NodesInfoOffice::handle_incom_msg(Box::new(msg)).await;
                                         },
                                         _=>{
                                             warn!("Couldn't find the topic type");
@@ -168,8 +164,8 @@ impl GossibConnection {
                                     info!("Local node is listening on {}",address);
                                 },
                                 SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
-                                    //TODO add a node here, ask for hardware information.
-                                    info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established)
+                                    info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
+                                    NodeInfo::request_other_nodes_info();
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
                                     //When a node is not connected, remove it.

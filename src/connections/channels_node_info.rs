@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::structs::structs::NodeInfo;
+use crate::connections::configs::topics::TopicsEnums;
+use crate::router::post_offices::external_com_ch::{ExternalComm, NodesMessage};
+use crate::structs::structs::{Message, NodeInfo, RequestsTypes};
 use lazy_static::lazy_static;
 use sysinfo::System;
 use tokio::runtime::Handle;
@@ -49,6 +51,13 @@ pub trait NodeInfoTrait {
         (available_threads, available_memory_kb)
     }
     fn update_current_node_info() -> NodeInfo;
+    fn request_other_nodes_info() {
+        ExternalComm::send_message(Box::new(Message {
+            topic_name: TopicsEnums::NodesInfo.to_string(),
+            request: RequestsTypes::RequestNodeInfo,
+            message: None,
+        }));
+    }
 }
 
 impl NodeInfoTrait for NodeInfo {

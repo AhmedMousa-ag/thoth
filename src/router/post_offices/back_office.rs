@@ -2,7 +2,7 @@ use crate::{
     connections::channels_node_info::NodeInfoTrait,
     info,
     router::{
-        post_offices::nodes_info::{channel::InternalCommunications, post_office::NodesOffice},
+        post_offices::nodes_info::{channel::InternalCommunications, post_office::NodesInfoOffice},
         traits::{PostOfficeTrait, SenderReciverTrait},
     },
     structs::structs::{NodeInfo, RequestsTypes},
@@ -24,7 +24,7 @@ pub fn start_back_office() {
                     RequestsTypes::RequestNodeInfo => {
                         info!("Got request type: {:?}", RequestsTypes::RequestNodeInfo);
                         let nodes_info = NodeInfo::update_current_node_info();
-                        NodesOffice::send_message(Box::new(nodes_info));
+                        NodesInfoOffice::send_message(Box::new(nodes_info));
                         info!("{:?}", message);
                     }
                     _ => warn!(
