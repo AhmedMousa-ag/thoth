@@ -1,5 +1,3 @@
-use std::fmt;
-
 use bincode::{Decode, Encode};
 
 #[derive(Clone, PartialEq, Debug, Encode, Decode)]
