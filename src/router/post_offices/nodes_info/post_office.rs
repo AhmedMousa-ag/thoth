@@ -1,38 +1,22 @@
 use crate::{
-    connections::channels_node_info::NodeInfoTrait,
-    err, info,
+    info,
     router::{
         messages::{Message, RequestsTypes},
-        post_offices::nodes_info::channel::InternalCommunications,
-        traits::{PostOfficeTrait, SenderReciverTrait},
+        post_offices::external_com_ch::ExternalComm,
+        traits::PostOfficeTrait,
     },
     structs::{structs::NodeInfo, traits::EncodingDecoding},
 };
-use tokio::runtime::Handle;
-use tokio::spawn;
-use tokio::task::block_in_place;
 
-pub struct CommunicationOffic {}
+pub struct NodesOffice {}
 
-impl PostOfficeTrait<NodeInfo> for CommunicationOffic {
+impl PostOfficeTrait<NodeInfo> for NodesOffice {
     fn send_message(message: Box<NodeInfo>) {
-        
-        block_in_place(|| {
-            Handle::current().block_on(async {
-                let rep_message =Box::new( Message {
-                    request: RequestsTypes::ReplyNodeInfoUpdate,
-                    message: Some(message.encode_bytes()),
-                });
-                if let Err(e) = InternalCommunications::get_sender_tx()
-                    .lock()
-                    .await
-                    .send(Box::clone(&rep_message))
-                    .await
-                {
-                    err!("Error Sending Message: {:?} , Error: {}", &rep_message, e);
-                }
-            })
+        let rep_message = Box::new(Message {
+            request: RequestsTypes::ReplyNodeInfoUpdate,
+            message: Some(message.encode_bytes()),
         });
+        ExternalComm::send_message(Box::clone(&rep_message));
+        info!("Sent message in Nodes Office.");
     }
-
 }

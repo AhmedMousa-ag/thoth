@@ -42,4 +42,3 @@ impl EncodingDecoding for NodesOpsMsg {
         messages
     }
 }
-

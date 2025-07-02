@@ -1,13 +1,13 @@
 use crate::{
     connections::channels_node_info::NodeInfoTrait,
-     info,
+    info,
     router::{
         messages::RequestsTypes,
-        post_offices::nodes_info::{channel::InternalCommunications,post_office::CommunicationOffic},
+        post_offices::nodes_info::{channel::InternalCommunications, post_office::NodesOffice},
         traits::{PostOfficeTrait, SenderReciverTrait},
     },
-    structs::structs::NodeInfo, warn,
-
+    structs::structs::NodeInfo,
+    warn,
 };
 use tokio::spawn;
 pub fn start_back_office() {
@@ -22,13 +22,16 @@ pub fn start_back_office() {
                 .await
             {
                 match message.request {
-                 RequestsTypes::RequestNodeInfo=>  {
-                    let nodes_info = NodeInfo::update_current_node_info();
-                    CommunicationOffic::send_message(Box::new(nodes_info));
-                    info!("{:?}", message);
-                }
-               ,
-                    _=>warn!("None of the above, it's: {:?}",message.request),
+                    RequestsTypes::RequestNodeInfo => {
+                        info!("Got request type: {:?}", RequestsTypes::RequestNodeInfo);
+                        let nodes_info = NodeInfo::update_current_node_info();
+                        NodesOffice::send_message(Box::new(nodes_info));
+                        info!("{:?}", message);
+                    }
+                    _ => warn!(
+                        "Backoffice request type none of the above, it's: {:?}",
+                        message.request
+                    ),
                 }
             }
         }
