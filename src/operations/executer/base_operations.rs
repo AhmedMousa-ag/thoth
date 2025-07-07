@@ -6,6 +6,7 @@ pub enum OperationTypes {
     ADD,
     SUBTRACT,
     MULTIPLY,
+    DOT,
     DIVIDE,
     POW,
     SQRT, //Square Root

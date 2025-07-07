@@ -9,8 +9,15 @@ use tokio::spawn;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     LoggerWritter::start().await;
     start_back_office();
-    let x: Vec<f64> = vec![1.0, 2.0, 3.5, 7.5]; //, vec![4.0, 5.0]];
-    let y: Vec<Vec<f64>> = vec![vec![1.0, 2.0], vec![4.0, 5.0]];
+    let x: Vec<Vec<Box<f64>>> = vec![
+        vec![Box::new(1.0), Box::new(2.0)],
+        vec![Box::new(4.0), Box::new(5.0)],
+        vec![Box::new(7.0), Box::new(8.0)],
+    ];
+    let y: Vec<Vec<Box<f64>>> = vec![
+        vec![Box::new(1.0), Box::new(2.0)],
+        vec![Box::new(4.0), Box::new(5.0)],
+    ];
 
     spawn(async {
         let conn_res = GossibConnection::p2pconnect().await;
@@ -25,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     thread::sleep(Duration::from_secs(5));
     let plan = Planner::new();
     debug!("Created planner");
-    let res = plan.plan_average(x);
+    let res = plan.plan_matrix_naive_multiply(x, y);
     debug!("{:?}", res);
     grpc_server::start_server().await?;
     Ok(())
