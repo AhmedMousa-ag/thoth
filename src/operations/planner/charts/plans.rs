@@ -2,13 +2,23 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::operations::executer::base_operations::OperationTypes;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum Numeric {
     Number(Box<f64>),
     Vector(Vec<Box<f64>>),
     Matrix(Vec<Vec<Box<f64>>>),
+}
+impl Numeric {
+    pub fn to_string(&self) -> String {
+        match self {
+            //TODO, fix it.
+            Numeric::Number(_) => format!("{:?}", self),
+            Numeric::Vector(_) => format!("{:?}", self),
+            Numeric::Matrix(_) => format!("{:?}", self),
+        }
+    }
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct ExtraInfo {

@@ -89,10 +89,11 @@ impl Planner {
             debug!("Finished row: {}", irow);
         }
         debug!("Finished all rows and stuff");
-        // info!("Finished planning: {:?}", nodes_msgs);
+
         let nodes_ops_msg = Box::new(NodesOpsMsg {
             nodes_duties: nodes_msgs,
         });
+        info!("Finished planning: {}", nodes_ops_msg);
         self.send_message(nodes_ops_msg);
     }
 

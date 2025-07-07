@@ -21,6 +21,29 @@ pub enum OperationTypes {
     TANH,
     SUM,
 }
+impl OperationTypes {
+    pub fn as_str(&self) -> &str {
+        match self {
+            OperationTypes::ABS => "Absolute",
+            OperationTypes::ACOS => "ACOS",
+            OperationTypes::ADD => "Add",
+            OperationTypes::COS => "Cosin",
+            OperationTypes::COSH => "Cosh",
+            OperationTypes::DIVIDE => "Divide",
+            OperationTypes::DOT => "Dot",
+            OperationTypes::FLOOR => "Floor",
+            OperationTypes::MULTIPLY => "Multiply",
+            OperationTypes::POW => "Power Of",
+            OperationTypes::SIN => "Sin",
+            OperationTypes::SINH => "SINH",
+            OperationTypes::SQRT => "Square",
+            OperationTypes::SUBTRACT => "Subtract",
+            OperationTypes::SUM => "Sum",
+            OperationTypes::TAN => "Tan",
+            OperationTypes::TANH => "Tanh",
+        }
+    }
+}
 // pub struct Numeric {
 //     x: f64,
 //     y: Option<f64>,
