@@ -1,10 +1,24 @@
-use super::types::EncodingDecoding;
-use crate::connections::{
-    configs::config::CONFIGS,
-    configs::topics::{get_topic, get_topics},
-    types::{GossipBehaviour, GossipBehaviourEvent, Messages, NodeInfo},
+use crate::{
+    connections::{
+        channels_node_info::NodeInfoTrait,
+        configs::{
+            config::get_config,
+            topics::{TopicsEnums, get_topic, get_topics},
+        },
+        types::{GossipBehaviour, GossipBehaviourEvent},
+    },
+    err, info,
+    router::{
+        post_offices::{external_com_ch::ExternalComm, nodes_info::post_office::NodesInfoOffice},
+        traits::PostOfficeTrait,
+    },
+    structs::{
+        structs::{Message, NodeInfo},
+        traits::EncodingDecoding,
+    },
+    warn,
 };
-use crate::{err, info, warn};
+use futures::stream::StreamExt;
 use libp2p::{
     Swarm, gossipsub, mdns, noise, ping,
     swarm::{self, SwarmEvent},
@@ -12,32 +26,17 @@ use libp2p::{
 };
 use std::{
     collections::hash_map::DefaultHasher,
+    error::Error,
     hash::{Hash, Hasher},
     time::Duration,
 };
-use tokio::io;
+use tokio::{io, select};
 use tracing_subscriber::EnvFilter;
-
-use futures::stream::StreamExt;
-use lazy_static::lazy_static;
-use std::error::Error;
-use tokio::select;
-use tokio::sync::RwLock;
-use tokio::sync::mpsc::{self, Receiver, Sender};
-
-lazy_static! {
-    static ref CHANNEL: (
-        RwLock<Sender<Messages<NodeInfo>>>,
-        RwLock<Receiver<Messages<NodeInfo>>>
-    ) = {
-        let (tx, rx) = mpsc::channel(100);
-        (RwLock::new(tx), RwLock::new(rx))
-    };
-}
 
 pub struct GossibConnection {}
 impl GossibConnection {
     pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
+        info!("Will start p2p connection now");
         let mut swarm: Swarm<GossipBehaviour> = Self::create_gossip_swarm();
         // Create a Gossipsub topics
         for topic in get_topics().iter() {
@@ -47,8 +46,7 @@ impl GossibConnection {
 
         // Listen on all interfaces and whatever port the OS assigns
         // swarm.listen_on(format!("/ip4/0.0.0.0/udp/{}/quic-v1", port).parse()?)?;
-        swarm.listen_on(format!("/ip4/0.0.0.0/tcp/{}", CONFIGS.port).parse()?)?;
-
+        swarm.listen_on(format!("/ip4/0.0.0.0/tcp/{}", get_config().port).parse()?)?;
         Self::listen_messages(&mut swarm).await
     }
 
@@ -105,78 +103,84 @@ impl GossibConnection {
     }
 
     async fn listen_messages(swarm: &mut swarm::Swarm<GossipBehaviour>) -> ! {
+        let ops_topic = TopicsEnums::OPERATIONS.as_str();
+        let node_topic = TopicsEnums::NodesInfo.as_str();
         loop {
             select! {
-                rec_message=recieve_messages()=>{
-                    if rec_message.is_some() {
-                        let message = rec_message.unwrap();
-                        let rec_topic = get_topic(message.topic_name.as_str());
-                        if rec_topic.is_some(){
-                            let topic = rec_topic.unwrap().clone();
-                            if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic, message.encode_bytes()){
-                                err!("Error publishing message: {:?}",e);
-                            };
-                        }
-                    }
-                },
+                            rec_message=ExternalComm::recieve_messages()=>{
+                                if rec_message.is_some() {
+                                    let message = rec_message.unwrap();
+                                    match get_topic(message.topic_name.as_str()){
+                                        Some(topic) =>{
+                                        if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
+                                            err!("Error publishing message: {:?}",e);
+                                        };}
+                                        None=>{warn!("Didn't find topic: {}",message.topic_name.as_str())}
+                                    }
+                                }
+                            },
 
-                event = swarm.select_next_some() => match event {
-                    SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
-                        for (peer_id, _multiaddr) in list {
-                            info!("mDNS discovered a new peer: {peer_id}");
-                            swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                            event = swarm.select_next_some() => match event {
+                                SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
+                                    for (peer_id, _multiaddr) in list {
+                                        info!("mDNS discovered a new peer: {peer_id}");
+                                        swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                                    }
+                                },
+                                SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
+                                    for (peer_id, _multiaddr) in list {
+                                        info!("mDNS discover peer has expired: {}",peer_id);
+                                        swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
+                                    }
+                                },
+                                SwarmEvent::Behaviour(GossipBehaviourEvent::Gossipsub(gossipsub::Event::Message {
+                                    propagation_source: peer_id,
+                                    message_id: id,
+                                    message,
+                                })) => {info!(
+                                        "Got message:  with id: {} from peer: {}",
+                                        id,peer_id
+                                    );
+
+                                    match message.topic.as_str(){
+                                        ops_topic=>{
+                                            info!("Got Operation Topic"); //message.data
+                                            let ops_msg:Message=Message::decode_bytes(&message.data);
+
+                                    },
+                                        node_topic=>{
+                                            info!("Got node info exchange Topic");//message.data
+                                            let ops_msg:Message=Message::decode_bytes(&message.data);
+                                            let msg = NodeInfo::decode_bytes(&ops_msg.message.unwrap());
+                                            NodesInfoOffice::handle_incom_msg(Box::new(msg)).await;
+                                        },
+                                        _=>{
+                                            warn!("Couldn't find the topic type");
+                                        }
+                                    };
+                                    //TODO When a node keeps pinging their resources or something.
+            },
+                                SwarmEvent::NewListenAddr { address, .. } => {
+                                    info!("Local node is listening on {}",address);
+                                },
+                                SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
+                                    info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
+                                    NodeInfo::request_other_nodes_info();
+                                },
+                                SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
+                                    //When a node is not connected, remove it.
+                                    NodeInfo::remove_node(peer_id.to_string());
+                                    warn!("Connection Closed id: {}, peer id: {}, number of established: {},  due to: {:?}",connection_id,peer_id ,num_established,cause)
+                                },
+                                SwarmEvent::IncomingConnection{connection_id,local_addr,send_back_addr}=>{
+                                    info!("Incomming connection id: {}, local address: {} send back address: {}",connection_id,local_addr,send_back_addr)
+                                },
+                                SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
+                                    warn!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
+                            },
+                                _ => {warn!("None of these options: {:?}",event)}
+                            }
                         }
-                    },
-                    SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
-                        for (peer_id, _multiaddr) in list {
-                            info!("mDNS discover peer has expired: {}",peer_id);
-                            swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
-                        }
-                    },
-                    SwarmEvent::Behaviour(GossipBehaviourEvent::Gossipsub(gossipsub::Event::Message {
-                        propagation_source: peer_id,
-                        message_id: id,
-                        message,
-                    })) => info!(
-                            "Got message: '{}' with id: {} from peer: {}",
-                            String::from_utf8_lossy(&message.data),id,peer_id
-                        ),
-                    SwarmEvent::NewListenAddr { address, .. } => {
-                        info!("Local node is listening on {}",address);
-                    },
-                    SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
-                        info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established)
-                    },
-                    SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
-                        warn!("Connection Closed id: {}, peer id: {}, number of established: {},  due to: {:?}",connection_id,peer_id ,num_established,cause)
-                    },
-                    SwarmEvent::IncomingConnection{connection_id,local_addr,send_back_addr}=>{
-                        info!("Incomming connection id: {}, local address: {} send back address: {}",connection_id,local_addr,send_back_addr)
-                    },
-                    SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
-                        warn!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
-                },
-                    _ => {warn!("None of these options: {:?}",event)}
-                }
-            }
         }
     }
-}
-
-// Accessor functions to get the TX and RX parts
-fn get_sender_tx() -> &'static RwLock<Sender<Messages<NodeInfo>>> {
-    &CHANNEL.0
-}
-
-fn get_reciver_rx() -> &'static RwLock<Receiver<Messages<NodeInfo>>> {
-    &CHANNEL.1
-}
-
-pub async fn send_messages(message: Messages<NodeInfo>) {
-    if let Err(e) = get_sender_tx().write().await.send(message).await {
-        err!("Error sending message: {:?}", e);
-    };
-}
-async fn recieve_messages() -> Option<Messages<NodeInfo>> {
-    get_reciver_rx().write().await.recv().await
 }

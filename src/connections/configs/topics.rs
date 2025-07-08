@@ -1,10 +1,32 @@
 use lazy_static::lazy_static;
 use libp2p::gossipsub::IdentTopic;
 use std::collections::HashMap;
+pub enum TopicsEnums {
+    OPERATIONS,
+    NodesInfo,
+}
+
+impl TopicsEnums {
+    pub fn as_str(&self) -> &str {
+        match self {
+            TopicsEnums::OPERATIONS => "OPERATIONS",
+            TopicsEnums::NodesInfo => "NODES_INFO",
+        }
+    }
+    pub fn to_string(&self) -> String {
+        match self {
+            TopicsEnums::OPERATIONS => String::from("OPERATIONS"),
+            TopicsEnums::NodesInfo => String::from("NODES_INFO"),
+        }
+    }
+}
 
 lazy_static! {
     static ref TOPICS: HashMap<&'static str, IdentTopic> = {
-        let all_topics = ["operations"];
+        let all_topics = [
+            TopicsEnums::OPERATIONS.as_str(),
+            TopicsEnums::NodesInfo.as_str(),
+        ];
 
         let mut m = HashMap::new();
         for topic_name in all_topics.iter() {
