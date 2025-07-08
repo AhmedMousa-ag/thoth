@@ -39,8 +39,13 @@ pub struct Steps {
     pub use_prev_res: bool, //If true, then this will be used instead of x.
     pub extra_info: Option<ExtraInfo>,
 }
+#[derive(Debug, Encode, Decode)]
+pub struct OperationInfo {
+    pub operation_id: String,
+    pub step_id: String,
+}
 
 #[derive(Debug, Encode, Decode)]
 pub struct NodesOpsMsg {
-    pub nodes_duties: HashMap<String, Rc<RefCell<Steps>>>,
+    pub nodes_duties: HashMap<String, Rc<RefCell<Vec<OperationInfo>>>>,
 }

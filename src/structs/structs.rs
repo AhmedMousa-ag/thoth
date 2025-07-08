@@ -22,6 +22,8 @@ pub enum RequestsTypes {
     RequestNodeInfo,
     ReplyNodeInfoUpdate,
     PlansToExecute,
+    StartExecutePlan,
+    EndedExecutingPlan,
 }
 impl RequestsTypes {
     pub fn as_str(&self) -> &str {
@@ -29,6 +31,8 @@ impl RequestsTypes {
             RequestsTypes::RequestNodeInfo => "Request Node Info",
             RequestsTypes::ReplyNodeInfoUpdate => "Reply Node Info Update",
             RequestsTypes::PlansToExecute => "Plan to Execute",
+            RequestsTypes::StartExecutePlan => "Start Execute Plan",
+            RequestsTypes::EndedExecutingPlan => "Ended Executing Plan",
         }
     }
 }

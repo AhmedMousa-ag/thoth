@@ -18,6 +18,7 @@ tonic-health = "0.13.1"
 protoc = "2.28.0"
 sysinfo = "0.35.2"
 uuid = {version = "1.17.0",features = ["v4"]}
+serde_json = "1.0.140"
 
 
 [build-dependencies]

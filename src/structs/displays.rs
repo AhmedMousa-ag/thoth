@@ -1,6 +1,6 @@
 use crate::operations::{
     executer::base_operations::OperationTypes,
-    planner::charts::structs::{NodesOpsMsg, Numeric, Steps},
+    planner::charts::structs::{NodesOpsMsg, Numeric, OperationInfo, Steps},
 };
 
 use super::structs::{Message, NodeInfo, RequestsTypes};
@@ -61,16 +61,25 @@ impl fmt::Display for Steps {
         write!(f, "\nOperation Type: {}, {}", self.op_type, msg)
     }
 }
+impl fmt::Display for OperationInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Operation Id: {}, Step Id: {}",
+            self.operation_id, self.step_id
+        )
+    }
+}
 
 impl fmt::Display for NodesOpsMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut msg = String::new();
         for node_id in self.nodes_duties.keys() {
-            msg.push_str(&format!(
-                "Node Id: {}, With Duty: {}",
-                node_id,
-                self.nodes_duties[node_id].borrow()
-            ));
+            let mut node_duties = String::new();
+            for node_duty in self.nodes_duties[node_id].borrow().iter() {
+                node_duties.push_str(&format!("{} ", node_duty));
+            }
+            msg.push_str(&format!("Node Id: {}, With Duty: {}", node_id, node_duties));
         }
         write!(f, "{}", msg)
     }
