@@ -1,10 +1,10 @@
 use crate::operations::{
     executer::base_operations::OperationTypes,
-    planner::charts::plans::{NodesOpsMsg, Numeric, Steps},
+    planner::charts::structs::{NodesOpsMsg, Numeric, Steps},
 };
 
 use super::structs::{Message, NodeInfo, RequestsTypes};
-use std::{cell::RefCell, fmt};
+use std::fmt;
 impl fmt::Display for NodeInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Customize so only `x` and `y` are denoted.
@@ -51,11 +51,11 @@ impl fmt::Display for Steps {
         if let Some(y) = &self.y {
             msg.push_str(&format!("Y: {}, ", y));
         }
-        // if let Some(next_step)=&self.next_step{
-        //     msg.push_str(&format!("Next Step: {}",next_step.borrow()));
-        // }
+        if let Some(next_step) = &self.next_step {
+            msg.push_str(&format!("Next Step: {}", next_step));
+        }
         if let Some(prev_step) = &self.prev_step {
-            msg.push_str(&format!("\n<= Previous Step => {}", prev_step.borrow()));
+            msg.push_str(&format!("\n<= Previous Step => {}", prev_step));
         }
 
         write!(f, "\nOperation Type: {}, {}", self.op_type, msg)

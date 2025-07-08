@@ -1,6 +1,7 @@
 use bincode::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Debug, Encode, Decode)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize, Encode, Decode)]
 pub struct NodeInfo {
     pub id: String,
     pub av_threads: usize,
@@ -16,7 +17,7 @@ pub struct Topics {
 //     InternalComponents,
 //     NodesToNodes,
 // }
-#[derive(Debug, Clone, PartialEq, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub enum RequestsTypes {
     RequestNodeInfo,
     ReplyNodeInfoUpdate,
@@ -32,7 +33,7 @@ impl RequestsTypes {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct Message {
     // pub parties: MessageParties,
     pub topic_name: String,

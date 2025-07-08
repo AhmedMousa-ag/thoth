@@ -1,5 +1,5 @@
 use super::structs::{Message, NodeInfo};
-use crate::operations::planner::charts::plans::NodesOpsMsg;
+use crate::operations::planner::charts::structs::NodesOpsMsg;
 use bincode::config;
 
 pub trait EncodingDecoding {

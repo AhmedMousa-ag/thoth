@@ -1,7 +1,7 @@
-use super::charts::plans::{NodesOpsMsg, Steps};
+use super::charts::structs::{NodesOpsMsg, Steps};
 use crate::connections::configs::topics::TopicsEnums;
 use crate::operations::executer::base_operations::OperationTypes;
-use crate::operations::planner::charts::plans::{ExtraInfo, Numeric};
+use crate::operations::planner::charts::structs::{ExtraInfo, Numeric};
 use crate::operations::utils::util;
 use crate::router::post_offices::external_com_ch::ExternalComm;
 use crate::structs::structs::{Message, NodeInfo, RequestsTypes};
@@ -11,6 +11,7 @@ use crate::{debug, warn};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use uuid::Uuid;
 
 pub struct Planner {
     nodes_info: HashMap<std::string::String, NodeInfo>,
@@ -52,7 +53,7 @@ impl Planner {
             y = util::transpose(y);
         }
         let mut prev_step: Option<Rc<RefCell<Steps>>> = None;
-
+        let operation_id = Uuid::new_v4().to_string();
         for (irow, row) in x.iter().enumerate() {
             //Every row by every column
             debug!("Will do  row: {}", irow);
@@ -62,14 +63,17 @@ impl Planner {
                 let col: Vec<Box<f64>> = y.iter().map(|yrow| Box::new(*yrow[icol])).collect();
                 debug!("Finished the columns vectors");
                 debug!("Will multiply: {:?} by {:?}", row, col);
-
+                let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
                 let step: Rc<RefCell<Steps>> = Rc::new(RefCell::new(Steps {
+                    node_id: node_id.to_string(),
+                    operation_id: operation_id.clone(),
+                    step_id: Uuid::new_v4().to_string(),
                     x: Some(Numeric::Vector(row.to_vec())),
                     y: Some(Numeric::Vector(col)),
                     op_type: OperationTypes::DOT,
                     result: None,
                     next_step: None,
-                    prev_step: None, //if prev_step.is_some() { Some(Rc::clone(&prev_step.unwrap())) } else { None } ,
+                    prev_step: None,
                     use_prev_res: false,
                     extra_info: Some(ExtraInfo {
                         res_pos: Some(vec![irow as u64, icol as u64]),
@@ -77,12 +81,12 @@ impl Planner {
                 }));
 
                 if let Some(prev) = prev_step {
-                    step.borrow_mut().prev_step = Some(Rc::clone(&prev));
-                    prev.borrow_mut().next_step = Some(Rc::clone(&step));
+                    step.borrow_mut().prev_step = Some(prev.borrow().step_id.to_string());
+                    prev.borrow_mut().next_step = Some(step.borrow().to_string());
                 }
 
                 prev_step = Some(Rc::clone(&step));
-                let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
+
                 nodes_msgs.insert(node_id, step);
                 debug!("Finished row: {} and col: {}", irow, icol);
             }
@@ -106,12 +110,30 @@ impl Planner {
         let mut idx = 0;
         let mut node_idx = 0;
         let mut nodes_msgs = HashMap::new();
-
+        let operation_id = Uuid::new_v4().to_string();
         while idx < data_size {
+            let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             let node_data = x[idx..ops_slice_size].to_vec();
+            let data_len = node_data.len() as f64;
+            let step_one = Rc::new(RefCell::new(Steps {
+                operation_id: operation_id.clone(),
+                step_id: Uuid::new_v4().to_string(),
+                node_id: first_step_node_id.to_string(),
+                x: Some(Numeric::Vector(node_data)),
+                y: None,
+                op_type: OperationTypes::SUM,
+                result: None,
+                use_prev_res: false,
+                prev_step: None,
+                next_step: None,
+                extra_info: None,
+            }));
             let step_two: Rc<RefCell<Steps>> = Rc::new(RefCell::new(Steps {
+                node_id: util::get_node_id(&mut node_idx, nodes_num, &nodes_keys),
+                operation_id: operation_id.clone(),
+                step_id: Uuid::new_v4().to_string(),
                 x: None,
-                y: Some(Numeric::Number(Box::new(node_data.len() as f64))),
+                y: Some(Numeric::Number(Box::new(data_len))),
                 op_type: OperationTypes::DIVIDE,
                 result: None,
                 next_step: None,
@@ -119,20 +141,10 @@ impl Planner {
                 use_prev_res: true,
                 extra_info: None,
             }));
-            let step_one = Rc::new(RefCell::new(Steps {
-                x: Some(Numeric::Vector(node_data)),
-                y: None,
-                op_type: OperationTypes::SUM,
-                result: None,
-                use_prev_res: false,
-                prev_step: None,
-                next_step: Some(Rc::clone(&step_two)),
-                extra_info: None,
-            }));
-            step_two.borrow_mut().prev_step = Some(Rc::clone(&step_one));
+            step_one.borrow_mut().next_step = Some(step_two.borrow().step_id.to_string());
+            step_two.borrow_mut().prev_step = Some(step_one.borrow().step_id.to_string());
 
-            let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
-            nodes_msgs.insert(node_id, step_one);
+            nodes_msgs.insert(first_step_node_id, step_one);
 
             idx += ops_slice_size;
         }

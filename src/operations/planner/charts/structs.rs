@@ -1,7 +1,6 @@
+use crate::operations::executer::base_operations::OperationTypes;
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
-
-use crate::operations::executer::base_operations::OperationTypes;
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
@@ -24,15 +23,19 @@ impl Numeric {
 pub struct ExtraInfo {
     pub res_pos: Option<Vec<u64>>, //If it's a matrix or a list, two points should be maximum
 }
+
 //TODO probably you would like to create functions instead of all of this mess.
 #[derive(Debug, Encode, Decode)]
 pub struct Steps {
+    pub node_id: String,
+    pub operation_id: String,
+    pub step_id: String,
     pub x: Option<Numeric>,
     pub y: Option<Numeric>,
     pub op_type: OperationTypes,
     pub result: Option<Numeric>,
-    pub next_step: Option<Rc<RefCell<Self>>>,
-    pub prev_step: Option<Rc<RefCell<Self>>>,
+    pub next_step: Option<String>,
+    pub prev_step: Option<String>,
     pub use_prev_res: bool, //If true, then this will be used instead of x.
     pub extra_info: Option<ExtraInfo>,
 }

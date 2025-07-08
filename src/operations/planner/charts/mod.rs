@@ -1,1 +1,2 @@
-pub mod plans;
+pub mod structs;
+pub mod traits;
