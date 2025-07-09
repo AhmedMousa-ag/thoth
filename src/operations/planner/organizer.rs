@@ -41,7 +41,7 @@ impl Planner {
         ExternalComm::send_message(nodes_msg);
         info!("Sent plans to be executed.")
     }
-    pub fn plan_matrix_naive_multiply(&self, x: Vec<Vec<Box<f64>>>, mut y: Vec<Vec<Box<f64>>>) {
+    pub fn plan_matrix_naive_multiply(&self, x: Vec<Vec<Box<f64>>>, mut y: Vec<Vec<Box<f64>>>, operation_id:String) {
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len();
@@ -61,7 +61,7 @@ impl Planner {
             y = util::transpose(y);
         }
         let mut prev_step: Option<Rc<RefCell<Steps>>> = None;
-        let operation_id = Uuid::new_v4().to_string();
+
         for (irow, row) in x.iter().enumerate() {
             //Every row by every column
             debug!("Will do  row: {}", irow);
@@ -117,7 +117,7 @@ impl Planner {
         self.send_message(nodes_ops_msg);
     }
 
-    pub fn plan_average(&self, x: Vec<Box<f64>>) {
+    pub fn plan_average(&self, x: Vec<Box<f64>>, operation_id:String) {
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -126,7 +126,6 @@ impl Planner {
         let mut idx = 0;
         let mut node_idx = 0;
         let mut nodes_duties: HashMap<String, Rc<RefCell<Vec<OperationInfo>>>> = HashMap::new();
-        let operation_id = Uuid::new_v4().to_string();
 
         while idx < data_size {
             let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
