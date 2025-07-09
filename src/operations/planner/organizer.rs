@@ -1,9 +1,14 @@
-use super::charts::structs::{NodesOpsMsg, Steps};
+use super::charts::structs::{SNodesOpsMsg, Steps};
 use crate::connections::configs::topics::TopicsEnums;
-use crate::operations::executer::types::OperationTypes;
+use crate::operations::executer::types::{Executer, OperationTypes};
 use crate::operations::planner::charts::structs::{ExtraInfo, Numeric, OperationInfo};
 use crate::operations::utils::util;
 use crate::router::post_offices::external_com_ch::ExternalComm;
+use crate::router::post_offices::nodes_info::channel::InternalCommunications;
+use crate::router::post_offices::nodes_info::post_office::{
+    OperationStepExecuter, OperationsExecuterOffice,
+};
+use crate::router::traits::{PostOfficeTrait, SenderReciverTrait};
 use crate::structs::structs::{Message, NodeInfo, RequestsTypes};
 use crate::structs::traits::EncodingDecoding;
 use crate::{connections::channels_node_info::get_nodes_info_cloned, info};
@@ -24,27 +29,17 @@ impl Planner {
             nodes_info: get_nodes_info_cloned(),
         }
     }
-    pub fn send_step_message(&self, msg: Rc<RefCell<Steps>>) {
-        let nodes_msg = Box::new(Message {
-            topic_name: TopicsEnums::OPERATIONS.to_string(),
-            request: RequestsTypes::PlansToExecute,
-            message: Some(msg.borrow().encode_bytes()),
-        });
-        ExternalComm::send_message(nodes_msg);
-    }
-    pub fn send_message(&self, msg: Box<NodesOpsMsg>) {
-        let nodes_msg = Box::new(Message {
-            topic_name: TopicsEnums::OPERATIONS.to_string(),
-            request: RequestsTypes::StartExecutePlan,
-            message: Some(msg.encode_bytes()),
-        });
-        ExternalComm::send_message(nodes_msg);
-        info!("Sent plans to be executed.")
-    }
-    pub fn plan_matrix_naive_multiply(&self, x: Vec<Vec<Box<f64>>>, mut y: Vec<Vec<Box<f64>>>, operation_id:String) {
+
+    pub fn plan_matrix_naive_multiply(
+        &self,
+        x: Vec<Vec<Box<f64>>>,
+        mut y: Vec<Vec<Box<f64>>>,
+        operation_id: String,
+    ) {
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len();
+
         let mut node_idx = 0;
         let mut nodes_duties: HashMap<String, Rc<RefCell<Vec<OperationInfo>>>> = HashMap::new();
 
@@ -99,7 +94,11 @@ impl Planner {
                     operation_id: operation_id.clone(),
                     step_id,
                 };
-                self.send_step_message(step);
+                if nodes_num <= 1 {
+                    // InternalCommunications::get_sender_tx()
+                    continue;
+                }
+                OperationStepExecuter::send_message(step);
                 match nodes_duties.get(&node_id) {
                     Some(msg_vec) => msg_vec.borrow_mut().push(op_msg),
                     None => {
@@ -112,12 +111,12 @@ impl Planner {
         }
         debug!("Finished all rows and stuff");
 
-        let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
+        let nodes_ops_msg = Box::new(SNodesOpsMsg { nodes_duties });
         info!("Finished planning: {}", nodes_ops_msg);
-        self.send_message(nodes_ops_msg);
+        OperationsExecuterOffice::send_message(nodes_ops_msg);
     }
 
-    pub fn plan_average(&self, x: Vec<Box<f64>>, operation_id:String) {
+    pub fn plan_average(&self, x: Vec<Box<f64>>, operation_id: String) {
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -165,7 +164,7 @@ impl Planner {
                 operation_id: operation_id.clone(),
                 step_id: first_step_id,
             };
-            self.send_step_message(step_one);
+            OperationStepExecuter::send_message(step_one);
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.borrow_mut().push(op_msg),
                 None => {
@@ -176,7 +175,7 @@ impl Planner {
             idx += ops_slice_size;
         }
         info!("Finished planning: {:?}", nodes_duties);
-        let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
-        self.send_message(nodes_ops_msg);
+        let nodes_ops_msg = Box::new(SNodesOpsMsg { nodes_duties });
+        OperationsExecuterOffice::send_message(nodes_ops_msg);
     }
 }

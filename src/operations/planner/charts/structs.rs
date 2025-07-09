@@ -45,7 +45,15 @@ pub struct OperationInfo {
     pub step_id: String,
 }
 
+type NodeOpsMsgType = Vec<OperationInfo>;
+///This one can be send between threads in async functions.
 #[derive(Debug, Encode, Decode)]
-pub struct NodesOpsMsg {
-    pub nodes_duties: HashMap<String, Rc<RefCell<Vec<OperationInfo>>>>,
+pub struct RNodesOpsMsg {
+    pub nodes_duties: HashMap<String, Box<NodeOpsMsgType>>,
+}
+
+///This one can't be sent between threads in async function
+#[derive(Debug, Encode, Decode)]
+pub struct SNodesOpsMsg {
+    pub nodes_duties: HashMap<String, Rc<RefCell<NodeOpsMsgType>>>,
 }

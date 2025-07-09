@@ -1,6 +1,6 @@
 use crate::operations::{
     executer::types::OperationTypes,
-    planner::charts::structs::{NodesOpsMsg, Numeric, OperationInfo, Steps},
+    planner::charts::structs::{Numeric, OperationInfo, SNodesOpsMsg, Steps},
 };
 
 use super::structs::{Message, NodeInfo, RequestsTypes};
@@ -71,7 +71,7 @@ impl fmt::Display for OperationInfo {
     }
 }
 
-impl fmt::Display for NodesOpsMsg {
+impl fmt::Display for SNodesOpsMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut msg = String::new();
         for node_id in self.nodes_duties.keys() {

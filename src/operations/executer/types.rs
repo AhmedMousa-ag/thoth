@@ -45,6 +45,8 @@ impl OperationTypes {
     }
 }
 
+pub struct Executer {}
+
 // pub trait Operations {
 //     fn perfom(&self) -> f64;
 // }
