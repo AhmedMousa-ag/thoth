@@ -1,4 +1,4 @@
-use crate::operations::executer::base_operations::OperationTypes;
+use crate::operations::executer::types::OperationTypes;
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};

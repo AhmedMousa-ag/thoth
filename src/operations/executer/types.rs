@@ -44,16 +44,6 @@ impl OperationTypes {
         }
     }
 }
-// pub struct Numeric {
-//     x: f64,
-//     y: Option<f64>,
-//     op_type: OperationTypes,
-// }
-// impl Numeric {
-//     pub fn new(x: f64, y: Option<f64>, op_type: OperationTypes) -> Self {
-//         Self { x, y, op_type }
-//     }
-// }
 
 // pub trait Operations {
 //     fn perfom(&self) -> f64;

@@ -1,6 +1,6 @@
 use super::charts::structs::{NodesOpsMsg, Steps};
 use crate::connections::configs::topics::TopicsEnums;
-use crate::operations::executer::base_operations::OperationTypes;
+use crate::operations::executer::types::OperationTypes;
 use crate::operations::planner::charts::structs::{ExtraInfo, Numeric, OperationInfo};
 use crate::operations::utils::util;
 use crate::router::post_offices::external_com_ch::ExternalComm;
