@@ -9,16 +9,21 @@ use crate::{
     },
     err, info,
     router::{
-        post_offices::{external_com_ch::ExternalComm, nodes_info::post_office::NodesInfoOffice},
+        post_offices::{
+            external_com_ch::ExternalComm,
+            nodes_info::post_office::{
+                NodesInfoOffice, OperationStepExecuter, OperationsExecuterOffice,
+            },
+        },
         traits::PostOfficeTrait,
     },
     structs::{
-        structs::{Message, NodeInfo},
+        structs::{Message, NodeInfo, RequestsTypes},
         traits::EncodingDecoding,
     },
     warn,
 };
-use futures::stream::StreamExt;
+use futures::{FutureExt, stream::StreamExt};
 use libp2p::{
     Swarm, gossipsub, mdns, noise, ping,
     swarm::{self, SwarmEvent},
@@ -141,18 +146,24 @@ impl GossibConnection {
                                         "Got message:  with id: {} from peer: {}",
                                         id,peer_id
                                     );
-
-                                    match message.topic.as_str(){
-                                        ops_topic=>{
-                                            info!("Got Operation Topic"); //message.data
+                                    let topic_name=message.topic.as_str();
+                                    match topic_name{
+                                        ops_topic if ops_topic==topic_name=>{
+                                            info!("Got Operation Topic: {}",ops_topic); //message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
+                                            match ops_msg.request {
+                                                RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(ops_msg.message);},
+                                                RequestsTypes::StartExecutePlan | RequestsTypes::EndedExecutingPlan=>{OperationsExecuterOffice::handle_incom_msg(ops_msg.message);},
+
+                                                _=>warn!("Got operation topic message with no Request Type")
+
+                                            };
 
                                     },
-                                        node_topic=>{
-                                            info!("Got node info exchange Topic");//message.data
+                                        node_topic if node_topic==topic_name=>{
+                                            info!("Got node info exchange Topic: {}",node_topic);//message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
-                                            let msg = NodeInfo::decode_bytes(&ops_msg.message.unwrap());
-                                            NodesInfoOffice::handle_incom_msg(Box::new(msg)).await;
+                                            NodesInfoOffice::handle_incom_msg(ops_msg.message);
                                         },
                                         _=>{
                                             warn!("Couldn't find the topic type");
