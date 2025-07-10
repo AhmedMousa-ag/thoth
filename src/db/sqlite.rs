@@ -37,7 +37,10 @@ pub async fn setup_db() {
 
     let schema = Schema::new(DbBackend::Sqlite);
 
-    let stmt: TableCreateStatement = schema.create_table_from_entity(Step).if_not_exists().to_owned();
+    let stmt: TableCreateStatement = schema
+        .create_table_from_entity(Step)
+        .if_not_exists()
+        .to_owned();
 
     match db.execute(db.get_database_backend().build(&stmt)).await {
         Ok(_) => info!("Successfull creation of Step table."),
@@ -46,7 +49,10 @@ pub async fn setup_db() {
         }
     }
 
-    let stmt: TableCreateStatement = schema.create_table_from_entity(Operation).if_not_exists().to_owned();
+    let stmt: TableCreateStatement = schema
+        .create_table_from_entity(Operation)
+        .if_not_exists()
+        .to_owned();
     match db.execute(db.get_database_backend().build(&stmt)).await {
         Ok(_) => info!("Successfull creation of Operation table."),
         Err(e) => {
