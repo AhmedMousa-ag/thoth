@@ -32,13 +32,13 @@ where
         })
     }
 
-    fn insert_row(row: A) {
+    fn insert_row(row: A) -> Result<<T as sea_orm::EntityTrait>::Model, sea_orm::DbErr> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                row.insert(db).await;
+                row.insert(db).await
             })
-        });
+        })
     }
 }
 
