@@ -14,8 +14,10 @@ impl Executer {
             step.borrow().step_id.to_owned(),
             step.borrow().operation_id.to_owned(),
         );
-        SqlSteps::insert_row(sql_step);
+        SqlSteps::insert_row(sql_step).unwrap();
+
         // Async Write it into operations file with serialization.
+
         // Translate the steps into a result.
         // Update steps files.
         step
