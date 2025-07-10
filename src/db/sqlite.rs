@@ -9,14 +9,14 @@ use crate::{
     debug, err, info,
 };
 use sea_orm::{
-    ConnectionTrait, Database, DatabaseConnection, DbBackend, DbConn, DbErr, Schema, Statement,
+    ConnectionTrait, Database, DatabaseConnection, DbBackend, DbConn, Schema,
     sea_query::TableCreateStatement,
 };
 use tokio::sync::OnceCell;
 
 static CONNECTION: OnceCell<DatabaseConnection> = OnceCell::const_new();
 
-pub async fn get_db_connection() -> Result<&'static DatabaseConnection, DbErr> {
+pub async fn get_db_connection() -> &'static DatabaseConnection {
     CONNECTION
         .get_or_try_init(|| async {
             let config = get_config();
@@ -30,10 +30,11 @@ pub async fn get_db_connection() -> Result<&'static DatabaseConnection, DbErr> {
             Database::connect(database_url).await
         })
         .await
+        .unwrap()
 }
 
 pub async fn setup_db() {
-    let db: &DbConn = get_db_connection().await.unwrap();
+    let db: &DbConn = get_db_connection().await;
 
     let schema = Schema::new(DbBackend::Sqlite);
 

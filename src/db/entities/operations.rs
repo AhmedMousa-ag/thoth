@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use sea_orm::prelude::*;
 use tonic::async_trait;
 
@@ -8,7 +9,7 @@ use crate::info;
 pub struct Model {
     #[sea_orm(primary_key, unique, auto_increment = false)]
     op_id: String, // Instead of using UUID, we are already converting everything into string and UUID several times.
-    exec_date: TimeTime,
+    exec_date: DateTime<Utc>,
     #[sea_orm(default_value = false)]
     is_finished: bool,
     //TODO you might put the result here.

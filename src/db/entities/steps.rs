@@ -5,7 +5,12 @@ use sea_orm::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, unique, auto_increment = false)]
     op_id: String,
+    step_id: String,
     file_path: String,
+    #[sea_orm(defualt = false)]
+    is_finished: bool,
+    #[sea_orm(nullable)]
+    result: String, //Not sure.
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
