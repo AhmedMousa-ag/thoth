@@ -1,4 +1,5 @@
 use thoth::connections::connect::GossibConnection;
+use thoth::db::sqlite::setup_db;
 use thoth::grpc::grpc_server;
 use thoth::logger::logger::LoggerWritter;
 use thoth::operations::planner::organizer::Planner;
@@ -9,6 +10,7 @@ use uuid::Uuid;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     LoggerWritter::start().await;
+    setup_db().await;
     start_back_office();
     let x: Vec<Vec<Box<f64>>> = vec![
         vec![Box::new(1.0), Box::new(2.0)],
@@ -28,6 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             panic!("Error Establishing Connection: {:?}", err);
         };
     });
+
     use std::thread;
     use std::time::Duration;
     thread::sleep(Duration::from_secs(5));

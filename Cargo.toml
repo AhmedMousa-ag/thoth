@@ -19,7 +19,8 @@ protoc = "2.28.0"
 sysinfo = "0.35.2"
 uuid = {version = "1.17.0",features = ["v4"]}
 serde_json = "1.0.140"
-
+sea-orm = { version = "1.1.13", features = [ "sqlx-sqlite", "runtime-async-std-native-tls", "macros" ] }
+sea-orm-migration = "1.1.13"
 
 [build-dependencies]
 tonic-build = "0.13.1"

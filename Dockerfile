@@ -1,6 +1,6 @@
 FROM rust:1.86.0
 RUN useradd -ms /bin/bash thoth
-RUN apt-get install protobuf-compiler
+RUN apt-get install protobuf-compiler libssl-dev -y
 WORKDIR /home/thoth/app
 RUN chown -R thoth:thoth /home/thoth/*
 USER thoth

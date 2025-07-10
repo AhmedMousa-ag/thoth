@@ -22,3 +22,5 @@ target/
 logs/*
 
 draft.*
+#sqlite db
+db/*.db 
