@@ -1,4 +1,4 @@
-use super::charts::structs::{SNodesOpsMsg, Steps};
+use super::charts::structs::{NodesOpsMsg, Steps};
 use crate::connections::configs::topics::TopicsEnums;
 use crate::operations::executer::types::{Executer, OperationTypes};
 use crate::operations::planner::charts::structs::{ExtraInfo, Numeric, OperationInfo};
@@ -111,7 +111,7 @@ impl Planner {
         }
         debug!("Finished all rows and stuff");
 
-        let nodes_ops_msg = Box::new(SNodesOpsMsg { nodes_duties });
+        let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         info!("Finished planning: {}", nodes_ops_msg);
         OperationsExecuterOffice::send_message(nodes_ops_msg);
     }
@@ -175,7 +175,7 @@ impl Planner {
             idx += ops_slice_size;
         }
         info!("Finished planning: {:?}", nodes_duties);
-        let nodes_ops_msg = Box::new(SNodesOpsMsg { nodes_duties });
+        let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         OperationsExecuterOffice::send_message(nodes_ops_msg);
     }
 }

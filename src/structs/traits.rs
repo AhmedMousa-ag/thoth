@@ -1,5 +1,5 @@
 use super::structs::{Message, NodeInfo};
-use crate::operations::planner::charts::structs::{SNodesOpsMsg, Steps};
+use crate::operations::planner::charts::structs::{NodesOpsMsg, Steps};
 use bincode::config;
 
 pub trait EncodingDecoding {
@@ -43,7 +43,7 @@ impl EncodingDecoding for Steps {
     }
 }
 
-impl EncodingDecoding for SNodesOpsMsg {
+impl EncodingDecoding for NodesOpsMsg {
     fn encode_bytes(&self) -> Vec<u8> {
         bincode::encode_to_vec(self, config::standard()).unwrap()
     }
