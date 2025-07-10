@@ -3,7 +3,10 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     connections::{channels_node_info::NodeInfoTrait, configs::topics::TopicsEnums},
     info,
-    operations::planner::charts::structs::{SNodesOpsMsg, Steps},
+    operations::{
+        executer::types::Executer,
+        planner::charts::structs::{NodesOpsMsg, Steps},
+    },
     router::{post_offices::external_com_ch::ExternalComm, traits::PostOfficeTrait},
     structs::{
         structs::{Message, NodeInfo, RequestsTypes},
@@ -51,14 +54,18 @@ impl PostOfficeTrait<Rc<RefCell<Steps>>> for OperationStepExecuter {
             message: Some(msg.borrow().encode_bytes()),
         });
         ExternalComm::send_message(nodes_msg);
+        info!("Sent step to be executed.")
     }
     fn handle_incom_msg(message: Option<Vec<u8>>) {
-        spawn(async {});
+        spawn(async {
+            let step = Rc::new(RefCell::new(Steps::decode_bytes(&message.unwrap())));
+            Executer::execute_step(step);
+        });
     }
 }
 
-impl PostOfficeTrait<Box<SNodesOpsMsg>> for OperationsExecuterOffice {
-    fn send_message(msg: Box<SNodesOpsMsg>) {
+impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
+    fn send_message(msg: Box<NodesOpsMsg>) {
         let nodes_msg = Box::new(Message {
             topic_name: TopicsEnums::OPERATIONS.to_string(),
             request: RequestsTypes::StartExecutePlan,
@@ -68,6 +75,9 @@ impl PostOfficeTrait<Box<SNodesOpsMsg>> for OperationsExecuterOffice {
         info!("Sent plans to be executed.")
     }
     fn handle_incom_msg(message: Option<Vec<u8>>) {
-        spawn(async {});
+        spawn(async {
+            let duties = NodesOpsMsg::decode_bytes(&message.unwrap());
+            Executer::execute_duties(duties);
+        });
     }
 }
