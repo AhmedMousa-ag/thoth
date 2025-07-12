@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use std::fs::File;
+use std::{collections::HashMap, fs::File};
 
 #[derive(Clone)]
 pub enum FileTypes {
@@ -17,7 +17,7 @@ impl FileTypes {
             FileTypes::DEBUG => "DEBUG",
             FileTypes::WARN => "WARN",
             FileTypes::ERROR => "ERROR",
-            FileTypes::OPERATIONS => "OPERATIONS",
+            FileTypes::OPERATIONS => "OPERATIONS", //TODO maybe you should re-think it
         }
     }
 }
@@ -27,4 +27,9 @@ pub struct LogFileManager {
     pub current_lint: i64,
     pub file_type: FileTypes,
     pub file: File,
+}
+pub struct OperationsFileManager {
+    pub op_id: String,
+    pub file_type: FileTypes, //TODO maybe you should re-think it
+    pub files: HashMap<String, File>,
 }

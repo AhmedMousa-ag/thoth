@@ -1,13 +1,18 @@
-use crate::logger::{
-    channels::{
-        get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
-        get_warn_reciever,
+use crate::{
+    logger::{
+        channels::{
+            get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
+            get_warn_reciever,
+        },
+        writters::writter::{FileTypes, LogFileManager, OperationsFileManager},
     },
-    writters::writter::{FileTypes, LogFileManager},
+    operations::planner::charts::structs::Steps,
 };
 use chrono::{DateTime, Utc};
+use sea_orm::ActiveValue::Set;
 use std::{
-    fs::{self, OpenOptions},
+    collections::HashMap,
+    fs::{self, File, OpenOptions},
     io::{self, prelude::*},
     os::unix::fs::FileExt,
     path::{Path, PathBuf},
@@ -117,5 +122,64 @@ impl FileManagerTrait for LogFileManager {
                 }
             }
         });
+    }
+}
+
+impl OperationsFileManager {
+    // It should handle operations folder, including each step file.
+    pub fn new(op_id: String) -> Result<Self, io::Error> {
+        let file_path = Self::generate_file_name(&op_id, "");
+        if let Some(parent) = file_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        Ok(Self {
+            op_id,
+            file_type: FileTypes::OPERATIONS,
+            files: HashMap::new(),
+        })
+    }
+
+    fn generate_file_name(op_id: &str, step_id: &str) -> PathBuf {
+        Path::new("logs")
+            .join(FileTypes::OPERATIONS.as_str())
+            .join(op_id)
+            .join(step_id)
+    }
+
+    fn open_file(&self, file_path: PathBuf) -> Result<File, io::Error> {
+        Ok(OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(file_path)?)
+    }
+
+    pub fn read(&mut self, max_lines: u64, step_id: &str) -> Result<String, io::Error> {
+        let mut contents = vec![];
+        let file;
+        match self.files.get(step_id) {
+            Some(f_file) => file = f_file,
+            None => file = self.create_step_file(step_id)?,
+        };
+        file.read_at(&mut contents, max_lines)?;
+        let file_content = String::from_utf8(contents).unwrap_or_default();
+        Ok(file_content)
+    }
+    pub fn write(&mut self, step: Steps) -> Result<(), io::Error> {
+        let mut file;
+        match self.files.get(&step.step_id.clone()) {
+            Some(f_file) => file = f_file,
+            None => file = self.create_step_file(&step.step_id)?,
+        };
+        let lines = serde_json::to_string(&step)?;
+        file.write_all(lines.as_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn create_step_file(&mut self, step_id: &str) -> Result<&File, io::Error> {
+        let file = self.open_file(Self::generate_file_name(&self.op_id, step_id))?;
+        self.files.insert(step_id.to_string(), file);
+        Ok(self.files.get(step_id).unwrap())
     }
 }

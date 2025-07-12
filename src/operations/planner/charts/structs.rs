@@ -25,7 +25,7 @@ pub struct ExtraInfo {
 }
 
 //TODO probably you would like to create functions instead of all of this mess.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, Serialize, Deserialize)]
 pub struct Steps {
     pub node_id: String,
     pub operation_id: String,
