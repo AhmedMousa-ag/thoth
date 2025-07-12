@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
-use std::{collections::HashMap, fs::File};
+use std::{cell::RefCell, collections::HashMap, fs::File, rc::Rc, sync::Arc};
+use tokio::sync::{Mutex, RwLock};
 
 #[derive(Clone)]
 pub enum FileTypes {
@@ -31,5 +32,5 @@ pub struct LogFileManager {
 pub struct OperationsFileManager {
     pub op_id: String,
     pub file_type: FileTypes, //TODO maybe you should re-think it
-    pub files: HashMap<String, File>,
+    pub files: HashMap<String, Arc<Mutex<File>>>,
 }

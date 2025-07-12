@@ -1,4 +1,5 @@
 use crate::{
+    err, info,
     logger::{
         channels::{
             get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
@@ -9,17 +10,22 @@ use crate::{
     operations::planner::charts::structs::Steps,
 };
 use chrono::{DateTime, Utc};
-use sea_orm::ActiveValue::Set;
 use std::{
     collections::HashMap,
     fs::{self, File, OpenOptions},
     io::{self, prelude::*},
+    ops::DerefMut,
     os::unix::fs::FileExt,
     path::{Path, PathBuf},
+    rc::Rc,
     sync::Arc,
 };
-use tokio::{spawn, sync::Mutex};
-
+use tokio::runtime::Handle;
+use tokio::task::block_in_place;
+use tokio::{
+    spawn,
+    sync::{Mutex, RwLock},
+};
 pub trait FileManagerTrait {
     fn new(file_type: FileTypes) -> Result<Self, io::Error>
     where
@@ -153,32 +159,43 @@ impl OperationsFileManager {
             .append(true)
             .open(file_path)?)
     }
+    pub fn get_file(&mut self, step_id: &str) -> &Arc<Mutex<File>> {
+        if !self.files.contains_key(step_id) {
+            return self.create_step_file(step_id).unwrap();
+        }
+        self.files.get(step_id).unwrap()
+    }
 
-    pub fn read(&mut self, max_lines: u64, step_id: &str) -> Result<String, io::Error> {
+    pub fn read(&mut self, step_id: &str) -> Result<String, io::Error> {
         let mut contents = vec![];
-        let file;
-        match self.files.get(step_id) {
-            Some(f_file) => file = f_file,
-            None => file = self.create_step_file(step_id)?,
-        };
-        file.read_at(&mut contents, max_lines)?;
-        let file_content = String::from_utf8(contents).unwrap_or_default();
-        Ok(file_content)
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                self.get_file(step_id)
+                    .lock()
+                    .await
+                    .read_to_end(&mut contents)?;
+                let file_content = String::from_utf8(contents).unwrap_or_default();
+                Ok(file_content)
+            })
+        })
     }
     pub fn write(&mut self, step: Steps) -> Result<(), io::Error> {
-        let mut file;
-        match self.files.get(&step.step_id.clone()) {
-            Some(f_file) => file = f_file,
-            None => file = self.create_step_file(&step.step_id)?,
-        };
-        let lines = serde_json::to_string(&step)?;
-        file.write_all(lines.as_bytes())?;
-
-        Ok(())
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let lines = serde_json::to_string(&step).unwrap();
+                self.get_file(&step.step_id)
+                    .lock()
+                    .await
+                    .write_all(lines.as_bytes())?;
+                Ok(())
+            })
+        })
     }
 
-    pub fn create_step_file(&mut self, step_id: &str) -> Result<&File, io::Error> {
-        let file = self.open_file(Self::generate_file_name(&self.op_id, step_id))?;
+    pub fn create_step_file(&mut self, step_id: &str) -> Result<&Arc<Mutex<File>>, io::Error> {
+        let file = Arc::new(Mutex::new(
+            self.open_file(Self::generate_file_name(&self.op_id, step_id))?,
+        ));
         self.files.insert(step_id.to_string(), file);
         Ok(self.files.get(step_id).unwrap())
     }
