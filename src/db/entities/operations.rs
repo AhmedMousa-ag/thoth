@@ -4,6 +4,7 @@ use tonic::async_trait;
 
 use crate::info;
 
+//TODO add nodes duties table releations
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "operations")]
 pub struct Model {
@@ -19,11 +20,19 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::steps::Entity")]
     Step,
+    #[sea_orm(has_many = "super::nodes_duties::Entity")]
+    NodeDuty,
 }
 
 impl Related<super::steps::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Step.def()
+    }
+}
+
+impl Related<super::nodes_duties::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::NodeDuty.def()
     }
 }
 
