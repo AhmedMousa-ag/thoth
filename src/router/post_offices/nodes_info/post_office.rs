@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     connections::{channels_node_info::NodeInfoTrait, configs::topics::TopicsEnums},
     info,
+    logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},
@@ -59,7 +60,11 @@ impl PostOfficeTrait<Rc<RefCell<Steps>>> for OperationStepExecuter {
     fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let step = Rc::new(RefCell::new(Steps::decode_bytes(&message.unwrap())));
-            Executer::execute_step(step);
+            let mut executer = Executer {
+                op_file_manager: OperationsFileManager::new(step.borrow().operation_id.clone())
+                    .unwrap(),
+            };
+            executer.execute_step(step);
         });
     }
 }

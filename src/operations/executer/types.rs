@@ -1,6 +1,8 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
+use crate::logger::writters::writter::OperationsFileManager;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum OperationTypes {
     ADD,
@@ -45,7 +47,9 @@ impl OperationTypes {
     }
 }
 
-pub struct Executer {}
+pub struct Executer {
+    pub op_file_manager: OperationsFileManager,
+}
 
 // pub trait Operations {
 //     fn perfom(&self) -> f64;

@@ -11,6 +11,7 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use std::{
+    cell::RefCell,
     collections::HashMap,
     fs::{self, File, OpenOptions},
     io::{self, prelude::*},
@@ -156,7 +157,7 @@ impl OperationsFileManager {
         Ok(OpenOptions::new()
             .create(true)
             .write(true)
-            .append(true)
+            // .append(true)
             .open(file_path)?)
     }
     pub fn get_file(&mut self, step_id: &str) -> &Arc<Mutex<File>> {
@@ -179,11 +180,11 @@ impl OperationsFileManager {
             })
         })
     }
-    pub fn write(&mut self, step: Steps) -> Result<(), io::Error> {
+    pub fn write(&mut self, step: Rc<RefCell<Steps>>) -> Result<(), io::Error> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&step).unwrap();
-                self.get_file(&step.step_id)
+                self.get_file(&step.borrow().step_id)
                     .lock()
                     .await
                     .write_all(lines.as_bytes())?;
