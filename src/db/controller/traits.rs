@@ -2,9 +2,10 @@ use std::path::Path;
 
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel};
 
-use crate::db::entities::{operations, steps};
+use crate::db::entities::{nodes_duties, operations, steps};
 use crate::db::{
     entities::{
+        nodes_duties::{ActiveModel as NodesDutiesModels, Entity as NodesDuties},
         operations::{ActiveModel as OperationsModel, Entity as Operations},
         steps::{ActiveModel as StepsModel, Entity as Steps},
     },
@@ -95,6 +96,27 @@ impl SqlOperations {
         OperationsModel {
             op_id: ActiveValue::Set(op_id),
             exec_date: ActiveValue::Set(chrono::offset::Utc::now()),
+            is_finished: ActiveValue::Set(false),
+        }
+    }
+}
+
+pub struct SqlNodesDuties {}
+impl SQLiteDBTraits<NodesDuties, NodesDutiesModels> for SqlNodesDuties {
+    fn find_by_id(id: String) -> nodes_duties::Model {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                NodesDuties::find_by_id(id).one(db).await.unwrap().unwrap()
+            })
+        })
+    }
+}
+impl SqlNodesDuties {
+    pub fn new(op_id: String, node_id: String) -> NodesDutiesModels {
+        NodesDutiesModels {
+            op_id: ActiveValue::Set(op_id),
+            node_id: ActiveValue::Set(node_id),
             is_finished: ActiveValue::Set(false),
         }
     }
