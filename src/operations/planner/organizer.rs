@@ -1,5 +1,6 @@
 use super::charts::structs::{NodesOpsMsg, Steps};
 use crate::connections::configs::topics::TopicsEnums;
+use crate::logger::writters::writter::{FileTypes, OperationsFileManager};
 use crate::operations::executer::types::{Executer, OperationTypes};
 use crate::operations::planner::charts::structs::{ExtraInfo, Numeric, OperationInfo};
 use crate::operations::utils::util;
@@ -39,7 +40,13 @@ impl Planner {
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len();
-
+        let mut executer: Option<Executer> = if nodes_num >= 1 {
+            Some(Executer {
+                op_file_manager: OperationsFileManager::new(operation_id.clone()).unwrap(),
+            })
+        } else {
+            None
+        };
         let mut node_idx = 0;
         let mut nodes_duties: HashMap<String, Rc<RefCell<Vec<OperationInfo>>>> = HashMap::new();
 
@@ -94,11 +101,13 @@ impl Planner {
                     operation_id: operation_id.clone(),
                     step_id,
                 };
-                if nodes_num <= 1 {
-                    // InternalCommunications::get_sender_tx()
+
+                if let Some(exec) = &mut executer {
+                    exec.execute_step(step.clone());
                     continue;
+                } else {
+                    OperationStepExecuter::send_message(step);
                 }
-                OperationStepExecuter::send_message(step);
                 match nodes_duties.get(&node_id) {
                     Some(msg_vec) => msg_vec.borrow_mut().push(op_msg),
                     None => {
@@ -113,6 +122,10 @@ impl Planner {
 
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         info!("Finished planning: {}", nodes_ops_msg);
+        if let Some(exec) = &mut executer {
+            exec.execute_duties(nodes_ops_msg);
+            return;
+        }
         OperationsExecuterOffice::send_message(nodes_ops_msg);
     }
 
@@ -120,7 +133,13 @@ impl Planner {
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
-        //TODO if nodes_num==1 then send it to the executre and return.
+        let mut executer: Option<Executer> = if nodes_num >= 1 {
+            Some(Executer {
+                op_file_manager: OperationsFileManager::new(operation_id.clone()).unwrap(),
+            })
+        } else {
+            None
+        };
         let ops_slice_size = data_size / nodes_num;
         let mut idx = 0;
         let mut node_idx = 0;
@@ -164,7 +183,11 @@ impl Planner {
                 operation_id: operation_id.clone(),
                 step_id: first_step_id,
             };
-            OperationStepExecuter::send_message(step_one);
+            if let Some(exec) = &mut executer {
+                exec.execute_step(step_one);
+            } else {
+                OperationStepExecuter::send_message(step_one);
+            }
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.borrow_mut().push(op_msg),
                 None => {
@@ -174,8 +197,13 @@ impl Planner {
 
             idx += ops_slice_size;
         }
+
         info!("Finished planning: {:?}", nodes_duties);
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
+        if let Some(exec) = &mut executer {
+            exec.execute_duties(nodes_ops_msg);
+            return;
+        }
         OperationsExecuterOffice::send_message(nodes_ops_msg);
     }
 }

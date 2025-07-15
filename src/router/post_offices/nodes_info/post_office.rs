@@ -1,7 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    connections::{channels_node_info::NodeInfoTrait, configs::topics::TopicsEnums},
+    connections::{
+        channels_node_info::{NodeInfoTrait, get_current_node_cloned},
+        configs::topics::TopicsEnums,
+    },
     info,
     logger::writters::writter::OperationsFileManager,
     operations::{
@@ -81,8 +84,16 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
     }
     fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
-            let duties = NodesOpsMsg::decode_bytes(&message.unwrap());
-            Executer::execute_duties(duties);
+            let duties = Box::new(NodesOpsMsg::decode_bytes(&message.unwrap()));
+            let node_key = get_current_node_cloned().id;
+            let operation_info = duties.nodes_duties.get(&node_key);
+            if let Some(op_info) = operation_info {
+                let op_id = op_info.borrow()[0].operation_id.clone();
+                Executer {
+                    op_file_manager: OperationsFileManager::new(op_id).unwrap(),
+                }
+                .execute_duties(duties);
+            }
         });
     }
 }
