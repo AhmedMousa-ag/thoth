@@ -22,6 +22,9 @@ pub trait Translator {
             OperationTypes::SUM => {
                 self.sum();
             }
+            OperationTypes::DIVIDE => {
+                self.divide();
+            }
             _ => {
                 warn!("Other operations not supported yet");
             }
