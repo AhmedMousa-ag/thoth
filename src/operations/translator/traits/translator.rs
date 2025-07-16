@@ -2,6 +2,7 @@ use std::{cell::RefCell, iter::zip, rc::Rc};
 
 use crate::{
     err,
+    logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::OperationTypes,
         planner::charts::structs::{Numeric, Steps},
@@ -28,6 +29,7 @@ pub trait Translator {
     }
     fn dot(&self) -> Rc<RefCell<Steps>>;
     fn sum(&self) -> Rc<RefCell<Steps>>;
+    fn divide(&self) -> Rc<RefCell<Steps>>;
 }
 
 impl Translator for ScalerTranslator {
@@ -57,25 +59,25 @@ impl Translator for ScalerTranslator {
     fn sum(&self) -> Rc<RefCell<Steps>> {
         let step_ref = self.step.borrow();
 
-        let x = match step_ref.x.as_ref().unwrap() {
-            Numeric::Scaler(val) => val,
-            _ => {
-                let msg = "Expected Vector variant in Vector Translator";
-                err!("{}",msg;panic=true);
-                unreachable!("{}", msg);
-            }
-        };
+        let x = step_ref.x.as_ref().unwrap().get_scaler_value();
 
-        let y = match step_ref.y.as_ref().unwrap() {
-            Numeric::Scaler(val) => val,
-            _ => {
-                let msg = "Expected Vector variant in Vector Translator";
-                err!("{}",msg;panic=true);
-                unreachable!("{}", msg);
-            }
-        };
+        let y = step_ref.y.as_ref().unwrap().get_scaler_value();
 
         let result = x.as_ref() + y.as_ref();
+
+        self.step.borrow_mut().result = Some(Numeric::Scaler(Box::new(result)));
+        self.step.clone()
+    }
+    fn divide(&self) -> Rc<RefCell<Steps>> {
+        let step_ref = self.step.borrow();
+        let mut result = 0.0;
+        if step_ref.x.is_none() && step_ref.use_prev_res {
+            let step_id = step_ref.prev_step.as_ref().unwrap(); //Get last step.
+            let prev_step = OperationsFileManager::load_step_file(&step_ref.operation_id, step_id);
+            let x = *prev_step.result.unwrap().get_scaler_value();
+            let y = *step_ref.y.as_ref().unwrap().get_scaler_value();
+            result = y * x
+        };
 
         self.step.borrow_mut().result = Some(Numeric::Scaler(Box::new(result)));
         self.step.clone()
@@ -85,22 +87,8 @@ impl Translator for ScalerTranslator {
 impl Translator for VecTranslator {
     fn dot(&self) -> Rc<RefCell<Steps>> {
         let step_ref = self.step.borrow();
-        let x = match step_ref.x.as_ref().unwrap() {
-            Numeric::Vector(val) => val,
-            _ => {
-                let msg = "Expected Vector variant in Vector Translator";
-                err!("{}",msg;panic=true);
-                unreachable!("{}", msg);
-            }
-        };
-        let y = match step_ref.y.as_ref().unwrap() {
-            Numeric::Vector(val) => val,
-            _ => {
-                let msg = "Expected Vector variant in Vector Translator";
-                err!("{}",msg;panic=true);
-                unreachable!("{}", msg);
-            }
-        };
+        let x = step_ref.x.as_ref().unwrap().get_vector_value();
+        let y = step_ref.y.as_ref().unwrap().get_vector_value();
 
         let mut result = 0.0;
         //TODO, you might want to spawn the result in multiple threads.
@@ -130,6 +118,9 @@ impl Translator for VecTranslator {
         self.step.borrow_mut().result = Some(Numeric::Scaler(Box::new(result)));
         self.step.clone()
     }
+    fn divide(&self) -> Rc<RefCell<Steps>> {
+        self.step.clone()
+    }
 }
 
 //TODO MatricesTranslator
@@ -138,6 +129,9 @@ impl Translator for MatricesTranslator {
         self.step.clone()
     }
     fn sum(&self) -> Rc<RefCell<Steps>> {
+        self.step.clone()
+    }
+    fn divide(&self) -> Rc<RefCell<Steps>> {
         self.step.clone()
     }
 }

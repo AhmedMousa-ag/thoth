@@ -2,7 +2,6 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
-    logger::writters::writter::OperationsFileManager,
     operations::{
         planner::charts::structs::{NodesDuties, Numeric, Steps},
         translator::traits::translator::Translator,
@@ -11,18 +10,13 @@ use crate::{
 
 pub struct DutiesTranslator {
     node_duty: NodesDuties,
-    file_manager: OperationsFileManager,
 }
 
 impl DutiesTranslator {
     pub fn new(node_duty: NodesDuties) -> Self {
         let operations_info = node_duty.get(&get_current_node_cloned().id);
         let op_id = operations_info.unwrap().borrow()[0].operation_id.clone();
-        let file_manager = OperationsFileManager::new(op_id).unwrap();
-        Self {
-            node_duty,
-            file_manager,
-        }
+        Self { node_duty }
     }
     fn create_translator(num: &Numeric, step: Rc<RefCell<Steps>>) -> Box<dyn Translator> {
         match num {
@@ -31,7 +25,7 @@ impl DutiesTranslator {
             Numeric::Matrix(_) => Box::new(MatricesTranslator::new(step)),
         }
     }
-    pub fn translate(step: Rc<RefCell<Steps>>) -> Rc<RefCell<Steps>> {
+    pub fn translate_step(step: Rc<RefCell<Steps>>) -> Rc<RefCell<Steps>> {
         let borrowed_step = step.borrow();
         let num = if borrowed_step.x.is_some() {
             borrowed_step.x.as_ref().unwrap()
