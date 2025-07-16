@@ -1,7 +1,8 @@
-use crate::operations::executer::types::OperationTypes;
+use crate::{operations::executer::types::OperationTypes, warn};
 use bincode::{Decode, Encode};
+use sea_orm::sea_query::value;
 use serde::{Deserialize, Serialize};
-use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::Debug, ops::Deref, rc::Rc};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum Numeric {
@@ -16,6 +17,41 @@ impl Numeric {
             Numeric::Scaler(_) => format!("{:?}", self),
             Numeric::Vector(_) => format!("{:?}", self),
             Numeric::Matrix(_) => format!("{:?}", self),
+        }
+    }
+    ///Don't use if your type isn't scaler.
+    pub fn get_scaler_value(&self) -> Box<f64> {
+        match self {
+            Numeric::Scaler(val) => val.clone(),
+            _ => {
+                let msg = "Expected Scaler variant, will return a zero";
+                warn!("{}", msg);
+                Box::from(0.0)
+            }
+        }
+    }
+
+    ///Don't use if your type isn't vector.
+    pub fn get_vector_value(&self) -> Vec<Box<f64>> {
+        match self {
+            Numeric::Vector(val) => val.clone(),
+            _ => {
+                let msg = "Expected Vector variant, will return a zero";
+                warn!("{}", msg);
+                vec![Box::new(0.0)].clone()
+            }
+        }
+    }
+
+    ///Don't use if your type isn't a Matrix.
+    pub fn get_matrices_value(&self) -> Vec<Vec<Box<f64>>> {
+        match self {
+            Numeric::Matrix(val) => val.clone(),
+            _ => {
+                let msg = "Expected Matrix variant, will return a zero";
+                warn!("{}", msg);
+                vec![vec![Box::new(0.0)]].clone()
+            }
         }
     }
 }
