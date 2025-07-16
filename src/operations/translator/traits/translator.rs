@@ -74,14 +74,23 @@ impl Translator for ScalerTranslator {
     fn divide(&self) -> Rc<RefCell<Steps>> {
         let step_ref = self.step.borrow();
         let mut result = 0.0;
-        if step_ref.x.is_none() && step_ref.use_prev_res {
-            let step_id = step_ref.prev_step.as_ref().unwrap(); //Get last step.
-            let prev_step = OperationsFileManager::load_step_file(&step_ref.operation_id, step_id);
-            let x = *prev_step.result.unwrap().get_scaler_value();
-            let y = *step_ref.y.as_ref().unwrap().get_scaler_value();
-            result = y * x
-        };
-
+        let x;
+        let y;
+        match step_ref.x.as_ref() {
+            Some(x_step) => {
+                x = *x_step.get_scaler_value();
+                y = *step_ref.y.as_ref().unwrap().get_scaler_value();
+            }
+            None => {
+                //if !step_ref.use_prev_res{
+                let step_id = step_ref.prev_step.as_ref().unwrap(); //Get last step.
+                let prev_step =
+                    OperationsFileManager::load_step_file(&step_ref.operation_id, step_id);
+                x = *prev_step.result.unwrap().get_scaler_value();
+                y = *step_ref.y.as_ref().unwrap().get_scaler_value();
+            }
+        }
+        result = y * x;
         self.step.borrow_mut().result = Some(Numeric::Scaler(Box::new(result)));
         self.step.clone()
     }
