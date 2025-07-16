@@ -1,5 +1,5 @@
 use crate::utils::util::create_directories;
-use std::{path::Path, sync::OnceLock};
+use std::{env, sync::OnceLock};
 
 pub struct Config {
     pub db_name: String,
@@ -10,7 +10,12 @@ static CONFIGS: OnceLock<Config> = OnceLock::new();
 
 pub fn get_config() -> &'static Config {
     CONFIGS.get_or_init(|| {
-        let os_path = String::from(Path::new("db").canonicalize().unwrap().to_str().unwrap()); //Absolute path
+        let os_path = env::current_dir()
+            .unwrap()
+            .join("db")
+            .to_str()
+            .unwrap()
+            .to_string(); //Absolute path
 
         create_directories(&os_path);
 

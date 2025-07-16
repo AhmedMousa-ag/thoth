@@ -1,3 +1,4 @@
+use std::env;
 use std::path::Path;
 
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel};
@@ -64,9 +65,9 @@ impl SQLiteDBTraits<Steps, StepsModel> for SqlSteps {
 }
 impl SqlSteps {
     pub fn new(step_id: String, op_id: String) -> StepsModel {
-        let file_path: String = Path::new(&op_id)
-            .canonicalize()
+        let file_path = env::current_dir()
             .unwrap()
+            .join(&op_id)
             .to_str()
             .unwrap()
             .to_string();

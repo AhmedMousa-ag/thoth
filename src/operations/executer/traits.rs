@@ -23,7 +23,7 @@ impl Executer {
         err!("{}", self.op_file_manager.write(step.clone()).unwrap_err());
         step
     }
-    pub fn execute_duties(duties: NodesOpsMsg) {
+    pub fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
         // Check for every step result, do calculate what is pending.
         // Return the final result to all nodes.
         // Invoke Returning final result to the user. Maybe in another function or something.

@@ -5,7 +5,7 @@ use std::{cell::RefCell, collections::HashMap, fmt::Debug, rc::Rc};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum Numeric {
-    Number(Box<f64>),
+    Scaler(Box<f64>),
     Vector(Vec<Box<f64>>),
     Matrix(Vec<Vec<Box<f64>>>),
 }
@@ -13,7 +13,7 @@ impl Numeric {
     pub fn to_string(&self) -> String {
         match self {
             //TODO, fix it.
-            Numeric::Number(_) => format!("{:?}", self),
+            Numeric::Scaler(_) => format!("{:?}", self),
             Numeric::Vector(_) => format!("{:?}", self),
             Numeric::Matrix(_) => format!("{:?}", self),
         }
@@ -46,7 +46,7 @@ pub struct OperationInfo {
 }
 
 type NodeOpsMsgType = Vec<OperationInfo>;
-///This one can be send between threads in async functions.
+//This one can be send between threads in async functions.
 // #[derive(Debug, Encode, Decode)]
 // pub struct RNodesOpsMsg {
 //     pub nodes_duties: HashMap<String, Box<NodeOpsMsgType>>,

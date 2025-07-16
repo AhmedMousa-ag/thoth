@@ -78,5 +78,13 @@ pub struct Executer {
 //             OperationTypes::TAN => self.x.tan(),
 //             OperationTypes::TANH => self.x.tanh(),
 //         }
+//         }
+//     }
+
+//     fn perform_vector(&self)->Vec<Box<f64>>{
+
+//     }
+//     fn perform_matrix(&self)->Vec<Vec<Box<f64>>>{
+
 //     }
 // }

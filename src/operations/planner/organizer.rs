@@ -175,7 +175,7 @@ impl Planner {
                 operation_id: operation_id.clone(),
                 step_id: Uuid::new_v4().to_string(),
                 x: None,
-                y: Some(Numeric::Number(Box::new(data_len))),
+                y: Some(Numeric::Scaler(Box::new(data_len))),
                 op_type: OperationTypes::DIVIDE,
                 result: None,
                 next_step: None,
