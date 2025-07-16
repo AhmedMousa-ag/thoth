@@ -200,4 +200,17 @@ impl OperationsFileManager {
         self.files.insert(step_id.to_string(), file);
         Ok(self.files.get(step_id).unwrap())
     }
+    pub fn load_step_file(op_id: &str, step_id: &str) -> Steps {
+        let file_path = Self::generate_file_name(op_id, step_id);
+        let mut file = OpenOptions::new()
+            .create(true)
+            .read(true)
+            .open(file_path)
+            .unwrap();
+        let mut contents = vec![];
+        file.read_to_end(&mut contents).unwrap();
+        let file_content = String::from_utf8(contents).unwrap_or_default();
+
+        serde_json::from_str(&file_content).unwrap()
+    }
 }
