@@ -5,7 +5,7 @@ use crate::{
     operations::{
         executer::types::OperationTypes,
         planner::charts::structs::{Numeric, Steps},
-        translator::translate::{ScalerTranslator, VecTranslator},
+        translator::translate::{MatricesTranslator, ScalerTranslator, VecTranslator},
     },
     warn,
 };
@@ -133,6 +133,11 @@ impl Translator for VecTranslator {
 }
 
 //TODO MatricesTranslator
-// impl Translator for MatricesTranslator {
-
-// }
+impl Translator for MatricesTranslator {
+    fn dot(&self) -> Rc<RefCell<Steps>> {
+        self.step.clone()
+    }
+    fn sum(&self) -> Rc<RefCell<Steps>> {
+        self.step.clone()
+    }
+}
