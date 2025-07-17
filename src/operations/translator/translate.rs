@@ -28,13 +28,12 @@ impl DutiesTranslator {
         }
     }
     pub fn translate_step(step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
-        let borrowed_step = step.try_read().unwrap();
-        let num = if borrowed_step.x.is_some() {
-            borrowed_step.x.as_ref().unwrap()
+        let num = if step.try_read().unwrap().x.is_some() {
+            step.try_read().unwrap().x.as_ref().unwrap().clone()
         } else {
-            borrowed_step.y.as_ref().unwrap()
+            step.try_read().unwrap().y.as_ref().unwrap().clone()
         };
-        let translator = DutiesTranslator::create_translator(num, Arc::clone(&step));
+        let translator = DutiesTranslator::create_translator(&num, Arc::clone(&step));
         translator.step(Arc::clone(&step));
         Arc::clone(&step)
     }

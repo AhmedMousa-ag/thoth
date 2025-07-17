@@ -1,12 +1,10 @@
 use std::{
-    cell::RefCell,
     iter::zip,
-    rc::Rc,
     sync::{Arc, RwLock},
 };
 
 use crate::{
-    err,
+    debug, err,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::OperationTypes,
@@ -19,8 +17,9 @@ use crate::{
 pub trait Translator {
     fn step(&self, step: Arc<RwLock<Steps>>) {
         // as per op_type;
-
-        match step.try_read().unwrap().op_type {
+        debug!("Will try to translate step");
+        let op_type = step.try_read().unwrap().op_type.clone();
+        match op_type {
             OperationTypes::DOT => {
                 self.dot();
             }
@@ -35,15 +34,15 @@ pub trait Translator {
             }
         }
     }
-    fn dot(&self) -> Arc<RwLock<Steps>>;
-    fn sum(&self) -> Arc<RwLock<Steps>>;
-    fn divide(&self) -> Arc<RwLock<Steps>>;
+    fn dot(&self);
+    fn sum(&self);
+    fn divide(&self);
 }
 
 impl Translator for ScalerTranslator {
-    fn dot(&self) -> Arc<RwLock<Steps>> {
-        let step_ref = self.step.try_read().unwrap();
-        let x = match step_ref.x.as_ref().unwrap() {
+    fn dot(&self) {
+        let read_guard = self.step.try_read().unwrap();
+        let x = match read_guard.x.as_ref().unwrap() {
             Numeric::Scaler(val) => val,
             _ => {
                 let msg = "Expected Vector variant in Vector Translator";
@@ -51,7 +50,7 @@ impl Translator for ScalerTranslator {
                 unreachable!("{}", msg);
             }
         };
-        let y = match step_ref.y.as_ref().unwrap() {
+        let y = match read_guard.y.as_ref().unwrap() {
             Numeric::Scaler(val) => val,
             _ => {
                 let msg = "Expected Vector variant in Vector Translator";
@@ -61,64 +60,63 @@ impl Translator for ScalerTranslator {
         };
 
         let result = x.as_ref() * y.as_ref();
+        drop(read_guard);
         self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
-        self.step.clone()
     }
-    fn sum(&self) -> Arc<RwLock<Steps>> {
-        let step_ref = self.step.try_read().unwrap();
+    fn sum(&self) {
+        let read_guard = self.step.try_read().unwrap();
 
-        let x = step_ref.x.as_ref().unwrap().get_scaler_value();
+        let x = read_guard.x.as_ref().unwrap().get_scaler_value();
 
-        let y = step_ref.y.as_ref().unwrap().get_scaler_value();
+        let y = read_guard.y.as_ref().unwrap().get_scaler_value();
 
         let result = x.as_ref() + y.as_ref();
-
+        drop(read_guard);
         self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
-        self.step.clone()
     }
-    fn divide(&self) -> Arc<RwLock<Steps>> {
-        let step_ref = self.step.try_read().unwrap();
+    fn divide(&self) {
+        let read_guard = self.step.try_read().unwrap();
         let x;
         let y;
-        match step_ref.x.as_ref() {
+        match read_guard.x.as_ref() {
             Some(x_step) => {
                 x = *x_step.get_scaler_value();
-                y = *step_ref.y.as_ref().unwrap().get_scaler_value();
+                y = *read_guard.y.as_ref().unwrap().get_scaler_value();
             }
             None => {
                 //if !step_ref.use_prev_res{
-                let step_id = step_ref.prev_step.as_ref().unwrap(); //Get last step.
+                let step_id = read_guard.prev_step.as_ref().unwrap().clone(); //Get last step.
                 let prev_step =
-                    OperationsFileManager::load_step_file(&step_ref.operation_id, step_id);
+                    OperationsFileManager::load_step_file(&read_guard.operation_id, &step_id);
                 x = *prev_step.result.unwrap().get_scaler_value();
-                y = *step_ref.y.as_ref().unwrap().get_scaler_value();
+                y = *read_guard.y.as_ref().unwrap().get_scaler_value();
             }
         }
         let result = y * x;
+        drop(read_guard);
         self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
-        self.step.clone()
     }
 }
 
 impl Translator for VecTranslator {
-    fn dot(&self) -> Arc<RwLock<Steps>> {
-        let step = self.step.clone();
-        let x = step.try_read().unwrap().x.as_ref().unwrap().get_vector_value();
-        let y = step.try_read().unwrap().y.as_ref().unwrap().get_vector_value();
-
+    fn dot(&self) {
         let mut result = 0.0;
+        let read_guard = self.step.read().unwrap();
+        let x = read_guard.x.as_ref().unwrap().get_vector_value();
+        let y = read_guard.y.as_ref().unwrap().get_vector_value();
+
         //TODO, you might want to spawn the result in multiple threads.
         for (x_num, y_num) in zip(x, y) {
             result += y_num.as_ref() * x_num.as_ref();
         }
-        step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
-        step.clone()
+        let res = Some(Numeric::Scaler(Box::new(result)));
+        drop(read_guard);
+        self.step.try_write().unwrap().result = res;
     }
-    fn sum(&self) -> Arc<RwLock<Steps>> {
-        let step_ref = self.step.try_read().unwrap();
-
-        let x = match step_ref.x.as_ref().unwrap() {
-            Numeric::Vector(val) => val,
+    fn sum(&self) {
+        let read_guard = self.step.try_read().unwrap();
+        let x = match read_guard.x.as_ref().unwrap() {
+            Numeric::Vector(val) => val.clone(),
             _ => {
                 let msg = "Expected Vector variant in Vector Translator";
                 err!("{}",msg;panic=true);
@@ -130,24 +128,15 @@ impl Translator for VecTranslator {
         for val in x.iter() {
             result += val.as_ref();
         }
-
+        drop(read_guard);
         self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
-        self.step.clone()
     }
-    fn divide(&self) -> Arc<RwLock<Steps>> {
-        self.step.clone()
-    }
+    fn divide(&self) {}
 }
 
 //TODO MatricesTranslator
 impl Translator for MatricesTranslator {
-    fn dot(&self) -> Arc<RwLock<Steps>> {
-        self.step.clone()
-    }
-    fn sum(&self) -> Arc<RwLock<Steps>> {
-        self.step.clone()
-    }
-    fn divide(&self) -> Arc<RwLock<Steps>> {
-        self.step.clone()
-    }
+    fn dot(&self) {}
+    fn sum(&self) {}
+    fn divide(&self) {}
 }

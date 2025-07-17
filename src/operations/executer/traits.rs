@@ -13,9 +13,9 @@ use std::sync::{Arc, RwLock};
 impl Executer {
     pub fn execute_step(&mut self, step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
         // Register into Sqlite the operation.
-        let step_read = step.try_read().unwrap();
-        let step_id = step_read.step_id.clone();
-        let op_id = step_read.operation_id.clone();
+
+        let step_id = step.try_read().unwrap().step_id.clone();
+        let op_id = step.try_read().unwrap().operation_id.clone();
 
         let is_op_exists = SqlOperations::find_by_id(op_id.clone()).is_some();
         debug!(" Is Ops exists: {:?}", is_op_exists);
