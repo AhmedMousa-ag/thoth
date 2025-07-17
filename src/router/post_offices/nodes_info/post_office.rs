@@ -1,4 +1,8 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 use crate::{
     connections::{
@@ -50,22 +54,24 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
     }
 }
 
-impl PostOfficeTrait<Rc<RefCell<Steps>>> for OperationStepExecuter {
-    fn send_message(msg: Rc<RefCell<Steps>>) {
+impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
+    fn send_message(msg: Arc<RwLock<Steps>>) {
         let nodes_msg = Box::new(Message {
             topic_name: TopicsEnums::OPERATIONS.to_string(),
             request: RequestsTypes::PlansToExecute,
-            message: Some(msg.borrow().encode_bytes()),
+            message: Some(msg.try_read().unwrap().encode_bytes()),
         });
         ExternalComm::send_message(nodes_msg);
         info!("Sent step to be executed.")
     }
     fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
-            let step = Rc::new(RefCell::new(Steps::decode_bytes(&message.unwrap())));
+            let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
             let mut executer = Executer {
-                op_file_manager: OperationsFileManager::new(step.borrow().operation_id.clone())
-                    .unwrap(),
+                op_file_manager: OperationsFileManager::new(
+                    step.try_read().unwrap().operation_id.clone(),
+                )
+                .unwrap(),
             };
             executer.execute_step(step);
         });
@@ -88,7 +94,7 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
             let node_key = get_current_node_cloned().id;
             let operation_info = duties.nodes_duties.get(&node_key);
             if let Some(op_info) = operation_info {
-                let op_id = op_info.borrow()[0].operation_id.clone();
+                let op_id = op_info.try_read().unwrap()[0].operation_id.clone();
                 Executer {
                     op_file_manager: OperationsFileManager::new(op_id).unwrap(),
                 }

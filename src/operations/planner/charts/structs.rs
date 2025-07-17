@@ -2,7 +2,14 @@ use crate::{operations::executer::types::OperationTypes, warn};
 use bincode::{Decode, Encode};
 use sea_orm::sea_query::value;
 use serde::{Deserialize, Serialize};
-use std::{cell::RefCell, collections::HashMap, fmt::Debug, ops::Deref, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fmt::Debug,
+    ops::Deref,
+    rc::Rc,
+    sync::{Arc, RwLock},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum Numeric {
@@ -88,7 +95,7 @@ type NodeOpsMsgType = Vec<OperationInfo>;
 //     pub nodes_duties: HashMap<String, Box<NodeOpsMsgType>>,
 // }
 
-pub type NodesDuties = HashMap<String, Rc<RefCell<NodeOpsMsgType>>>;
+pub type NodesDuties = HashMap<String, Arc<RwLock<NodeOpsMsgType>>>;
 ///This one can't be sent between threads in async function
 #[derive(Debug, Encode, Decode)]
 pub struct NodesOpsMsg {

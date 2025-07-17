@@ -20,7 +20,7 @@ use std::{
     os::unix::fs::FileExt,
     path::{Path, PathBuf},
     rc::Rc,
-    sync::Arc,
+    sync::{Arc, RwLock as StandardRwLock},
 };
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
@@ -181,11 +181,11 @@ impl OperationsFileManager {
             })
         })
     }
-    pub fn write(&mut self, step: Rc<RefCell<Steps>>) -> Result<(), io::Error> {
+    pub fn write(&mut self, step: Arc<StandardRwLock<Steps>>) -> Result<(), io::Error> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&step).unwrap();
-                self.get_file(&step.borrow().step_id)
+                self.get_file(&step.try_read().unwrap().step_id)
                     .lock()
                     .await
                     .write_all(lines.as_bytes())?;
