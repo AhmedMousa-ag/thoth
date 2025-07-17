@@ -1,5 +1,5 @@
 use crate::{
-    debug, err, info,
+    debug,
     logger::{
         channels::{
             get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
@@ -12,21 +12,18 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use std::{
-    cell::RefCell,
     collections::HashMap,
     fs::{self, File, OpenOptions},
     io::{self, prelude::*},
-    ops::DerefMut,
     os::unix::fs::FileExt,
     path::{Path, PathBuf},
-    rc::Rc,
     sync::{Arc, RwLock as StandardRwLock},
 };
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 use tokio::{
     spawn,
-    sync::{Mutex, RwLock},
+    sync::Mutex,
 };
 pub trait FileManagerTrait {
     fn new(file_type: FileTypes) -> Result<Self, io::Error>

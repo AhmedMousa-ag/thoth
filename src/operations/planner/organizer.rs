@@ -1,17 +1,13 @@
 use super::charts::structs::{NodesOpsMsg, Steps};
-use crate::connections::configs::topics::TopicsEnums;
-use crate::logger::writters::writter::{FileTypes, OperationsFileManager};
+use crate::logger::writters::writter::OperationsFileManager;
 use crate::operations::executer::types::{Executer, OperationTypes};
 use crate::operations::planner::charts::structs::{ExtraInfo, Numeric, OperationInfo};
 use crate::operations::utils::util;
-use crate::router::post_offices::external_com_ch::ExternalComm;
-use crate::router::post_offices::nodes_info::channel::InternalCommunications;
 use crate::router::post_offices::nodes_info::post_office::{
     OperationStepExecuter, OperationsExecuterOffice,
 };
-use crate::router::traits::{PostOfficeTrait, SenderReciverTrait};
-use crate::structs::structs::{Message, NodeInfo, RequestsTypes};
-use crate::structs::traits::EncodingDecoding;
+use crate::router::traits::PostOfficeTrait;
+use crate::structs::structs::NodeInfo;
 use crate::{connections::channels_node_info::get_nodes_info_cloned, info};
 use crate::{debug, warn};
 use std::collections::HashMap;

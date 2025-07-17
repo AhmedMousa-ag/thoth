@@ -1,7 +1,7 @@
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     db::controller::traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
-    debug, err,
+    debug,
     operations::{
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},

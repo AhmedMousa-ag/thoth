@@ -23,7 +23,7 @@ use crate::{
     },
     warn,
 };
-use futures::{FutureExt, stream::StreamExt};
+use futures::stream::StreamExt;
 use libp2p::{
     Swarm, gossipsub, mdns, noise, ping,
     swarm::{self, SwarmEvent},

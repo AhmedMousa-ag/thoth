@@ -3,7 +3,7 @@ use crate::{
         configs::config::get_config,
         entities::{
             operations::Entity as Operation,
-            steps::{ActiveModel as StepModel, Entity as Step},
+            steps::Entity as Step,
         },
     },
     debug, err, info,
