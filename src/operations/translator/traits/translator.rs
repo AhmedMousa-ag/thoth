@@ -73,7 +73,6 @@ impl Translator for ScalerTranslator {
     }
     fn divide(&self) -> Rc<RefCell<Steps>> {
         let step_ref = self.step.borrow();
-        let mut result = 0.0;
         let x;
         let y;
         match step_ref.x.as_ref() {
@@ -90,7 +89,7 @@ impl Translator for ScalerTranslator {
                 y = *step_ref.y.as_ref().unwrap().get_scaler_value();
             }
         }
-        result = y * x;
+        let result = y * x;
         self.step.borrow_mut().result = Some(Numeric::Scaler(Box::new(result)));
         self.step.clone()
     }
@@ -98,17 +97,17 @@ impl Translator for ScalerTranslator {
 
 impl Translator for VecTranslator {
     fn dot(&self) -> Rc<RefCell<Steps>> {
-        let step_ref = self.step.borrow();
-        let x = step_ref.x.as_ref().unwrap().get_vector_value();
-        let y = step_ref.y.as_ref().unwrap().get_vector_value();
+        let step = self.step.clone();
+        let x = step.borrow().x.as_ref().unwrap().get_vector_value();
+        let y = step.borrow().y.as_ref().unwrap().get_vector_value();
 
         let mut result = 0.0;
         //TODO, you might want to spawn the result in multiple threads.
         for (x_num, y_num) in zip(x, y) {
             result += y_num.as_ref() * x_num.as_ref();
         }
-        self.step.borrow_mut().result = Some(Numeric::Scaler(Box::new(result)));
-        self.step.clone()
+        step.borrow_mut().result = Some(Numeric::Scaler(Box::new(result)));
+        step.clone()
     }
     fn sum(&self) -> Rc<RefCell<Steps>> {
         let step_ref = self.step.borrow();

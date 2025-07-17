@@ -1,6 +1,7 @@
 use std::env;
 use std::path::Path;
 
+use sea_orm::ActiveValue::NotSet;
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel};
 
 use crate::db::entities::{nodes_duties, operations, steps};
@@ -12,6 +13,8 @@ use crate::db::{
     },
     sqlite::get_db_connection,
 };
+use crate::debug;
+use crate::operations::planner::charts::structs::Numeric;
 
 use chrono;
 use tokio::runtime::Handle;
@@ -23,7 +26,7 @@ where
     A: ActiveModelTrait<Entity = T> + ActiveModelBehavior + Send,
     <T as EntityTrait>::Model: IntoActiveModel<A>,
 {
-    fn find_by_id(id: String) -> <T as EntityTrait>::Model;
+    fn find_by_id(id: String) -> Option<<T as EntityTrait>::Model>;
     fn get_all() -> Vec<<T as EntityTrait>::Model> {
         block_in_place(|| {
             Handle::current().block_on(async {
@@ -35,6 +38,7 @@ where
     }
 
     fn insert_row(row: A) -> Result<<T as sea_orm::EntityTrait>::Model, sea_orm::DbErr> {
+        debug!("{:?}", row);
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
@@ -54,11 +58,11 @@ where
 
 pub struct SqlSteps {}
 impl SQLiteDBTraits<Steps, StepsModel> for SqlSteps {
-    fn find_by_id(id: String) -> steps::Model {
+    fn find_by_id(id: String) -> Option<steps::Model> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                Steps::find_by_id(id).one(db).await.unwrap().unwrap()
+                Steps::find_by_id(id).one(db).await.unwrap()
             })
         })
     }
@@ -83,11 +87,11 @@ impl SqlSteps {
 
 pub struct SqlOperations {}
 impl SQLiteDBTraits<Operations, OperationsModel> for SqlOperations {
-    fn find_by_id(id: String) -> operations::Model {
+    fn find_by_id(id: String) -> Option<operations::Model> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                Operations::find_by_id(id).one(db).await.unwrap().unwrap()
+                Operations::find_by_id(id).one(db).await.unwrap()
             })
         })
     }
@@ -104,11 +108,11 @@ impl SqlOperations {
 
 pub struct SqlNodesDuties {}
 impl SQLiteDBTraits<NodesDuties, NodesDutiesModels> for SqlNodesDuties {
-    fn find_by_id(id: String) -> nodes_duties::Model {
+    fn find_by_id(id: String) -> Option<nodes_duties::Model> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                NodesDuties::find_by_id(id).one(db).await.unwrap().unwrap()
+                NodesDuties::find_by_id(id).one(db).await.unwrap()
             })
         })
     }

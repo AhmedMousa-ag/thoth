@@ -3,14 +3,15 @@ use sea_orm::prelude::*;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "steps")]
 pub struct Model {
-    #[sea_orm(primary_key, unique, auto_increment = false)]
+    #[sea_orm(index)]
     op_id: String,
+    #[sea_orm(primary_key, unique, auto_increment = false)]
     step_id: String,
     file_path: String,
     #[sea_orm(defualt = false)]
     is_finished: bool,
     #[sea_orm(nullable)]
-    result: String, //Not sure.
+    result: Option<String>, //Not sure.
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

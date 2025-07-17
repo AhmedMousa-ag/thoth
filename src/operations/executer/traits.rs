@@ -1,7 +1,7 @@
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     db::controller::traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
-    err,
+    debug, err,
     operations::{
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},
@@ -13,16 +13,23 @@ use std::{cell::RefCell, rc::Rc};
 impl Executer {
     pub fn execute_step(&mut self, step: Rc<RefCell<Steps>>) -> Rc<RefCell<Steps>> {
         // Register into Sqlite the operation.
-        let sql_step = SqlSteps::new(
-            step.borrow().step_id.to_owned(),
-            step.borrow().operation_id.to_owned(),
-        );
-        SqlSteps::insert_row(sql_step).unwrap();
-        err!("{}", self.op_file_manager.write(step.clone()).unwrap_err());
+        let ref_step = step.borrow();
+        let step_id = ref_step.step_id.clone();
+        let op_id = ref_step.operation_id.clone();
+
+        let is_op_exists = SqlOperations::find_by_id(op_id.clone()).is_some();
+        debug!(" Is Ops exists: {:?}", is_op_exists);
+        if !is_op_exists {
+            let _ = SqlOperations::insert_row(SqlOperations::new(op_id.clone()));
+        }
+        SqlSteps::insert_row(SqlSteps::new(step_id.clone(), op_id.clone())).unwrap();
+        self.op_file_manager.write(step.clone()).unwrap();
+        // err!("{}", self.op_file_manager.write(step.clone()).unwrap_err());
         // Translate the steps into a result.
-        let step = DutiesTranslator::translate_step(step); //I think we don't need to return it as it's mutable by reference.
+        let step = DutiesTranslator::translate_step(step.clone()); //I think we don't need to return it as it's mutable by reference.
         // Update steps files.
-        err!("{}", self.op_file_manager.write(step.clone()).unwrap_err());
+        self.op_file_manager.write(step.clone()).unwrap();
+        // err!("{}", self.op_file_manager.write(step.clone()).unwrap_err());
         step
     }
     pub fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
