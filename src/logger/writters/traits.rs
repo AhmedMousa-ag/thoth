@@ -1,5 +1,5 @@
 use crate::{
-    err, info,
+    debug, err, info,
     logger::{
         channels::{
             get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
@@ -8,6 +8,7 @@ use crate::{
         writters::writter::{FileTypes, LogFileManager, OperationsFileManager},
     },
     operations::planner::charts::structs::Steps,
+    utils::util::create_directories,
 };
 use chrono::{DateTime, Utc};
 use std::{
@@ -136,9 +137,7 @@ impl OperationsFileManager {
     // It should handle operations folder, including each step file.
     pub fn new(op_id: String) -> Result<Self, io::Error> {
         let file_path = Self::generate_file_name(&op_id, "");
-        if let Some(parent) = file_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
+        create_directories(file_path.as_os_str().to_str().unwrap());
         Ok(Self {
             op_id,
             file_type: FileTypes::OPERATIONS,
@@ -154,6 +153,8 @@ impl OperationsFileManager {
     }
 
     fn open_file(&self, file_path: PathBuf) -> Result<File, io::Error> {
+        debug!("Will open a file path: {:?}", file_path);
+
         Ok(OpenOptions::new()
             .create(true)
             .write(true)
