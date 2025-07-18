@@ -21,10 +21,7 @@ use std::{
 };
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
-use tokio::{
-    spawn,
-    sync::Mutex,
-};
+use tokio::{spawn, sync::Mutex};
 pub trait FileManagerTrait {
     fn new(file_type: FileTypes) -> Result<Self, io::Error>
     where
@@ -156,6 +153,7 @@ impl OperationsFileManager {
             .create(true)
             .write(true)
             // .append(true)
+            .truncate(true)
             .open(file_path)?)
     }
     pub fn get_file(&mut self, step_id: &str) -> &Arc<Mutex<File>> {
