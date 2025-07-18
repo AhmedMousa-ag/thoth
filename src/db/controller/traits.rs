@@ -1,7 +1,5 @@
 use std::env;
-use std::path::Path;
 
-use sea_orm::ActiveValue::NotSet;
 use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel};
 
 use crate::db::entities::{nodes_duties, operations, steps};
@@ -14,7 +12,6 @@ use crate::db::{
     sqlite::get_db_connection,
 };
 use crate::debug;
-use crate::operations::planner::charts::structs::Numeric;
 
 use chrono;
 use tokio::runtime::Handle;

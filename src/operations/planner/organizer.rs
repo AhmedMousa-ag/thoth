@@ -1,22 +1,17 @@
 use super::charts::structs::{NodesOpsMsg, Steps};
-use crate::connections::configs::topics::TopicsEnums;
-use crate::logger::writters::writter::{FileTypes, OperationsFileManager};
+use crate::logger::writters::writter::OperationsFileManager;
 use crate::operations::executer::types::{Executer, OperationTypes};
 use crate::operations::planner::charts::structs::{ExtraInfo, Numeric, OperationInfo};
 use crate::operations::utils::util;
-use crate::router::post_offices::external_com_ch::ExternalComm;
-use crate::router::post_offices::nodes_info::channel::InternalCommunications;
 use crate::router::post_offices::nodes_info::post_office::{
     OperationStepExecuter, OperationsExecuterOffice,
 };
-use crate::router::traits::{PostOfficeTrait, SenderReciverTrait};
-use crate::structs::structs::{Message, NodeInfo, RequestsTypes};
-use crate::structs::traits::EncodingDecoding;
+use crate::router::traits::PostOfficeTrait;
+use crate::structs::structs::NodeInfo;
 use crate::{connections::channels_node_info::get_nodes_info_cloned, info};
 use crate::{debug, warn};
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
 pub struct Planner {
@@ -51,7 +46,7 @@ impl Planner {
             None
         };
         let mut node_idx = 0;
-        let mut nodes_duties: HashMap<String, Rc<RefCell<Vec<OperationInfo>>>> = HashMap::new();
+        let mut nodes_duties: HashMap<String, Arc<RwLock<Vec<OperationInfo>>>> = HashMap::new();
 
         if x.is_empty() || y.is_empty() {
             warn!("Empty Vectors");
@@ -65,7 +60,7 @@ impl Planner {
             // TODO check if transponsing will be beneficial in terms of the deminsions then throw an error if it doesn't.
             y = util::transpose(y);
         }
-        let mut prev_step: Option<Rc<RefCell<Steps>>> = None;
+        let mut prev_step: Option<Arc<RwLock<Steps>>> = None;
 
         for (irow, row) in x.iter().enumerate() {
             //Every row by every column
@@ -78,7 +73,7 @@ impl Planner {
                 debug!("Will multiply: {:?} by {:?}", row, col);
                 let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
                 let step_id = Uuid::new_v4().to_string();
-                let step: Rc<RefCell<Steps>> = Rc::new(RefCell::new(Steps {
+                let step: Arc<RwLock<Steps>> = Arc::new(RwLock::new(Steps {
                     node_id: node_id.to_string(),
                     operation_id: operation_id.clone(),
                     step_id: step_id.clone(),
@@ -95,26 +90,28 @@ impl Planner {
                 }));
 
                 if let Some(prev) = prev_step {
-                    step.borrow_mut().prev_step = Some(prev.borrow().step_id.to_string());
-                    prev.borrow_mut().next_step = Some(step.borrow().step_id.to_string());
+                    step.try_write().unwrap().prev_step =
+                        Some(prev.try_read().unwrap().step_id.to_string());
+                    prev.try_write().unwrap().next_step =
+                        Some(step.try_read().unwrap().step_id.to_string());
                 }
 
-                prev_step = Some(Rc::clone(&step));
+                prev_step = Some(Arc::clone(&step));
                 let op_msg = OperationInfo {
                     operation_id: operation_id.clone(),
                     step_id,
                 };
 
                 if let Some(exec) = &mut executer {
-                    exec.execute_step(step.clone());
+                    exec.execute_step(Arc::clone(&step));
                     continue;
                 } else {
-                    OperationStepExecuter::send_message(step);
+                    OperationStepExecuter::send_message(Arc::clone(&step));
                 }
                 match nodes_duties.get(&node_id) {
-                    Some(msg_vec) => msg_vec.borrow_mut().push(op_msg),
+                    Some(msg_vec) => msg_vec.try_write().unwrap().push(op_msg),
                     None => {
-                        nodes_duties.insert(node_id, Rc::new(RefCell::new(vec![op_msg])));
+                        nodes_duties.insert(node_id, Arc::new(RwLock::new(vec![op_msg])));
                     }
                 }
                 debug!("Finished row: {} and col: {}", irow, icol);
@@ -150,14 +147,14 @@ impl Planner {
         let ops_slice_size = data_size / nodes_num;
         let mut idx = 0;
         let mut node_idx = 0;
-        let mut nodes_duties: HashMap<String, Rc<RefCell<Vec<OperationInfo>>>> = HashMap::new();
+        let mut nodes_duties: HashMap<String, Arc<RwLock<Vec<OperationInfo>>>> = HashMap::new();
 
         while idx < data_size {
             let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             let first_step_id = Uuid::new_v4().to_string();
             let node_data = x[idx..ops_slice_size].to_vec();
             let data_len = node_data.len() as f64;
-            let step_one = Rc::new(RefCell::new(Steps {
+            let step_one = Arc::new(RwLock::new(Steps {
                 operation_id: operation_id.clone(),
                 step_id: first_step_id.clone(),
                 node_id: first_step_node_id.to_string(),
@@ -170,7 +167,7 @@ impl Planner {
                 next_step: None,
                 extra_info: None,
             }));
-            let step_two: Rc<RefCell<Steps>> = Rc::new(RefCell::new(Steps {
+            let step_two = Arc::new(RwLock::new(Steps {
                 node_id: util::get_node_id(&mut node_idx, nodes_num, &nodes_keys),
                 operation_id: operation_id.clone(),
                 step_id: Uuid::new_v4().to_string(),
@@ -183,8 +180,10 @@ impl Planner {
                 use_prev_res: true,
                 extra_info: None,
             }));
-            step_one.borrow_mut().next_step = Some(step_two.borrow().step_id.to_string());
-            step_two.borrow_mut().prev_step = Some(step_one.borrow().step_id.to_string());
+            step_one.try_write().unwrap().next_step =
+                Some(step_two.try_read().unwrap().step_id.to_string());
+            step_two.try_write().unwrap().prev_step =
+                Some(step_one.try_read().unwrap().step_id.to_string());
 
             let op_msg = OperationInfo {
                 operation_id: operation_id.clone(),
@@ -196,9 +195,9 @@ impl Planner {
                 OperationStepExecuter::send_message(step_one);
             }
             match nodes_duties.get(&first_step_node_id) {
-                Some(msg_vec) => msg_vec.borrow_mut().push(op_msg),
+                Some(msg_vec) => msg_vec.try_write().unwrap().push(op_msg),
                 None => {
-                    nodes_duties.insert(first_step_node_id, Rc::new(RefCell::new(vec![op_msg])));
+                    nodes_duties.insert(first_step_node_id, Arc::new(RwLock::new(vec![op_msg])));
                 }
             }
 

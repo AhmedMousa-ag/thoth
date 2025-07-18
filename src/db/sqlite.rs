@@ -1,10 +1,7 @@
 use crate::{
     db::{
         configs::config::get_config,
-        entities::{
-            operations::Entity as Operation,
-            steps::{ActiveModel as StepModel, Entity as Step},
-        },
+        entities::{operations::Entity as Operation, steps::Entity as Step},
     },
     debug, err, info,
 };

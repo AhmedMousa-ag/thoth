@@ -1,5 +1,3 @@
-use crate::debug;
-
 pub fn transpose<T>(x: Vec<Vec<Box<T>>>) -> Vec<Vec<Box<T>>> {
     if x.is_empty() || x[0].is_empty() {
         return Vec::new();

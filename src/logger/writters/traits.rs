@@ -1,5 +1,5 @@
 use crate::{
-    debug, err, info,
+    debug,
     logger::{
         channels::{
             get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
@@ -12,22 +12,16 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use std::{
-    cell::RefCell,
     collections::HashMap,
     fs::{self, File, OpenOptions},
     io::{self, prelude::*},
-    ops::DerefMut,
     os::unix::fs::FileExt,
     path::{Path, PathBuf},
-    rc::Rc,
-    sync::Arc,
+    sync::{Arc, RwLock as StandardRwLock},
 };
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
-use tokio::{
-    spawn,
-    sync::{Mutex, RwLock},
-};
+use tokio::{spawn, sync::Mutex};
 pub trait FileManagerTrait {
     fn new(file_type: FileTypes) -> Result<Self, io::Error>
     where
@@ -159,6 +153,7 @@ impl OperationsFileManager {
             .create(true)
             .write(true)
             // .append(true)
+            .truncate(true)
             .open(file_path)?)
     }
     pub fn get_file(&mut self, step_id: &str) -> &Arc<Mutex<File>> {
@@ -181,11 +176,11 @@ impl OperationsFileManager {
             })
         })
     }
-    pub fn write(&mut self, step: Rc<RefCell<Steps>>) -> Result<(), io::Error> {
+    pub fn write(&mut self, step: Arc<StandardRwLock<Steps>>) -> Result<(), io::Error> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&step).unwrap();
-                self.get_file(&step.borrow().step_id)
+                self.get_file(&step.try_read().unwrap().step_id)
                     .lock()
                     .await
                     .write_all(lines.as_bytes())?;

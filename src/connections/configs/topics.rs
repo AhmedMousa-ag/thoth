@@ -2,7 +2,6 @@ use lazy_static::lazy_static;
 use libp2p::gossipsub::IdentTopic;
 use std::collections::HashMap;
 
-use crate::router::post_offices::nodes_info;
 pub enum TopicsEnums {
     OPERATIONS,
     NodesInfo,
