@@ -189,7 +189,7 @@ impl GossibConnection {
                                 SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
                                     warn!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
                             },
-                                _ => {warn!("None of these options: {:?}",event)}
+                                _ => {}//warn!("None of these options: {:?}",event)}
                             }
                         }
         }
