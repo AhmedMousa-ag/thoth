@@ -61,6 +61,7 @@ impl Numeric {
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct ExtraInfo {
     pub res_pos: Option<Vec<u64>>, //If it's a matrix or a list, two points should be maximum
+    pub res_type: Option<Numeric>, // To define the final output shape, shall it be matrix or vector or a scaler ?
 }
 
 //TODO probably you would like to create functions instead of all of this mess.

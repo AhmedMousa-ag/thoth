@@ -12,6 +12,7 @@ use crate::{connections::channels_node_info::get_nodes_info_cloned, info};
 use crate::{debug, warn};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use std::vec;
 use uuid::Uuid;
 
 pub struct Planner {
@@ -35,7 +36,7 @@ impl Planner {
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len();
-        let mut executer: Option<Executer> = if nodes_num >= 1 {
+        let mut executer: Option<Executer> = if nodes_num <= 1 {
             warn!(
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
@@ -86,6 +87,7 @@ impl Planner {
                     use_prev_res: false,
                     extra_info: Some(ExtraInfo {
                         res_pos: Some(vec![irow as u64, icol as u64]),
+                        res_type: Some(Numeric::Matrix(vec![vec![]])),
                     }),
                 }));
 
@@ -103,9 +105,11 @@ impl Planner {
                 };
 
                 if let Some(exec) = &mut executer {
+                    warn!("Will execute step internally");
                     exec.execute_step(Arc::clone(&step));
                     continue;
                 } else {
+                    info!("Will send an execution step");
                     OperationStepExecuter::send_message(Arc::clone(&step));
                 }
                 match nodes_duties.get(&node_id) {
@@ -126,6 +130,7 @@ impl Planner {
             exec.execute_duties(nodes_ops_msg);
             return;
         }
+        info!("Will send an execution message");
         OperationsExecuterOffice::send_message(nodes_ops_msg);
     }
 
@@ -178,7 +183,10 @@ impl Planner {
                 next_step: None,
                 prev_step: None,
                 use_prev_res: true,
-                extra_info: None,
+                extra_info: Some(ExtraInfo {
+                    res_pos: None,
+                    res_type: Some(Numeric::Scaler(Box::new(0.0))),
+                }),
             }));
             step_one.try_write().unwrap().next_step =
                 Some(step_two.try_read().unwrap().step_id.to_string());
@@ -194,6 +202,7 @@ impl Planner {
             } else {
                 OperationStepExecuter::send_message(step_one);
             }
+
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.try_write().unwrap().push(op_msg),
                 None => {
