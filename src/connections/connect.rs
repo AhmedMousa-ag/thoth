@@ -7,7 +7,7 @@ use crate::{
         },
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
-    err, info,
+    debug, err, info,
     router::{
         post_offices::{
             external_com_ch::ExternalComm,
@@ -46,6 +46,7 @@ impl GossibConnection {
         // Create a Gossipsub topics
         for topic in get_topics().iter() {
             // subscribes to our topic
+            debug!("Subscribing to topic: {}", topic);
             swarm.behaviour_mut().gossipsub.subscribe(topic)?;
         }
 
@@ -81,7 +82,8 @@ impl GossibConnection {
                     .heartbeat_interval(Duration::from_secs(1))
                     .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message
                     // signing)
-                    .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
+                    .message_id_fn(message_id_fn)
+                    .max_transmit_size(get_config().max_msg_size) // content-address messages. No two messages of the same content will be propagated.
                     .build()
                     .map_err(io::Error::other)
                     .expect("Error building gossib configuration."); // Temporary hack because `build` does not return a proper `std::error::Error`.
@@ -117,6 +119,7 @@ impl GossibConnection {
                                     let message = rec_message.unwrap();
                                     match get_topic(message.topic_name.as_str()){
                                         Some(topic) =>{
+                                            debug!("Will send a message to topic: {}",topic);
                                         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
                                             err!("Error publishing message: {:?}",e);
                                         };}
