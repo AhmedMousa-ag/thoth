@@ -193,8 +193,9 @@ impl GossibConnection {
                                 SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
                                     info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
 
-
-                                    NodeInfo::request_other_nodes_info();
+                                    NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                                    // NodeInfo::request_other_nodes_info();
+                                    
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
                                     //When a node is not connected, remove it.

@@ -1,4 +1,5 @@
 use super::charts::structs::{NodesOpsMsg, Steps};
+use crate::connections::channels_node_info::NodeInfoTrait;
 use crate::logger::writters::writter::OperationsFileManager;
 use crate::operations::executer::types::{Executer, OperationTypes};
 use crate::operations::planner::charts::structs::{ExtraInfo, Numeric, OperationInfo};
@@ -9,7 +10,7 @@ use crate::router::post_offices::nodes_info::post_office::{
 use crate::router::traits::PostOfficeTrait;
 use crate::structs::structs::NodeInfo;
 use crate::{connections::channels_node_info::get_nodes_info_cloned, info};
-use crate::{debug, warn};
+use crate::{debug, err, warn};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::vec;
@@ -22,6 +23,7 @@ pub struct Planner {
 impl Planner {
     pub fn new() -> Self {
         info!("Started new planer");
+        NodeInfo::request_other_nodes_info();
         Self {
             nodes_info: get_nodes_info_cloned(),
         }
@@ -36,6 +38,7 @@ impl Planner {
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len();
+        err!("Nodes number is: {:?}",nodes_num);
         let mut executer: Option<Executer> = if nodes_num <= 1 {
             warn!(
                 "Only one node available which is considered usesless for Thoth to handle this operation"
