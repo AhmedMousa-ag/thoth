@@ -160,9 +160,8 @@ impl GossibConnection {
                                         id,peer_id
                                     );
                                     let topic_name=message.topic.as_str();
-                                    match topic_name{
-                                        ops_topic if ops_topic==topic_name=>{
-                                            info!("Got Operation Topic: {}",ops_topic); //message.data
+                                    if topic_name==ops_topic{
+                                        info!("Got Operation Topic: {}",ops_topic); //message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
                                             match ops_msg.request {
                                                 RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(ops_msg.message);},
@@ -171,16 +170,14 @@ impl GossibConnection {
                                                 _=>warn!("Got operation topic message with no Request Type")
 
                                             };
-                                    },
-                                        node_topic if node_topic==topic_name=>{
-                                            info!("Got node info exchange Topic: {}",node_topic);//message.data
+                                    }else if topic_name==node_topic{
+                                        info!("Got node info exchange Topic: {}",node_topic);//message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
                                             NodesInfoOffice::handle_incom_msg(ops_msg.message);
-                                        },
-                                        _=>{
-                                            warn!("Couldn't find the topic type");
-                                        }
-                                    };
+                                    }else{
+                                        warn!("Couldn't find the topic type");
+                                    }
+
                                     //TODO When a node keeps pinging their resources or something.
             },
                                 SwarmEvent::NewListenAddr { address, .. } => {
