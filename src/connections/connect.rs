@@ -1,6 +1,6 @@
 use crate::{
     connections::{
-        channels_node_info::NodeInfoTrait,
+        channels_node_info::{NodeInfoTrait, get_current_node_cloned},
         configs::{
             config::get_config,
             topics::{TopicsEnums, get_topic, get_topics},
@@ -130,6 +130,7 @@ impl GossibConnection {
                                     match get_topic(message.topic_name.as_str()){
                                         Some(topic) =>{
                                             debug!("Will send a message to topic: {}",topic);
+                                            debug!("The message is: {:?} ",message);
                                         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
                                             err!("Error publishing message: {:?}",e);
                                         };}
@@ -173,7 +174,13 @@ impl GossibConnection {
                                     }else if topic_name==node_topic{
                                         info!("Got node info exchange Topic: {}",node_topic);//message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
-                                            NodesInfoOffice::handle_incom_msg(ops_msg.message);
+                                            if ops_msg.request==RequestsTypes::RequestNodeInfo{
+                                                NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                                            }else if ops_msg.request==RequestsTypes::ReplyNodeInfoUpdate{
+                                                NodesInfoOffice::handle_incom_msg(ops_msg.message);
+                                            }else{
+                                                warn!("Node Info request type couldn't be identified.")
+                                            }
                                     }else{
                                         warn!("Couldn't find the topic type");
                                     }

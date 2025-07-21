@@ -5,7 +5,7 @@ use crate::{
         channels_node_info::{NodeInfoTrait, get_current_node_cloned},
         configs::topics::TopicsEnums,
     },
-    info,
+    debug, info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
@@ -29,6 +29,8 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
             request: RequestsTypes::ReplyNodeInfoUpdate,
             message: Some(message.encode_bytes()),
         });
+
+        debug!("Will send nodes info to other nodes: {:?}", rep_message);
         ExternalComm::send_message(Box::clone(&rep_message));
         info!("Sent message in Nodes Office.");
     }
