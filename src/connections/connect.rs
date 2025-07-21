@@ -40,15 +40,24 @@ use tracing_subscriber::EnvFilter;
 
 pub struct GossibConnection {}
 impl GossibConnection {
+    pub async fn subscribe_topics(
+        swarm: &mut swarm::Swarm<GossipBehaviour>,
+    ) -> &mut swarm::Swarm<GossipBehaviour> {
+        for topic in get_topics() {
+            // subscribes to our topic
+            debug!("Subscribing to topic: {}", topic);
+            if let Err(e) = swarm.behaviour_mut().gossipsub.subscribe(topic) {
+                err!("Couldn't subscribe to topic {} due to {}", topic, e);
+            }
+            info!("Subscribed to topic: {}", topic);
+        }
+        swarm
+    }
     pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
         info!("Will start p2p connection now");
         let mut swarm: Swarm<GossipBehaviour> = Self::create_gossip_swarm();
         // Create a Gossipsub topics
-        for topic in get_topics().iter() {
-            // subscribes to our topic
-            debug!("Subscribing to topic: {}", topic);
-            swarm.behaviour_mut().gossipsub.subscribe(topic)?;
-        }
+        GossibConnection::subscribe_topics(&mut swarm).await;
 
         // Listen on all interfaces and whatever port the OS assigns
         // swarm.listen_on(format!("/ip4/0.0.0.0/udp/{}/quic-v1", port).parse()?)?;
@@ -106,6 +115,7 @@ impl GossibConnection {
             })
             .expect("Error building swarms.")
             .build();
+
         swarm
     }
 
@@ -161,7 +171,6 @@ impl GossibConnection {
                                                 _=>warn!("Got operation topic message with no Request Type")
 
                                             };
-
                                     },
                                         node_topic if node_topic==topic_name=>{
                                             info!("Got node info exchange Topic: {}",node_topic);//message.data
@@ -179,6 +188,8 @@ impl GossibConnection {
                                 },
                                 SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
                                     info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
+
+
                                     NodeInfo::request_other_nodes_info();
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
