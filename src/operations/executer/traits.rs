@@ -1,15 +1,24 @@
+use sea_orm::ActiveValue;
+
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
-    db::controller::traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
+    db::{
+        controller::traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
+        entities::operations::ActiveModel,
+    },
     debug,
+    logger::{logger::LoggerWritter, writters::writter::OperationsFileManager},
     operations::{
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
     },
 };
-use std::sync::{Arc, RwLock};
-
+use std::{
+    sync::{Arc, RwLock},
+    thread,
+    time::Duration,
+};
 impl Executer {
     pub fn execute_step(&mut self, step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
         // Register into Sqlite the operation.
@@ -33,19 +42,25 @@ impl Executer {
         step
     }
     pub fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
-        // Check for every step result, do calculate what is pending.
+        // Check for every step result.
         if let Some(node_duties) = duties.nodes_duties.get(&get_current_node_cloned().id) {
-            let _sql_ops = SqlOperations::insert_row(SqlOperations::new(
-                node_duties.try_read().unwrap()[0].operation_id.clone(),
-            ))
-            .unwrap();
+            let mut sql_ops_model =
+                SqlOperations::new(node_duties.try_read().unwrap()[0].operation_id.clone());
+            SqlOperations::insert_row(sql_ops_model.clone()).unwrap();
             for duty in node_duties.try_read().unwrap().iter() {
                 // DutiesTranslator::new(node_duty)
+                while SqlSteps::find_by_id(duty.step_id.clone()).is_none() {
+                    //Will wait for one second, maybe not all messages weren't processed. //TODO There's a potential an error happened and might cause the process to keep waiting.
+                    thread::sleep(Duration::from_secs(1));
+                }
+                let step = OperationsFileManager::load_step_file(&duty.operation_id, &duty.step_id)
+                    .unwrap(); //You might get it from the sqlite, possible you should not use the sqlite, it feels limited to it's one thread access in it's nature.
+                if step.result.is_none() {
+                    self.execute_step(Arc::new(RwLock::new(step)));
+                }
             }
-
-            // SqlOperations::update_row(sql_ops);
+            sql_ops_model.is_finished = ActiveValue::Set(true);
+            SqlOperations::update_row(sql_ops_model);
         }
-        // Return the final result to all nodes.
-        // Invoke Returning final result to the user. Maybe in another function or something.
     }
 }

@@ -79,7 +79,7 @@ pub struct Steps {
     pub use_prev_res: bool, //If true, then this will be used instead of x.
     pub extra_info: Option<ExtraInfo>,
 }
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, Clone)]
 pub struct OperationInfo {
     pub operation_id: String,
     pub step_id: String,
@@ -94,7 +94,7 @@ type NodeOpsMsgType = Vec<OperationInfo>;
 
 pub type NodesDuties = HashMap<String, Arc<RwLock<NodeOpsMsgType>>>;
 ///This one can't be sent between threads in async function
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, Clone)]
 pub struct NodesOpsMsg {
     pub nodes_duties: NodesDuties,
 }

@@ -1,24 +1,27 @@
-use std::sync::{Arc, RwLock};
-
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     operations::{
-        planner::charts::structs::{NodesDuties, Numeric, Steps},
+        planner::charts::structs::{NodesDuties, Numeric, OperationInfo, Steps},
         translator::traits::translator::Translator,
     },
 };
+use std::sync::{Arc, RwLock};
 
 pub struct DutiesTranslator {
-    node_duty: NodesDuties,
+    pub node_duty: Arc<RwLock<Vec<OperationInfo>>>,
 }
 
 impl DutiesTranslator {
-    pub fn new(node_duty: NodesDuties) -> Self {
-        let operations_info = node_duty.get(&get_current_node_cloned().id);
-        let op_id = operations_info.unwrap().try_read().unwrap()[0]
-            .operation_id
-            .clone();
-        Self { node_duty }
+    //TODO this function seems useless as all the methodes are static. Unless you're going to do a check before excuting a step. Consider deleting it, seems uselss.
+    pub fn new(nodes_duty: NodesDuties) -> Option<Self> {
+        let operations_info: Option<&Arc<RwLock<Vec<OperationInfo>>>> =
+            nodes_duty.get(&get_current_node_cloned().id);
+        match operations_info {
+            Some(node_duty) => Some(Self {
+                node_duty: node_duty.clone(),
+            }),
+            None => None,
+        }
     }
     fn create_translator(num: &Numeric, step: Arc<RwLock<Steps>>) -> Box<dyn Translator> {
         match num {

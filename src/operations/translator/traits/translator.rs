@@ -87,7 +87,8 @@ impl Translator for ScalerTranslator {
                 //if !step_ref.use_prev_res{
                 let step_id = read_guard.prev_step.as_ref().unwrap().clone(); //Get last step.
                 let prev_step =
-                    OperationsFileManager::load_step_file(&read_guard.operation_id, &step_id);
+                    OperationsFileManager::load_step_file(&read_guard.operation_id, &step_id)
+                        .unwrap();
                 x = *prev_step.result.unwrap().get_scaler_value();
                 y = *read_guard.y.as_ref().unwrap().get_scaler_value();
             }

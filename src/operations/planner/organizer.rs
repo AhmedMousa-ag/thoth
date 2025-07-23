@@ -23,7 +23,7 @@ pub struct Planner {
 impl Planner {
     pub fn new() -> Self {
         info!("Started new planer");
-        NodeInfo::request_other_nodes_info();
+        NodeInfo::request_other_nodes_info(); // I think it's useless, it takes time to respond, TODO consider event driven or get the reference of the node (I don't like it, the guard will stay for long time.)
         Self {
             nodes_info: get_nodes_info_cloned(),
         }
@@ -34,11 +34,11 @@ impl Planner {
         x: Vec<Vec<Box<f64>>>,
         mut y: Vec<Vec<Box<f64>>>,
         operation_id: String,
-    ) {
+    ) -> Box<NodesOpsMsg> {
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len();
-        err!("Nodes number is: {:?}",nodes_num);
+        info!("Available Nodes number is: {:?}", nodes_num);
         let mut executer: Option<Executer> = if nodes_num <= 1 {
             warn!(
                 "Only one node available which is considered usesless for Thoth to handle this operation"
@@ -58,9 +58,7 @@ impl Planner {
         }
         let y_row_len = y.len();
         let x_col_len = x.get(0).unwrap_or(&vec![]).len();
-        debug!("Y before: {:?}", y);
         if x_col_len != y_row_len {
-            debug!("Is transposing");
             // TODO check if transponsing will be beneficial in terms of the deminsions then throw an error if it doesn't.
             y = util::transpose(y);
         }
@@ -68,13 +66,9 @@ impl Planner {
 
         for (irow, row) in x.iter().enumerate() {
             //Every row by every column
-            debug!("Will do  row: {}", irow);
             for icol in 0..y_row_len {
                 //Iterate every column
-                debug!("Will get the columns vectors");
                 let col: Vec<Box<f64>> = y.iter().map(|yrow| Box::new(*yrow[icol])).collect();
-                debug!("Finished the columns vectors");
-                debug!("Will multiply: {:?} by {:?}", row, col);
                 let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
                 let step_id = Uuid::new_v4().to_string();
                 let step: Arc<RwLock<Steps>> = Arc::new(RwLock::new(Steps {
@@ -110,7 +104,6 @@ impl Planner {
                 if let Some(exec) = &mut executer {
                     warn!("Will execute step internally");
                     exec.execute_step(Arc::clone(&step));
-                    continue;
                 } else {
                     info!("Will send an execution step");
                     OperationStepExecuter::send_message(Arc::clone(&step));
@@ -121,23 +114,21 @@ impl Planner {
                         nodes_duties.insert(node_id, Arc::new(RwLock::new(vec![op_msg])));
                     }
                 }
-                debug!("Finished row: {} and col: {}", irow, icol);
             }
-            debug!("Finished row: {}", irow);
         }
-        debug!("Finished all rows and stuff");
-
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         info!("Finished planning: {}", nodes_ops_msg);
         if let Some(exec) = &mut executer {
-            exec.execute_duties(nodes_ops_msg);
-            return;
+            exec.execute_duties(nodes_ops_msg.clone());
+            // return;
+        } else {
+            info!("Will send an execution message");
+            OperationsExecuterOffice::send_message(nodes_ops_msg.clone());
         }
-        info!("Will send an execution message");
-        OperationsExecuterOffice::send_message(nodes_ops_msg);
+        nodes_ops_msg
     }
 
-    pub fn plan_average(&self, x: Vec<Box<f64>>, operation_id: String) {
+    pub fn plan_average(&self, x: Vec<Box<f64>>, operation_id: String) -> Box<NodesOpsMsg> {
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -219,9 +210,11 @@ impl Planner {
         info!("Finished planning: {:?}", nodes_duties);
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         if let Some(exec) = &mut executer {
-            exec.execute_duties(nodes_ops_msg);
-            return;
+            exec.execute_duties(nodes_ops_msg.clone());
+            // return;
+        } else {
+            OperationsExecuterOffice::send_message(nodes_ops_msg.clone());
         }
-        OperationsExecuterOffice::send_message(nodes_ops_msg);
+        nodes_ops_msg
     }
 }
