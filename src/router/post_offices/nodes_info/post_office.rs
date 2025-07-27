@@ -110,7 +110,7 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
 
 impl PostOfficeTrait<GatheredMessage> for GathererOffice {
     fn send_message(msg: GatheredMessage) {
-        spawn(async {
+        spawn(async move {
             let nodes_msg = Box::new(Message {
                 topic_name: TopicsEnums::OPERATIONS.to_string(),
                 request: RequestsTypes::RequestGatherPlans,
@@ -135,8 +135,7 @@ impl PostOfficeTrait<GatheredMessage> for GathererOffice {
 impl GathererOffice {
     pub fn handle_reply_gather_res(message: Option<Vec<u8>>) {
         spawn(async {
-            let mut gathered_msg: GatheredMessage =
-                GatheredMessage::decode_bytes(&message.unwrap());
+            let gathered_msg: GatheredMessage = GatheredMessage::decode_bytes(&message.unwrap());
             let res = match Gatherer::reply_gathered_msg(gathered_msg) {
                 Some(res) => res,
                 None => return,

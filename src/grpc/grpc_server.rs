@@ -5,10 +5,7 @@ use mathop::{
 use tonic::{Request, Response, Status, transport::Server};
 
 use crate::{
-    grpc::{
-        grpc_server::mathop::{Matrix, MatrixRow},
-        utils::extract_matrix,
-    },
+    grpc::{grpc_server::mathop::Matrix, utils::extract_matrix},
     info,
     operations::{
         gatherer::structs::Gatherer,
