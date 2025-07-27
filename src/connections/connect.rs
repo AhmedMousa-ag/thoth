@@ -1,19 +1,24 @@
 use crate::{
     connections::{
-        channels_node_info::NodeInfoTrait,
+        channels_node_info::{NodeInfoTrait, get_current_node_cloned},
         configs::{
             config::get_config,
             topics::{TopicsEnums, get_topic, get_topics},
         },
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
-    err, info,
+    debug, err, info,
     router::{
-        post_offices::{external_com_ch::ExternalComm, nodes_info::post_office::NodesInfoOffice},
+        post_offices::{
+            external_com_ch::ExternalComm,
+            nodes_info::post_office::{
+                GathererOffice, NodesInfoOffice, OperationStepExecuter, OperationsExecuterOffice,
+            },
+        },
         traits::PostOfficeTrait,
     },
     structs::{
-        structs::{Message, NodeInfo},
+        structs::{Message, NodeInfo, RequestsTypes},
         traits::EncodingDecoding,
     },
     warn,
@@ -35,14 +40,24 @@ use tracing_subscriber::EnvFilter;
 
 pub struct GossibConnection {}
 impl GossibConnection {
+    pub async fn subscribe_topics(
+        swarm: &mut swarm::Swarm<GossipBehaviour>,
+    ) -> &mut swarm::Swarm<GossipBehaviour> {
+        for topic in get_topics() {
+            // subscribes to our topic
+            debug!("Subscribing to topic: {}", topic);
+            if let Err(e) = swarm.behaviour_mut().gossipsub.subscribe(topic) {
+                err!("Couldn't subscribe to topic {} due to {}", topic, e);
+            }
+            info!("Subscribed to topic: {}", topic);
+        }
+        swarm
+    }
     pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
         info!("Will start p2p connection now");
         let mut swarm: Swarm<GossipBehaviour> = Self::create_gossip_swarm();
         // Create a Gossipsub topics
-        for topic in get_topics().iter() {
-            // subscribes to our topic
-            swarm.behaviour_mut().gossipsub.subscribe(topic)?;
-        }
+        GossibConnection::subscribe_topics(&mut swarm).await;
 
         // Listen on all interfaces and whatever port the OS assigns
         // swarm.listen_on(format!("/ip4/0.0.0.0/udp/{}/quic-v1", port).parse()?)?;
@@ -76,7 +91,8 @@ impl GossibConnection {
                     .heartbeat_interval(Duration::from_secs(1))
                     .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message
                     // signing)
-                    .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
+                    .message_id_fn(message_id_fn)
+                    .max_transmit_size(get_config().max_msg_size) // content-address messages. No two messages of the same content will be propagated.
                     .build()
                     .map_err(io::Error::other)
                     .expect("Error building gossib configuration."); // Temporary hack because `build` does not return a proper `std::error::Error`.
@@ -99,6 +115,7 @@ impl GossibConnection {
             })
             .expect("Error building swarms.")
             .build();
+
         swarm
     }
 
@@ -112,6 +129,8 @@ impl GossibConnection {
                                     let message = rec_message.unwrap();
                                     match get_topic(message.topic_name.as_str()){
                                         Some(topic) =>{
+                                            debug!("Will send a message to topic: {}",topic);
+                                            debug!("The message is: {:?} ",message);
                                         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
                                             err!("Error publishing message: {:?}",e);
                                         };}
@@ -141,23 +160,32 @@ impl GossibConnection {
                                         "Got message:  with id: {} from peer: {}",
                                         id,peer_id
                                     );
-
-                                    match message.topic.as_str(){
-                                        ops_topic=>{
-                                            info!("Got Operation Topic"); //message.data
+                                    let topic_name=message.topic.as_str();
+                                    if topic_name==ops_topic{
+                                        info!("Got Operation Topic: {}",ops_topic); //message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
+                                            match ops_msg.request {
+                                                RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(ops_msg.message);},
+                                                RequestsTypes::StartExecutePlan | RequestsTypes::EndedExecutingPlan=>{OperationsExecuterOffice::handle_incom_msg(ops_msg.message);},
+                                                RequestsTypes::RequestGatherPlans=>{GathererOffice::handle_reply_gather_res(ops_msg.message)},
+                                                RequestsTypes::ReplyGatherPlansRes=>{GathererOffice::handle_incom_msg(ops_msg.message);}
+                                                _=>warn!("Got operation topic message with no Request Type")
 
-                                    },
-                                        node_topic=>{
-                                            info!("Got node info exchange Topic");//message.data
+                                            };
+                                    }else if topic_name==node_topic{
+                                        info!("Got node info exchange Topic: {}",node_topic);//message.data
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
-                                            let msg = NodeInfo::decode_bytes(&ops_msg.message.unwrap());
-                                            NodesInfoOffice::handle_incom_msg(Box::new(msg)).await;
-                                        },
-                                        _=>{
-                                            warn!("Couldn't find the topic type");
-                                        }
-                                    };
+                                            if ops_msg.request==RequestsTypes::RequestNodeInfo{
+                                                NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                                            }else if ops_msg.request==RequestsTypes::ReplyNodeInfoUpdate{
+                                                NodesInfoOffice::handle_incom_msg(ops_msg.message);
+                                            }else{
+                                                warn!("Node Info request type couldn't be identified.")
+                                            }
+                                    }else{
+                                        warn!("Couldn't find the topic type");
+                                    }
+
                                     //TODO When a node keeps pinging their resources or something.
             },
                                 SwarmEvent::NewListenAddr { address, .. } => {
@@ -165,7 +193,10 @@ impl GossibConnection {
                                 },
                                 SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
                                     info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
-                                    NodeInfo::request_other_nodes_info();
+
+                                    NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                                    // NodeInfo::request_other_nodes_info();
+
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
                                     //When a node is not connected, remove it.
@@ -178,7 +209,7 @@ impl GossibConnection {
                                 SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
                                     warn!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
                             },
-                                _ => {warn!("None of these options: {:?}",event)}
+                                _ => {}//warn!("None of these options: {:?}",event)}
                             }
                         }
         }

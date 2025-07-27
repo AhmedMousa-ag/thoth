@@ -1,4 +1,5 @@
 use super::writters::writter::{FileTypes, LogFileManager};
+use crate::logger::writters::traits::FileManagerTrait;
 use lazy_static::lazy_static;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -18,9 +19,9 @@ pub struct LoggerWritter;
 
 impl LoggerWritter {
     pub async fn start() {
-        LogFileManager::start(INFO_WRITER.clone()).await;
-        LogFileManager::start(DEBUG_WRITER.clone()).await;
-        LogFileManager::start(WARNING_WRITER.clone()).await;
-        LogFileManager::start(ERROR_WRITER.clone()).await;
+        LogFileManager::start_reciever(INFO_WRITER.clone()).await;
+        LogFileManager::start_reciever(DEBUG_WRITER.clone()).await;
+        LogFileManager::start_reciever(WARNING_WRITER.clone()).await;
+        LogFileManager::start_reciever(ERROR_WRITER.clone()).await;
     }
 }

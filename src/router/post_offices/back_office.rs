@@ -9,6 +9,7 @@ use crate::{
     warn,
 };
 use tokio::spawn;
+//TODO seems useless.
 pub fn start_back_office() {
     // Watch for internal communication requests
     spawn(async {

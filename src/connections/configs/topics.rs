@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
 use libp2p::gossipsub::IdentTopic;
 use std::collections::HashMap;
+
 pub enum TopicsEnums {
     OPERATIONS,
     NodesInfo,

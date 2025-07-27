@@ -17,6 +17,7 @@ message Matrix {
 message MatrixOperationRequest {
   Matrix matrix_a = 1;
   Matrix matrix_b = 2;
+  string operation_id=3;
 }
 
 message MatrixOperationReply {

@@ -1,4 +1,5 @@
 pub mod channels;
+pub mod config;
 pub mod log;
 pub mod logger;
 pub mod utils;

@@ -21,6 +21,10 @@ lazy_static! {
         let (tx, rx) = mpsc::unbounded_channel();
         (tx, Mutex::new(rx))
     };
+    static ref OPS_CH: (UnboundedSender<String>, Mutex<UnboundedReceiver<String>>) = {
+        let (tx, rx) = mpsc::unbounded_channel();
+        (tx, Mutex::new(rx))
+    };
 }
 
 pub fn get_info_sender() -> &'static UnboundedSender<String> {
@@ -53,4 +57,12 @@ pub fn get_err_sender() -> &'static UnboundedSender<String> {
 
 pub fn get_err_reciever() -> &'static Mutex<UnboundedReceiver<String>> {
     &ERR_CH.1
+}
+
+pub fn get_ops_sender() -> &'static UnboundedSender<String> {
+    &OPS_CH.0
+}
+
+pub fn get_ops_reciever() -> &'static Mutex<UnboundedReceiver<String>> {
+    &OPS_CH.1
 }

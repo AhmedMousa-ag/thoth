@@ -4,7 +4,14 @@ use mathop::{
 };
 use tonic::{Request, Response, Status, transport::Server};
 
-use crate::info;
+use crate::{
+    grpc::{grpc_server::mathop::Matrix, utils::extract_matrix},
+    info,
+    operations::{
+        gatherer::structs::Gatherer,
+        planner::{charts::structs::NodesOpsMsg, organizer::Planner},
+    },
+};
 pub mod mathop {
     tonic::include_proto!("mathop");
 }
@@ -19,11 +26,47 @@ impl MathOps for MatrixOperations {
         request: Request<MatrixOperationRequest>,
     ) -> Result<Response<MatrixOperationReply>, Status> {
         info!(
-            "Just got a request from: {:?}",
+            "gRPC: got a request from: {:?}",
             request.remote_addr().unwrap()
         );
+        let pln = Planner::new();
+        let req_data: MatrixOperationRequest = request.into_inner();
+        let operation_id: String = req_data.operation_id.clone();
+        let x_matrix: mathop::Matrix = match req_data.matrix_a {
+            Some(s) => s,
+            None => {
+                return Ok(Response::new(MatrixOperationReply {
+                    result_matrix: None,
+                    status_message: format!(
+                        "Matrix X wasn't provided, please provide two matrixes"
+                    ),
+                }));
+            }
+        };
+
+        let (x, x_rows_dim, _x_cols_dim) = extract_matrix(x_matrix);
+        let y_matrix: Matrix = match req_data.matrix_b {
+            Some(s) => s,
+            None => {
+                return Ok(Response::new(MatrixOperationReply {
+                    result_matrix: None,
+                    status_message: format!(
+                        "Matrix X wasn't provided, please provide two matrixes"
+                    ),
+                }));
+            }
+        };
+
+        let (y, _y_rows_dim, y_cols_dim) = extract_matrix(y_matrix);
+        let nodes_duties: Box<NodesOpsMsg> =
+            pln.plan_matrix_naive_multiply(x, y, operation_id.clone());
+        let mut gatherer = Gatherer::new(operation_id);
+        let num_res = gatherer
+            .gather_matrix_multiply(nodes_duties, (x_rows_dim, y_cols_dim))
+            .await
+            .unwrap();
         let reply = MatrixOperationReply {
-            result_matrix: None,
+            result_matrix: Some(num_res),
             status_message: format!("Hello {}", "Hold Temporarily"),
         };
         Ok(Response::new(reply))

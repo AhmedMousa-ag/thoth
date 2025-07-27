@@ -1,18 +1,22 @@
 #[macro_export]
 macro_rules! info {
     ($fmt:expr) => {{
-        let timestamp = chrono::Utc::now();
-        let colored_msg = format!(
-            "\x1b[90m{}\x1b[0m:\x1b[32m[INFO]\x1b[0m: {}",
-            timestamp,
-            $fmt
-        );
-        let plain_msg = format!("{}:[INFO]: {}", timestamp, $fmt);
-        println!("{}", colored_msg);
-        let _ = $crate::logger::channels::get_info_sender().send(plain_msg);
+        if crate::logger::config::get_config().debug_level.as_num()==crate::logger::config::DebugLevel::INFO.as_num(){
+            let timestamp = chrono::Utc::now();
+            let colored_msg = format!(
+                "\x1b[90m{}\x1b[0m:\x1b[32m[INFO]\x1b[0m: {}",
+                timestamp,
+                $fmt
+            );
+            let plain_msg = format!("{}:[INFO]: {}", timestamp, $fmt);
+            println!("{}", colored_msg);
+            let _ = $crate::logger::channels::get_info_sender().send(plain_msg);
+        }
 
      } };
     ($fmt:expr, $($args:expr),*) => {{
+                if crate::logger::config::get_config().debug_level.as_num()==crate::logger::config::DebugLevel::INFO.as_num(){
+
         let timestamp =  chrono::Utc::now();
         let message = format!($fmt, $($args),*);
         let colored_msg = format!(
@@ -23,6 +27,7 @@ macro_rules! info {
         let plain_msg = format!("{}:[INFO]: {}", timestamp, message);
         println!("{}", colored_msg);
         let _ = $crate::logger::channels::get_info_sender().send(plain_msg);
+    }
     }};
 }
 
@@ -104,5 +109,34 @@ macro_rules! err {
         let plain_msg = format!("{}:[ERROR]: {}", timestamp, message);
         println!("{}", colored_msg);
         let _ = $crate::logger::channels::get_err_sender().send(plain_msg);
+    }};
+    ($fmt:expr; panic = $should_panic:expr) => {{
+        let timestamp = chrono::Utc::now();
+        let colored_msg = format!(
+            "\x1b[90m{}\x1b[0m:\x1b[31m[ERROR]\x1b[0m: {}",
+            timestamp,
+            $fmt
+        );
+        let plain_msg = format!("{}:[ERROR]: {}", timestamp, $fmt);
+        println!("{}", colored_msg);
+        let _ = $crate::logger::channels::get_err_sender().send(plain_msg);
+        if $should_panic {
+            panic!("{}", $fmt);
+        }
+    }};
+    ($fmt:expr, $($args:expr),*; panic = $should_panic:expr) => {{
+        let timestamp = chrono::Utc::now();
+        let message = format!($fmt, $($args),*);
+        let colored_msg = format!(
+            "\x1b[90m{}\x1b[0m:\x1b[31m[ERROR]\x1b[0m: {}",
+            timestamp,
+            message
+        );
+        let plain_msg = format!("{}:[ERROR]: {}", timestamp, message);
+        println!("{}", colored_msg);
+        let _ = $crate::logger::channels::get_err_sender().send(plain_msg);
+        if $should_panic {
+            panic!("{}", message);
+        }
     }};
 }

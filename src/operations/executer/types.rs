@@ -1,6 +1,8 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
+use crate::logger::writters::writter::OperationsFileManager;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum OperationTypes {
     ADD,
@@ -44,16 +46,10 @@ impl OperationTypes {
         }
     }
 }
-// pub struct Numeric {
-//     x: f64,
-//     y: Option<f64>,
-//     op_type: OperationTypes,
-// }
-// impl Numeric {
-//     pub fn new(x: f64, y: Option<f64>, op_type: OperationTypes) -> Self {
-//         Self { x, y, op_type }
-//     }
-// }
+
+pub struct Executer {
+    pub op_file_manager: OperationsFileManager,
+}
 
 // pub trait Operations {
 //     fn perfom(&self) -> f64;
@@ -82,5 +78,13 @@ impl OperationTypes {
 //             OperationTypes::TAN => self.x.tan(),
 //             OperationTypes::TANH => self.x.tanh(),
 //         }
+//         }
+//     }
+
+//     fn perform_vector(&self)->Vec<Box<f64>>{
+
+//     }
+//     fn perform_matrix(&self)->Vec<Vec<Box<f64>>>{
+
 //     }
 // }

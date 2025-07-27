@@ -1,5 +1,5 @@
 use crate::operations::{
-    executer::base_operations::OperationTypes,
+    executer::types::OperationTypes,
     planner::charts::structs::{NodesOpsMsg, Numeric, OperationInfo, Steps},
 };
 
@@ -76,7 +76,7 @@ impl fmt::Display for NodesOpsMsg {
         let mut msg = String::new();
         for node_id in self.nodes_duties.keys() {
             let mut node_duties = String::new();
-            for node_duty in self.nodes_duties[node_id].borrow().iter() {
+            for node_duty in self.nodes_duties[node_id].try_read().unwrap().iter() {
                 node_duties.push_str(&format!("{} ", node_duty));
             }
             msg.push_str(&format!("Node Id: {}, With Duty: {}", node_id, node_duties));
