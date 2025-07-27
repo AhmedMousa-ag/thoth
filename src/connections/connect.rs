@@ -8,7 +8,6 @@ use crate::{
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
     debug, err, info,
-    operations::gatherer::{channels::get_opened_ch_sender, structs::Gatherer},
     router::{
         post_offices::{
             external_com_ch::ExternalComm,
