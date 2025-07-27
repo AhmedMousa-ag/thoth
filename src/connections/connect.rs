@@ -8,11 +8,12 @@ use crate::{
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
     debug, err, info,
+    operations::gatherer::{channels::get_opened_ch_sender, structs::Gatherer},
     router::{
         post_offices::{
             external_com_ch::ExternalComm,
             nodes_info::post_office::{
-                NodesInfoOffice, OperationStepExecuter, OperationsExecuterOffice,
+                GathererOffice, NodesInfoOffice, OperationStepExecuter, OperationsExecuterOffice,
             },
         },
         traits::PostOfficeTrait,
@@ -167,7 +168,8 @@ impl GossibConnection {
                                             match ops_msg.request {
                                                 RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(ops_msg.message);},
                                                 RequestsTypes::StartExecutePlan | RequestsTypes::EndedExecutingPlan=>{OperationsExecuterOffice::handle_incom_msg(ops_msg.message);},
-
+                                                RequestsTypes::RequestGatherPlans=>{GathererOffice::handle_reply_gather_res(ops_msg.message)},
+                                                RequestsTypes::ReplyGatherPlansRes=>{GathererOffice::handle_incom_msg(ops_msg.message);}
                                                 _=>warn!("Got operation topic message with no Request Type")
 
                                             };
@@ -195,7 +197,7 @@ impl GossibConnection {
 
                                     NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
                                     // NodeInfo::request_other_nodes_info();
-                                    
+
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
                                     //When a node is not connected, remove it.

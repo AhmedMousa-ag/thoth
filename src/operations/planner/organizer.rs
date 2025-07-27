@@ -83,7 +83,7 @@ impl Planner {
                     prev_step: None,
                     use_prev_res: false,
                     extra_info: Some(ExtraInfo {
-                        res_pos: Some(vec![irow as u64, icol as u64]),
+                        res_pos: Some(vec![irow, icol]),
                         res_type: Some(Numeric::Matrix(vec![vec![]])),
                     }),
                 }));

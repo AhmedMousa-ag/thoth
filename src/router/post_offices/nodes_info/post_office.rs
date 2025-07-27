@@ -9,6 +9,10 @@ use crate::{
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
+        gatherer::{
+            channels::get_opened_ch_sender,
+            structs::{GatheredMessage, Gatherer},
+        },
         planner::charts::structs::{NodesOpsMsg, Steps},
     },
     router::{post_offices::external_com_ch::ExternalComm, traits::PostOfficeTrait},
@@ -21,6 +25,8 @@ use tokio::spawn;
 pub struct NodesInfoOffice {}
 pub struct OperationsExecuterOffice {}
 pub struct OperationStepExecuter {}
+
+pub struct GathererOffice {}
 
 impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
     fn send_message(message: Box<NodeInfo>) {
@@ -98,6 +104,50 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
                 }
                 .execute_duties(duties);
             }
+        });
+    }
+}
+
+impl PostOfficeTrait<GatheredMessage> for GathererOffice {
+    fn send_message(msg: GatheredMessage) {
+        spawn(async {
+            let nodes_msg = Box::new(Message {
+                topic_name: TopicsEnums::OPERATIONS.to_string(),
+                request: RequestsTypes::RequestGatherPlans,
+                message: Some(msg.encode_bytes()),
+            });
+            ExternalComm::send_message(nodes_msg);
+            info!("Sent Gathered Requests to be executed.");
+        });
+    }
+    fn handle_incom_msg(message: Option<Vec<u8>>) {
+        spawn(async {
+            let gathered_reply: GatheredMessage = GatheredMessage::decode_bytes(&message.unwrap());
+            let msg_sender = match get_opened_ch_sender(&gathered_reply.operation_id) {
+                Some(sender) => sender,
+                None => return,
+            };
+            msg_sender.send(gathered_reply);
+        });
+    }
+}
+
+impl GathererOffice {
+    pub fn handle_reply_gather_res(message: Option<Vec<u8>>) {
+        spawn(async {
+            let mut gathered_msg: GatheredMessage =
+                GatheredMessage::decode_bytes(&message.unwrap());
+            let res = match Gatherer::reply_gathered_msg(gathered_msg) {
+                Some(res) => res,
+                None => return,
+            };
+            let nodes_msg = Box::new(Message {
+                topic_name: TopicsEnums::OPERATIONS.to_string(),
+                request: RequestsTypes::ReplyGatherPlansRes,
+                message: Some(res.encode_bytes()),
+            });
+            ExternalComm::send_message(nodes_msg);
+            info!("Sent Gathered replies to other nodes.");
         });
     }
 }

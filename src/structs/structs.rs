@@ -24,6 +24,8 @@ pub enum RequestsTypes {
     PlansToExecute,
     StartExecutePlan,
     EndedExecutingPlan,
+    RequestGatherPlans,
+    ReplyGatherPlansRes,
 }
 impl RequestsTypes {
     pub fn as_str(&self) -> &str {
@@ -33,6 +35,8 @@ impl RequestsTypes {
             RequestsTypes::PlansToExecute => "Plan to Execute",
             RequestsTypes::StartExecutePlan => "Start Execute Plan",
             RequestsTypes::EndedExecutingPlan => "Ended Executing Plan",
+            RequestsTypes::RequestGatherPlans => "Request Gathering Plans",
+            RequestsTypes::ReplyGatherPlansRes => "Reply Gathering Plans Result",
         }
     }
 }

@@ -1,19 +1,15 @@
-use sea_orm::ActiveValue;
-
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
-    db::{
-        controller::traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
-        entities::operations::ActiveModel,
-    },
+    db::controller::traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
     debug,
-    logger::{logger::LoggerWritter, writters::writter::OperationsFileManager},
+    logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
     },
 };
+use sea_orm::ActiveValue;
 use std::{
     sync::{Arc, RwLock},
     thread,
