@@ -1,15 +1,13 @@
 import grpc
 from proto import mathop_pb2
 from proto import mathop_pb2_grpc
+import uuid
 
 
 def run_client():
     """
     Connects to the gRPC server and calls the Calculate RPC.
     """
-    # Establish a connection to the server.
-    # IMPORTANT: You must change 'localhost:50051' to the actual address
-    # and port of your Rust gRPC server.
     with grpc.insecure_channel("localhost:50051") as channel:
         # Create a client stub. The class 'MathStub' is generated from the .proto file.
         stub = mathop_pb2_grpc.MathOpsStub(channel)
@@ -28,7 +26,9 @@ def run_client():
 
         # Create the request using the proto Matrix objects
         req = mathop_pb2.MatrixOperationRequest(
-            matrix_a=matrix_a_proto, matrix_b=matrix_b_proto
+            matrix_a=matrix_a_proto,
+            matrix_b=matrix_b_proto,
+            operation_id=str(uuid.uuid4()),
         )
 
         res = stub.MatrixMultiply(req)
