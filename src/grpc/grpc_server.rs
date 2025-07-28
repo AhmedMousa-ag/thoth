@@ -100,7 +100,7 @@ impl MathOps for MatrixOperations {
         request: Request<ListAverageOperationRequest>,
     ) -> Result<Response<ListAverageOperationReply>, Status> {
         info!(
-            "gRPC: got matrix multiplication request from: {:?}",
+            "gRPC: got list average  request from: {:?}",
             request.remote_addr().unwrap()
         );
         let pln = Planner::new();
