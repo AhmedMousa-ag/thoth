@@ -4,14 +4,14 @@ use sea_orm::prelude::*;
 #[sea_orm(table_name = "steps")]
 pub struct Model {
     #[sea_orm(index)]
-    op_id: String,
+    pub op_id: String,
     #[sea_orm(primary_key, unique, auto_increment = false)]
-    step_id: String,
-    file_path: String,
+    pub step_id: String,
+    pub file_path: String,
     #[sea_orm(defualt = false)]
-    is_finished: bool,
+    pub is_finished: bool,
     #[sea_orm(nullable)]
-    result: Option<String>, //Not sure.
+    pub result: Option<String>, //Not sure.
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]

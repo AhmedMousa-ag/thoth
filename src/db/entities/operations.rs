@@ -9,10 +9,10 @@ use crate::info;
 #[sea_orm(table_name = "operations")]
 pub struct Model {
     #[sea_orm(primary_key, unique, auto_increment = false)]
-    op_id: String, // Instead of using UUID, we are already converting everything into string and UUID several times.
-    exec_date: DateTime<Utc>,
+    pub op_id: String, // Instead of using UUID, we are already converting everything into string and UUID several times.
+    pub exec_date: DateTime<Utc>,
     #[sea_orm(default_value = false)]
-    is_finished: bool,
+    pub is_finished: bool,
     //TODO you might put the result here.
 }
 
