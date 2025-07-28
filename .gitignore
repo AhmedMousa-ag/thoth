@@ -24,3 +24,8 @@ logs/*
 draft.*
 #sqlite db
 db/*.db 
+
+
+# Python 
+
+venv
