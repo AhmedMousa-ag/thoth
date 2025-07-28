@@ -36,7 +36,6 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
             message: Some(message.encode_bytes()),
         });
 
-        debug!("Will send nodes info to other nodes: {:?}", rep_message);
         ExternalComm::send_message(Box::clone(&rep_message));
         info!("Sent message in Nodes Office.");
     }

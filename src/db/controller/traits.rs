@@ -35,7 +35,7 @@ where
     }
 
     fn insert_row(row: A) -> Result<<T as sea_orm::EntityTrait>::Model, sea_orm::DbErr> {
-        debug!("{:?}", row);
+        debug!("Inserting row into the database: {:?}", row);
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;

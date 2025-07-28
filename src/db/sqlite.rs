@@ -22,7 +22,6 @@ pub async fn get_db_connection() -> &'static DatabaseConnection {
                 "sqlite:///{}/{}.db?mode={}",
                 config.path, config.db_name, config.db_mod
             );
-            debug!("database url: {}", database_url);
 
             Database::connect(database_url).await
         })

@@ -147,8 +147,6 @@ impl OperationsFileManager {
     }
 
     fn open_file(&self, file_path: PathBuf) -> Result<File, io::Error> {
-        debug!("Will open a file path: {:?}", file_path);
-
         Ok(OpenOptions::new()
             .create(true)
             .write(true)

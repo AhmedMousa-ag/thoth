@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    debug, err,
+    debug, err, info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::OperationTypes,
@@ -17,7 +17,7 @@ use crate::{
 pub trait Translator {
     fn step(&self, step: Arc<RwLock<Steps>>) {
         // as per op_type;
-        debug!("Will try to translate step");
+        // info!("Will try to translate step");
         let op_type = step.try_read().unwrap().op_type.clone();
         match op_type {
             OperationTypes::DOT => {
