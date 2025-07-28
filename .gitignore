@@ -24,3 +24,11 @@ logs/*
 draft.*
 #sqlite db
 db/*.db 
+
+
+# Python 
+
+venv
+# setup build objects
+py_thoth.egg-info
+__pycache__
