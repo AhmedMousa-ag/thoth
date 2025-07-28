@@ -25,14 +25,16 @@ use uuid::Uuid;
 
 pub struct Planner {
     nodes_info: HashMap<std::string::String, NodeInfo>,
+    operation_id: String,
 }
 
 impl Planner {
-    pub fn new() -> Self {
+    pub fn new(operation_id: String) -> Self {
         info!("Started new planer");
         NodeInfo::request_other_nodes_info(); // I think it's useless, it takes time to respond, TODO consider event driven or get the reference of the node (I don't like it, the guard will stay for long time.)
         Self {
             nodes_info: get_nodes_info_cloned(),
+            operation_id,
         }
     }
 
@@ -40,7 +42,6 @@ impl Planner {
         &self,
         x: Vec<Vec<f64>>,
         mut y: Vec<Vec<f64>>,
-        operation_id: String,
     ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
@@ -51,7 +52,7 @@ impl Planner {
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(operation_id.clone())?,
+                op_file_manager: OperationsFileManager::new(self.operation_id.clone())?,
             })
         } else {
             None
@@ -80,7 +81,7 @@ impl Planner {
                 let step_id = Uuid::new_v4().to_string();
                 let step: Arc<RwLock<Steps>> = Arc::new(RwLock::new(Steps {
                     node_id: node_id.to_string(),
-                    operation_id: operation_id.clone(),
+                    operation_id: self.operation_id.clone(),
                     step_id: step_id.clone(),
                     x: Some(Numeric::Vector(row.to_vec())),
                     y: Some(Numeric::Vector(col)),
@@ -102,7 +103,7 @@ impl Planner {
 
                 prev_step = Some(Arc::clone(&step));
                 let op_msg = OperationInfo {
-                    operation_id: operation_id.clone(),
+                    operation_id: self.operation_id.clone(),
                     step_id,
                 };
 
@@ -133,11 +134,7 @@ impl Planner {
         Ok(nodes_ops_msg)
     }
 
-    pub fn plan_average(
-        &self,
-        x: Vec<f64>,
-        operation_id: String,
-    ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+    pub fn plan_average(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -147,7 +144,7 @@ impl Planner {
             );
 
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(operation_id.clone())?,
+                op_file_manager: OperationsFileManager::new(self.operation_id.clone())?,
             })
         } else {
             None
@@ -163,7 +160,7 @@ impl Planner {
             let node_data = x[idx..ops_slice_size].to_vec();
             let data_len = node_data.len() as f64;
             let step_one = Arc::new(RwLock::new(Steps {
-                operation_id: operation_id.clone(),
+                operation_id: self.operation_id.clone(),
                 step_id: first_step_id.clone(),
                 node_id: first_step_node_id.to_string(),
                 x: Some(Numeric::Vector(node_data)),
@@ -177,7 +174,7 @@ impl Planner {
             }));
             let step_two = Arc::new(RwLock::new(Steps {
                 node_id: util::get_node_id(&mut node_idx, nodes_num, &nodes_keys),
-                operation_id: operation_id.clone(),
+                operation_id: self.operation_id.clone(),
                 step_id: Uuid::new_v4().to_string(),
                 x: None,
                 y: Some(Numeric::Scaler(data_len)),
@@ -195,7 +192,7 @@ impl Planner {
             step_two.try_write()?.prev_step = Some(step_one.try_read()?.step_id.to_string());
 
             let op_msg = OperationInfo {
-                operation_id: operation_id.clone(),
+                operation_id: self.operation_id.clone(),
                 step_id: first_step_id,
             };
             if let Some(exec) = &mut executer {

@@ -32,8 +32,8 @@ async fn main() -> Result<(), ThothErrors> {
     thread::sleep(Duration::from_secs(5));
     NodeInfo::request_other_nodes_info();
     thread::sleep(Duration::from_secs(5));
-    let plan = Planner::new();
-    let res = plan.plan_matrix_naive_multiply(x, y, Uuid::new_v4().to_string());
+    let plan = Planner::new(Uuid::new_v4().to_string());
+    let res = plan.plan_matrix_naive_multiply(x, y);
     grpc_server::start_server().await?;
     Ok(())
 }

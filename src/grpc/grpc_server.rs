@@ -32,9 +32,10 @@ impl MathOps for MatrixOperations {
             "gRPC: got matrix multiplication request from: {:?}",
             request.remote_addr().unwrap()
         );
-        let pln = Planner::new();
         let req_data: MatrixOperationRequest = request.into_inner();
-        let operation_id: String = req_data.operation_id.clone();
+        let operation_id: String = req_data.operation_id;
+        let pln = Planner::new(operation_id.clone());
+
         let x_matrix: mathop::Matrix = match req_data.matrix_a {
             Some(s) => s,
             None => {
@@ -61,18 +62,17 @@ impl MathOps for MatrixOperations {
         };
 
         let (y, _y_rows_dim, y_cols_dim) = extract_matrix(y_matrix);
-        let nodes_duties: Box<NodesOpsMsg> =
-            match pln.plan_matrix_naive_multiply(x, y, operation_id.clone()) {
-                Ok(duties) => duties,
-                Err(e) => {
-                    let err_msg = format!("Failed to create plans due to: {}", e);
-                    err!(err_msg);
-                    return Ok(Response::new(MatrixOperationReply {
-                        result_matrix: None,
-                        status_message: err_msg,
-                    }));
-                }
-            };
+        let nodes_duties: Box<NodesOpsMsg> = match pln.plan_matrix_naive_multiply(x, y) {
+            Ok(duties) => duties,
+            Err(e) => {
+                let err_msg = format!("Failed to create plans due to: {}", e);
+                err!(err_msg);
+                return Ok(Response::new(MatrixOperationReply {
+                    result_matrix: None,
+                    status_message: err_msg,
+                }));
+            }
+        };
         let mut gatherer = Gatherer::new(operation_id);
         let num_res = match gatherer
             .gather_matrix_multiply(nodes_duties, (x_rows_dim, y_cols_dim))
@@ -103,10 +103,11 @@ impl MathOps for MatrixOperations {
             "gRPC: got list average  request from: {:?}",
             request.remote_addr().unwrap()
         );
-        let pln = Planner::new();
         let req_data: ListAverageOperationRequest = request.into_inner();
         let operation_id = req_data.operation_id;
-        let nodes_duties = match pln.plan_average(req_data.x, operation_id.clone()) {
+        let pln = Planner::new(operation_id.clone());
+
+        let nodes_duties = match pln.plan_average(req_data.x) {
             Ok(duties) => duties,
             Err(e) => {
                 let err_msg = format!("Failed to create plans due to: {}", e);
