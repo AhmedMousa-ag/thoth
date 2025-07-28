@@ -6,6 +6,7 @@ use tonic::{Request, Response, Status, transport::Server};
 
 use crate::{
     err,
+    errors::thot_errors::ThothErrors,
     grpc::{grpc_server::mathop::Matrix, utils::extract_matrix},
     info,
     operations::{
@@ -94,7 +95,7 @@ impl MathOps for MatrixOperations {
     }
 }
 
-pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_server() -> Result<(), ThothErrors> {
     info!("Start of gRPC server");
     let addr = "[::1]:50051".parse().unwrap();
     let matrix_ops: MatrixOperations = MatrixOperations::default();

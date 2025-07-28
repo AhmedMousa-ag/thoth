@@ -6,6 +6,7 @@ use std::{fmt, io};
 pub enum ThothErrors {
     LockError(String),
     Io(String),
+    Tonic(String),
 }
 
 impl fmt::Display for ThothErrors {
@@ -13,6 +14,7 @@ impl fmt::Display for ThothErrors {
         match self {
             ThothErrors::LockError(msg) => write!(f, "Lock error: {}", msg),
             ThothErrors::Io(msg) => write!(f, "Io error: {}", msg),
+            ThothErrors::Tonic(msg) => write!(f, "gRPC Tonic error: {}", msg),
         }
     }
 }
@@ -43,6 +45,12 @@ impl<T> From<TryLockError<RwLockReadGuard<'_, T>>> for ThothErrors {
 
 impl From<io::Error> for ThothErrors {
     fn from(err: io::Error) -> Self {
+        ThothErrors::Io(err.to_string())
+    }
+}
+
+impl From<tonic::transport::Error> for ThothErrors {
+    fn from(err: tonic::transport::Error) -> Self {
         ThothErrors::Io(err.to_string())
     }
 }
