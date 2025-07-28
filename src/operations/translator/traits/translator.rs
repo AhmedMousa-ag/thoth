@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    debug, err, info,
+    err,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::OperationTypes,

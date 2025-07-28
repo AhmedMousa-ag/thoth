@@ -3,7 +3,7 @@ use crate::{
         configs::config::get_config,
         entities::{operations::Entity as Operation, steps::Entity as Step},
     },
-    debug, err, info,
+    err, info,
 };
 use sea_orm::{
     ConnectionTrait, Database, DatabaseConnection, DbBackend, DbConn, Schema,

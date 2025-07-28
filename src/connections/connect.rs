@@ -7,7 +7,7 @@ use crate::{
         },
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
-    debug, err, info,
+    err, info,
     router::{
         post_offices::{
             external_com_ch::ExternalComm,

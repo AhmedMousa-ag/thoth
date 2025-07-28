@@ -5,7 +5,7 @@ use crate::{
         channels_node_info::{NodeInfoTrait, get_current_node_cloned},
         configs::topics::TopicsEnums,
     },
-    debug, info,
+    err, info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
@@ -126,7 +126,10 @@ impl PostOfficeTrait<GatheredMessage> for GathererOffice {
                 Some(sender) => sender,
                 None => return,
             };
-            msg_sender.send(gathered_reply);
+            match msg_sender.send(gathered_reply) {
+                Ok(_) => {}
+                Err(e) => err!("Error sending message of Gatherer Office: {}", e),
+            };
         });
     }
 }

@@ -1,11 +1,8 @@
-use std::{collections::HashMap, sync::RwLock};
+use std::collections::HashMap;
 
 use crate::operations::gatherer::structs::GatheredMessage;
 use lazy_static::lazy_static;
-use tokio::sync::{
-    Mutex,
-    mpsc::{self, UnboundedReceiver, UnboundedSender},
-};
+use tokio::sync::{Mutex, mpsc::UnboundedSender};
 
 lazy_static! {
     // static ref GATHERD_CH: (

@@ -1,12 +1,12 @@
 use thoth::connections::channels_node_info::NodeInfoTrait;
 use thoth::connections::connect::GossibConnection;
 use thoth::db::sqlite::setup_db;
+use thoth::err;
 use thoth::grpc::grpc_server;
 use thoth::logger::logger::LoggerWritter;
 use thoth::operations::planner::organizer::Planner;
 use thoth::router::post_offices::back_office::start_back_office;
 use thoth::structs::structs::NodeInfo;
-use thoth::{debug, err};
 use tokio::spawn;
 use uuid::Uuid;
 #[tokio::main]

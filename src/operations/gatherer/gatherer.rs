@@ -41,7 +41,7 @@ impl Gatherer {
                         return None;
                     }
                 }
-                Err(e) => return None,
+                Err(_) => return None,
             };
         message.respond = Some(res);
         Some(message)

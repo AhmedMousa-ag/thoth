@@ -1,5 +1,4 @@
 use crate::{
-    debug,
     logger::{
         channels::{
             get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
