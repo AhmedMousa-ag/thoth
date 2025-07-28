@@ -8,16 +8,18 @@ use crate::{
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
     },
-    warn,
 };
-use sea_orm::ActiveValue;
+use sea_orm::{
+    ActiveValue::{self, Set},
+    IntoActiveModel,
+};
 use std::{
     sync::{Arc, RwLock},
     thread,
     time::Duration,
 };
 impl Executer {
-    pub fn execute_step(&mut self, step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
+    pub fn execute_step(&mut self, step: Arc<RwLock<Steps>>) {
         let step_id = step
             .try_read()
             .map_err(|e| err!("Faild to read lock step due to: {}.", e))
@@ -30,16 +32,25 @@ impl Executer {
         if !is_op_exists {
             let _ = SqlOperations::insert_row(SqlOperations::new(op_id.clone()));
         }
-        SqlSteps::insert_row(SqlSteps::new(step_id.clone(), op_id.clone())).unwrap();
-        let _ = self.op_file_manager.write(Arc::clone(&step), false); // Ignoring this error as it's not critical.
-        // Translate the steps into a result.
-        let step = DutiesTranslator::translate_step(Arc::clone(&step)); //I think we don't need to return it as it's mutable by reference.
-        // Update steps files.
-        self.op_file_manager
-            .write(Arc::clone(&step), false)
-            .unwrap();
-        // err!("{}", self.op_file_manager.write(step.clone()).unwrap_err());
-        step
+
+        let sql_step = SqlSteps::find_by_id(step_id.clone());
+        if sql_step.clone().is_none_or(|stp| !stp.is_finished) {
+            let mut sql_step_model = match sql_step {
+                Some(sql_mod) => sql_mod.into_active_model(),
+                None => SqlSteps::new(step_id.clone(), op_id.clone()),
+            };
+
+            SqlSteps::insert_row(sql_step_model.clone()).unwrap();
+            let _ = self.op_file_manager.write(Arc::clone(&step), false); // Ignoring this error as it's not critical.
+            // Translate the steps into a result.
+            let step = DutiesTranslator::translate_step(Arc::clone(&step)); //I think we don't need to return it as it's mutable by reference.
+            // Update steps files.
+            self.op_file_manager
+                .write(Arc::clone(&step), false)
+                .unwrap();
+            sql_step_model.is_finished = Set(true);
+            SqlSteps::update_row(sql_step_model).unwrap();
+        }
     }
     pub fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
         // Check for every step result.
