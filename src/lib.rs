@@ -1,5 +1,6 @@
 pub mod connections;
 pub mod db;
+pub mod errors;
 pub mod grpc;
 pub mod logger;
 pub mod operations;
