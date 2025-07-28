@@ -5,6 +5,7 @@ use mathop::{
 use tonic::{Request, Response, Status, transport::Server};
 
 use crate::{
+    err,
     grpc::{grpc_server::mathop::Matrix, utils::extract_matrix},
     info,
     operations::{
@@ -59,12 +60,32 @@ impl MathOps for MatrixOperations {
 
         let (y, _y_rows_dim, y_cols_dim) = extract_matrix(y_matrix);
         let nodes_duties: Box<NodesOpsMsg> =
-            pln.plan_matrix_naive_multiply(x, y, operation_id.clone());
+            match pln.plan_matrix_naive_multiply(x, y, operation_id.clone()) {
+                Ok(duties) => duties,
+                Err(e) => {
+                    let err_msg = format!("Failed to create plans due to: {}", e);
+                    err!(err_msg);
+                    return Ok(Response::new(MatrixOperationReply {
+                        result_matrix: None,
+                        status_message: err_msg,
+                    }));
+                }
+            };
         let mut gatherer = Gatherer::new(operation_id);
-        let num_res = gatherer
+        let num_res = match gatherer
             .gather_matrix_multiply(nodes_duties, (x_rows_dim, y_cols_dim))
             .await
-            .unwrap();
+        {
+            Ok(rs) => rs,
+            Err(e) => {
+                let err_msg = format!("Failed to gather results due to: {}", e);
+                err!(err_msg);
+                return Ok(Response::new(MatrixOperationReply {
+                    result_matrix: None,
+                    status_message: err_msg,
+                }));
+            }
+        };
         let reply = MatrixOperationReply {
             result_matrix: Some(num_res),
             status_message: format!("Hello {}", "Hold Temporarily"),
