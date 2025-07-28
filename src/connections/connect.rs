@@ -7,7 +7,9 @@ use crate::{
         },
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
-    err, info,
+    err,
+    errors::thot_errors::ThothErrors,
+    info,
     router::{
         post_offices::{
             external_com_ch::ExternalComm,
@@ -31,7 +33,6 @@ use libp2p::{
 };
 use std::{
     collections::hash_map::DefaultHasher,
-    error::Error,
     hash::{Hash, Hasher},
     time::Duration,
 };
@@ -52,7 +53,7 @@ impl GossibConnection {
         }
         swarm
     }
-    pub async fn p2pconnect() -> Result<(), Box<dyn Error + Send + Sync>> {
+    pub async fn p2pconnect() -> Result<(), ThothErrors> {
         info!("Will start p2p connection now");
         let mut swarm: Swarm<GossipBehaviour> = Self::create_gossip_swarm();
         // Create a Gossipsub topics

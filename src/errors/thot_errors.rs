@@ -2,11 +2,14 @@ use std::error::Error;
 use std::sync::{RwLockReadGuard, RwLockWriteGuard, TryLockError};
 use std::{fmt, io};
 
+use libp2p::TransportError;
+
 #[derive(Debug, Clone)]
 pub enum ThothErrors {
     LockError(String),
     Io(String),
     Tonic(String),
+    P2PError(String),
 }
 
 impl fmt::Display for ThothErrors {
@@ -15,6 +18,7 @@ impl fmt::Display for ThothErrors {
             ThothErrors::LockError(msg) => write!(f, "Lock error: {}", msg),
             ThothErrors::Io(msg) => write!(f, "Io error: {}", msg),
             ThothErrors::Tonic(msg) => write!(f, "gRPC Tonic error: {}", msg),
+            ThothErrors::P2PError(msg) => write!(f, "P2P error: {}", msg),
         }
     }
 }
@@ -52,5 +56,17 @@ impl From<io::Error> for ThothErrors {
 impl From<tonic::transport::Error> for ThothErrors {
     fn from(err: tonic::transport::Error) -> Self {
         ThothErrors::Io(err.to_string())
+    }
+}
+
+impl From<libp2p::multiaddr::Error> for ThothErrors {
+    fn from(err: libp2p::multiaddr::Error) -> Self {
+        ThothErrors::P2PError(err.to_string())
+    }
+}
+
+impl From<TransportError<std::io::Error>> for ThothErrors {
+    fn from(err: TransportError<std::io::Error>) -> Self {
+        ThothErrors::P2PError(err.to_string())
     }
 }

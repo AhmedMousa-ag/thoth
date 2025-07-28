@@ -2,6 +2,7 @@ use thoth::connections::channels_node_info::NodeInfoTrait;
 use thoth::connections::connect::GossibConnection;
 use thoth::db::sqlite::setup_db;
 use thoth::err;
+use thoth::errors::thot_errors::ThothErrors;
 use thoth::grpc::grpc_server;
 use thoth::logger::logger::LoggerWritter;
 use thoth::operations::planner::organizer::Planner;
@@ -10,7 +11,7 @@ use thoth::structs::structs::NodeInfo;
 use tokio::spawn;
 use uuid::Uuid;
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), ThothErrors> {
     LoggerWritter::start().await;
     setup_db().await;
     start_back_office();
