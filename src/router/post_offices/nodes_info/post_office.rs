@@ -5,7 +5,7 @@ use crate::{
         channels_node_info::{NodeInfoTrait, get_current_node_cloned},
         configs::topics::TopicsEnums,
     },
-    debug, info,
+    err, info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
@@ -36,7 +36,6 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
             message: Some(message.encode_bytes()),
         });
 
-        debug!("Will send nodes info to other nodes: {:?}", rep_message);
         ExternalComm::send_message(Box::clone(&rep_message));
         info!("Sent message in Nodes Office.");
     }
@@ -127,7 +126,10 @@ impl PostOfficeTrait<GatheredMessage> for GathererOffice {
                 Some(sender) => sender,
                 None => return,
             };
-            msg_sender.send(gathered_reply);
+            match msg_sender.send(gathered_reply) {
+                Ok(_) => {}
+                Err(e) => err!("Error sending message of Gatherer Office: {}", e),
+            };
         });
     }
 }

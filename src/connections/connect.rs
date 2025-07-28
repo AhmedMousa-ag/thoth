@@ -7,7 +7,7 @@ use crate::{
         },
         types::{GossipBehaviour, GossipBehaviourEvent},
     },
-    debug, err, info,
+    err, info,
     router::{
         post_offices::{
             external_com_ch::ExternalComm,
@@ -45,7 +45,6 @@ impl GossibConnection {
     ) -> &mut swarm::Swarm<GossipBehaviour> {
         for topic in get_topics() {
             // subscribes to our topic
-            debug!("Subscribing to topic: {}", topic);
             if let Err(e) = swarm.behaviour_mut().gossipsub.subscribe(topic) {
                 err!("Couldn't subscribe to topic {} due to {}", topic, e);
             }
@@ -129,8 +128,8 @@ impl GossibConnection {
                                     let message = rec_message.unwrap();
                                     match get_topic(message.topic_name.as_str()){
                                         Some(topic) =>{
-                                            debug!("Will send a message to topic: {}",topic);
-                                            debug!("The message is: {:?} ",message);
+                                            info!("Will send a message to topic: {}",topic);
+                                            info!("The message is: {:?} ",message);
                                         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
                                             err!("Error publishing message: {:?}",e);
                                         };}

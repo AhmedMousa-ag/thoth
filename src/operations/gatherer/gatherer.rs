@@ -1,4 +1,5 @@
 use crate::{
+    errors::thot_errors::ThothErrors,
     grpc::grpc_server::mathop::{Matrix, MatrixRow},
     info,
     logger::writters::writter::OperationsFileManager,
@@ -11,7 +12,6 @@ use crate::{
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
 };
-use std::fmt::Error;
 use tokio::{
     select, spawn,
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
@@ -41,15 +41,15 @@ impl Gatherer {
                         return None;
                     }
                 }
-                Err(e) => return None,
+                Err(_) => return None,
             };
         message.respond = Some(res);
         Some(message)
     }
     // TODO you might move it outside of this struct, but I don't see it worth it.
-    fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) {
+    fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<(), ThothErrors> {
         for (_, op_infos) in plan.nodes_duties {
-            for info in op_infos.try_read().unwrap().clone() {
+            for info in op_infos.try_read()?.clone() {
                 spawn(async {
                     GathererOffice::send_message(GatheredMessage {
                         operation_id: info.operation_id,
@@ -59,13 +59,14 @@ impl Gatherer {
                 });
             }
         }
+        Ok(())
     }
     pub async fn gather_matrix_multiply(
         &mut self,
         plan: Box<NodesOpsMsg>,
         (rows_dim, cols_dim): (usize, usize),
-    ) -> Result<Matrix, Error> {
-        Self::ask_nodes_their_results(plan);
+    ) -> Result<Matrix, ThothErrors> {
+        Self::ask_nodes_their_results(plan)?;
 
         let mut res: Matrix = Matrix {
             rows: vec![
@@ -81,13 +82,12 @@ impl Gatherer {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
-                         // Handle received value
-                         info!("Received: {:?}", value);
+                        info!("Received: {:?}", value);
                         match value.respond{
                         Some(gath_res)=>{
                             let num = gath_res.result.get_scaler_value();
                             if let Some(extra_infos)=gath_res.extra_info{
-                                let poses= extra_infos.res_pos.unwrap(); // It shall never be None in case of metrics.
+                                let poses= extra_infos.res_pos.unwrap_or(vec![0,0]); // It shall never be None in case of metrics.
                                 let (x_pos,y_pos) = (poses[0],poses[1]);
                                 res.rows[x_pos].values[y_pos]= *num;
                                 left_to_gather+=1;
