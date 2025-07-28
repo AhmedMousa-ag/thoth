@@ -38,8 +38,8 @@ impl Planner {
 
     pub fn plan_matrix_naive_multiply(
         &self,
-        x: Vec<Vec<Box<f64>>>,
-        mut y: Vec<Vec<Box<f64>>>,
+        x: Vec<Vec<f64>>,
+        mut y: Vec<Vec<f64>>,
         operation_id: String,
     ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         info!("Will start planning naive multiply");
@@ -75,7 +75,7 @@ impl Planner {
             //Every row by every column
             for icol in 0..y_row_len {
                 //Iterate every column
-                let col: Vec<Box<f64>> = y.iter().map(|yrow| Box::new(*yrow[icol])).collect();
+                let col: Vec<f64> = y.iter().map(|yrow| yrow[icol]).collect();
                 let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
                 let step_id = Uuid::new_v4().to_string();
                 let step: Arc<RwLock<Steps>> = Arc::new(RwLock::new(Steps {
@@ -135,7 +135,7 @@ impl Planner {
 
     pub fn plan_average(
         &self,
-        x: Vec<Box<f64>>,
+        x: Vec<f64>,
         operation_id: String,
     ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         let data_size = x.len();
@@ -180,7 +180,7 @@ impl Planner {
                 operation_id: operation_id.clone(),
                 step_id: Uuid::new_v4().to_string(),
                 x: None,
-                y: Some(Numeric::Scaler(Box::new(data_len))),
+                y: Some(Numeric::Scaler(data_len)),
                 op_type: OperationTypes::DIVIDE,
                 result: None,
                 next_step: None,
@@ -188,7 +188,7 @@ impl Planner {
                 use_prev_res: true,
                 extra_info: Some(ExtraInfo {
                     res_pos: None,
-                    res_type: Some(Numeric::Scaler(Box::new(0.0))),
+                    res_type: Some(Numeric::Scaler(0.0)),
                 }),
             }));
             step_one.try_write()?.next_step = Some(step_two.try_read()?.step_id.to_string());

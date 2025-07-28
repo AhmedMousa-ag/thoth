@@ -1,5 +1,6 @@
 use mathop::{
-    MatrixOperationReply, MatrixOperationRequest,
+    ListAverageOperationReply, ListAverageOperationRequest, MatrixOperationReply,
+    MatrixOperationRequest,
     math_ops_server::{MathOps, MathOpsServer},
 };
 use tonic::{Request, Response, Status, transport::Server};
@@ -28,7 +29,7 @@ impl MathOps for MatrixOperations {
         request: Request<MatrixOperationRequest>,
     ) -> Result<Response<MatrixOperationReply>, Status> {
         info!(
-            "gRPC: got a request from: {:?}",
+            "gRPC: got matrix multiplication request from: {:?}",
             request.remote_addr().unwrap()
         );
         let pln = Planner::new();
@@ -89,7 +90,49 @@ impl MathOps for MatrixOperations {
         };
         let reply = MatrixOperationReply {
             result_matrix: Some(num_res),
-            status_message: format!("Hello {}", "Hold Temporarily"),
+            status_message: format!("Succesfully got your result."),
+        };
+        Ok(Response::new(reply))
+    }
+
+    async fn list_average(
+        &self,
+        request: Request<ListAverageOperationRequest>,
+    ) -> Result<Response<ListAverageOperationReply>, Status> {
+        info!(
+            "gRPC: got matrix multiplication request from: {:?}",
+            request.remote_addr().unwrap()
+        );
+        let pln = Planner::new();
+        let req_data: ListAverageOperationRequest = request.into_inner();
+        let operation_id = req_data.operation_id;
+        let nodes_duties = match pln.plan_average(req_data.x, operation_id.clone()) {
+            Ok(duties) => duties,
+            Err(e) => {
+                let err_msg = format!("Failed to create plans due to: {}", e);
+                err!(err_msg);
+                return Ok(Response::new(ListAverageOperationReply {
+                    result_average: None,
+                    status_message: err_msg,
+                }));
+            }
+        };
+        let mut gatherer = Gatherer::new(operation_id);
+        let num_res = match gatherer.gather_list_average(nodes_duties).await {
+            Ok(rs) => rs,
+            Err(e) => {
+                let err_msg = format!("Failed to gather results due to: {}", e);
+                err!(err_msg);
+                return Ok(Response::new(ListAverageOperationReply {
+                    result_average: None,
+                    status_message: err_msg,
+                }));
+            }
+        };
+
+        let reply = ListAverageOperationReply {
+            result_average: Some(num_res),
+            status_message: format!("Succesfully got your result."),
         };
         Ok(Response::new(reply))
     }

@@ -59,9 +59,9 @@ impl Translator for ScalerTranslator {
             }
         };
 
-        let result = x.as_ref() * y.as_ref();
+        let result = x * y;
         drop(read_guard);
-        self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
+        self.step.try_write().unwrap().result = Some(Numeric::Scaler(result));
     }
     fn sum(&self) {
         let read_guard = self.step.try_read().unwrap();
@@ -70,9 +70,9 @@ impl Translator for ScalerTranslator {
 
         let y = read_guard.y.as_ref().unwrap().get_scaler_value();
 
-        let result = x.as_ref() + y.as_ref();
+        let result = x + y;
         drop(read_guard);
-        self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
+        self.step.try_write().unwrap().result = Some(Numeric::Scaler(result));
     }
     fn divide(&self) {
         let read_guard = self.step.try_read().unwrap();
@@ -80,8 +80,8 @@ impl Translator for ScalerTranslator {
         let y;
         match read_guard.x.as_ref() {
             Some(x_step) => {
-                x = *x_step.get_scaler_value();
-                y = *read_guard.y.as_ref().unwrap().get_scaler_value();
+                x = x_step.get_scaler_value();
+                y = read_guard.y.as_ref().unwrap().get_scaler_value();
             }
             None => {
                 //if !step_ref.use_prev_res{
@@ -89,13 +89,13 @@ impl Translator for ScalerTranslator {
                 let prev_step =
                     OperationsFileManager::load_step_file(&read_guard.operation_id, &step_id)
                         .unwrap();
-                x = *prev_step.result.unwrap().get_scaler_value();
-                y = *read_guard.y.as_ref().unwrap().get_scaler_value();
+                x = prev_step.result.unwrap().get_scaler_value();
+                y = read_guard.y.as_ref().unwrap().get_scaler_value();
             }
         }
         let result = y * x;
         drop(read_guard);
-        self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
+        self.step.try_write().unwrap().result = Some(Numeric::Scaler(result));
     }
 }
 
@@ -108,9 +108,9 @@ impl Translator for VecTranslator {
 
         //TODO, you might want to spawn the result in multiple threads.
         for (x_num, y_num) in zip(x, y) {
-            result += y_num.as_ref() * x_num.as_ref();
+            result += y_num * x_num;
         }
-        let res = Some(Numeric::Scaler(Box::new(result)));
+        let res = Some(Numeric::Scaler(result));
         drop(read_guard);
         self.step.try_write().unwrap().result = res;
     }
@@ -127,10 +127,10 @@ impl Translator for VecTranslator {
 
         let mut result = 0.0;
         for val in x.iter() {
-            result += val.as_ref();
+            result += val;
         }
         drop(read_guard);
-        self.step.try_write().unwrap().result = Some(Numeric::Scaler(Box::new(result)));
+        self.step.try_write().unwrap().result = Some(Numeric::Scaler(result));
     }
     fn divide(&self) {}
 }

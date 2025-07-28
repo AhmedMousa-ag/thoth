@@ -9,9 +9,9 @@ use std::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum Numeric {
-    Scaler(Box<f64>),
-    Vector(Vec<Box<f64>>),
-    Matrix(Vec<Vec<Box<f64>>>),
+    Scaler(f64),
+    Vector(Vec<f64>),
+    Matrix(Vec<Vec<f64>>),
 }
 impl Numeric {
     pub fn to_string(&self) -> String {
@@ -23,37 +23,37 @@ impl Numeric {
         }
     }
     ///Don't use if your type isn't scaler.
-    pub fn get_scaler_value(&self) -> Box<f64> {
+    pub fn get_scaler_value(&self) -> f64 {
         match self {
-            Numeric::Scaler(val) => val.clone(),
+            Numeric::Scaler(val) => *val,
             _ => {
                 let msg = "Expected Scaler variant, will return a zero";
                 warn!("{}", msg);
-                Box::from(0.0)
+                0.0
             }
         }
     }
 
     ///Don't use if your type isn't vector.
-    pub fn get_vector_value(&self) -> Vec<Box<f64>> {
+    pub fn get_vector_value(&self) -> Vec<f64> {
         match self {
             Numeric::Vector(val) => val.clone(),
             _ => {
                 let msg = "Expected Vector variant, will return a zero";
                 warn!("{}", msg);
-                vec![Box::new(0.0)].clone()
+                vec![0.0]
             }
         }
     }
 
     ///Don't use if your type isn't a Matrix.
-    pub fn get_matrices_value(&self) -> Vec<Vec<Box<f64>>> {
+    pub fn get_matrices_value(&self) -> Vec<Vec<f64>> {
         match self {
             Numeric::Matrix(val) => val.clone(),
             _ => {
                 let msg = "Expected Matrix variant, will return a zero";
                 warn!("{}", msg);
-                vec![vec![Box::new(0.0)]].clone()
+                vec![vec![0.0]]
             }
         }
     }

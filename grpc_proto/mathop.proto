@@ -2,8 +2,8 @@ syntax = "proto3";
 package mathop;
 
 service MathOps {
-    // rpc SayHello (HelloRequest) returns (HelloReply);
     rpc MatrixMultiply (MatrixOperationRequest) returns (MatrixOperationReply);
+    rpc ListAverage (ListAverageOperationRequest) returns (ListAverageOperationReply);
 }
 
 message MatrixRow {
@@ -23,4 +23,16 @@ message MatrixOperationRequest {
 message MatrixOperationReply {
   Matrix result_matrix = 1;
   string status_message = 2; // e.g., "Success", "Matrices have incompatible dimensions"
+}
+
+message ListAverageOperationRequest{
+  repeated double x = 1;
+    string operation_id=2;
+
+}
+
+message ListAverageOperationReply{
+  optional double result_average = 1;
+  string status_message = 2; // e.g., "Success".
+
 }

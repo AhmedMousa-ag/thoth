@@ -47,7 +47,8 @@ impl Gatherer {
         Some(message)
     }
     // TODO you might move it outside of this struct, but I don't see it worth it.
-    fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<(), ThothErrors> {
+    fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
+        let mut num_sent_message = 0;
         for (_, op_infos) in plan.nodes_duties {
             for info in op_infos.try_read()?.clone() {
                 spawn(async {
@@ -57,16 +58,57 @@ impl Gatherer {
                         respond: None,
                     });
                 });
+                num_sent_message += 1
             }
         }
-        Ok(())
+        Ok(num_sent_message)
     }
+
+    pub async fn gather_list_average(
+        &mut self,
+        plan: Box<NodesOpsMsg>,
+    ) -> Result<f64, ThothErrors> {
+        let num_duties = Self::ask_nodes_their_results(plan)?;
+        let mut left_to_gather = num_duties.clone();
+        let mut res = 0.0;
+
+        while left_to_gather > 0 {
+            select! {
+             result = self.reciever_ch.recv() => {
+                 match result {
+                     Some(value) => {
+                        info!("Received: {:?}", value);
+                        match value.respond{
+                        Some(gath_res)=>{
+                            let num = gath_res.result.get_scaler_value();
+                            res+=num;
+                            // if let Some(extra_infos)=gath_res.extra_info{
+
+
+                            // }
+                            left_to_gather-=1;
+                        },
+                        None=>continue,
+                        }
+                     }
+                     None => {
+                         // Channel closed
+                         break;
+                     }
+                 }
+             }
+            }
+        }
+        res /= num_duties as f64; // Each step had it's own average, now after we gather each step average, we need to define the last average for all gathered steps.
+        Ok(res)
+    }
+
     pub async fn gather_matrix_multiply(
         &mut self,
         plan: Box<NodesOpsMsg>,
         (rows_dim, cols_dim): (usize, usize),
     ) -> Result<Matrix, ThothErrors> {
-        Self::ask_nodes_their_results(plan)?;
+        let mut left_to_gather = Self::ask_nodes_their_results(plan)?;
 
         let mut res: Matrix = Matrix {
             rows: vec![
@@ -76,7 +118,7 @@ impl Gatherer {
                 rows_dim
             ],
         };
-        let mut left_to_gather = rows_dim * cols_dim;
+        // let mut left_to_gather = rows_dim * cols_dim;
         while left_to_gather > 0 {
             select! {
              result = self.reciever_ch.recv() => {
@@ -89,9 +131,10 @@ impl Gatherer {
                             if let Some(extra_infos)=gath_res.extra_info{
                                 let poses= extra_infos.res_pos.unwrap_or(vec![0,0]); // It shall never be None in case of metrics.
                                 let (x_pos,y_pos) = (poses[0],poses[1]);
-                                res.rows[x_pos].values[y_pos]= *num;
-                                left_to_gather+=1;
+                                res.rows[x_pos].values[y_pos]= num;
+
                             }
+                            left_to_gather-=1;
 
                         },
                         None=>continue,

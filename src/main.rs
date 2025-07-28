@@ -15,15 +15,8 @@ async fn main() -> Result<(), ThothErrors> {
     LoggerWritter::start().await;
     setup_db().await;
     start_back_office();
-    let x: Vec<Vec<Box<f64>>> = vec![
-        vec![Box::new(1.0), Box::new(2.0)],
-        vec![Box::new(4.0), Box::new(5.0)],
-        vec![Box::new(7.0), Box::new(8.0)],
-    ];
-    let y: Vec<Vec<Box<f64>>> = vec![
-        vec![Box::new(1.0), Box::new(2.0)],
-        vec![Box::new(4.0), Box::new(5.0)],
-    ];
+    let x: Vec<Vec<f64>> = vec![vec![1.0, 2.0], vec![4.0, 5.0], vec![7.0, 8.0]];
+    let y: Vec<Vec<f64>> = vec![vec![1.0, 2.0], vec![4.0, 5.0]];
 
     spawn(async {
         let conn_res = GossibConnection::p2pconnect().await;
