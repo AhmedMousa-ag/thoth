@@ -29,3 +29,5 @@ db/*.db
 # Python 
 
 venv
+# setup build objects
+py_thoth.egg-info
