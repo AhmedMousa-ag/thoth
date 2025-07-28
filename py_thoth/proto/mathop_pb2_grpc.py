@@ -5,7 +5,7 @@ import warnings
 
 from . import mathop_pb2 as mathop__pb2
 
-GRPC_GENERATED_VERSION = "1.73.0"
+GRPC_GENERATED_VERSION = "1.74.0"
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -43,13 +43,25 @@ class MathOpsStub(object):
             response_deserializer=mathop__pb2.MatrixOperationReply.FromString,
             _registered_method=True,
         )
+        self.ListAverage = channel.unary_unary(
+            "/mathop.MathOps/ListAverage",
+            request_serializer=mathop__pb2.ListAverageOperationRequest.SerializeToString,
+            response_deserializer=mathop__pb2.ListAverageOperationReply.FromString,
+            _registered_method=True,
+        )
 
 
 class MathOpsServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def MatrixMultiply(self, request, context):
-        """rpc SayHello (HelloRequest) returns (HelloReply);"""
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def ListAverage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
@@ -61,6 +73,11 @@ def add_MathOpsServicer_to_server(servicer, server):
             servicer.MatrixMultiply,
             request_deserializer=mathop__pb2.MatrixOperationRequest.FromString,
             response_serializer=mathop__pb2.MatrixOperationReply.SerializeToString,
+        ),
+        "ListAverage": grpc.unary_unary_rpc_method_handler(
+            servicer.ListAverage,
+            request_deserializer=mathop__pb2.ListAverageOperationRequest.FromString,
+            response_serializer=mathop__pb2.ListAverageOperationReply.SerializeToString,
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -93,6 +110,36 @@ class MathOps(object):
             "/mathop.MathOps/MatrixMultiply",
             mathop__pb2.MatrixOperationRequest.SerializeToString,
             mathop__pb2.MatrixOperationReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def ListAverage(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/mathop.MathOps/ListAverage",
+            mathop__pb2.ListAverageOperationRequest.SerializeToString,
+            mathop__pb2.ListAverageOperationReply.FromString,
             options,
             channel_credentials,
             insecure,

@@ -5,7 +5,8 @@ from utils.util import run_client
 
 
 @run_client
-def matrix_multiply(a: List[List[float]], b: List[List[float]], stub):
+def matrix_multiply(a: List[List[float]], b: List[List[float]], **kwargs):
+    stub = kwargs["stub"]
     # Convert Python lists to proto Matrix objects
     matrix_a_proto = mathop_pb2.Matrix()
     for row_data in a:

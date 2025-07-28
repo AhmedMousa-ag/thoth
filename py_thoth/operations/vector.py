@@ -5,9 +5,10 @@ from utils.util import run_client
 
 
 @run_client
-def list_average(a: List[float], stub):
+def list_average(a: List[float], **kwargs):
+    stub = kwargs["stub"]
     req = mathop_pb2.ListAverageOperationRequest(
-        result_average=a,
+        x=a,
         operation_id=str(uuid.uuid4()),
     )
 

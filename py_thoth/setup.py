@@ -24,6 +24,6 @@ setup(
     name="py_thoth",
     version=get_git_version_from_tags(),
     packages=find_packages(),
-    install_requires=[],
-    python_requires=">=3.6",
+    install_requires=["grpcio==1.74.0", "grpcio-tools==1.74.0"],
+    python_requires=">=3.8",
 )
