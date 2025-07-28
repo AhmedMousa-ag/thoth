@@ -152,22 +152,21 @@ impl OperationsFileManager {
         Ok(OpenOptions::new()
             .create(true)
             .write(true)
-            // .append(true)
             .truncate(true)
             .open(file_path)?)
     }
-    pub fn get_file(&mut self, step_id: &str) -> &Arc<Mutex<File>> {
+    pub fn get_file(&mut self, step_id: &str, keep_file_open: bool) -> Arc<Mutex<File>> {
         if !self.files.contains_key(step_id) {
-            return self.create_step_file(step_id).unwrap();
+            return self.create_step_file(step_id, keep_file_open).unwrap();
         }
-        self.files.get(step_id).unwrap()
+        self.files.get(step_id).unwrap().clone()
     }
 
-    pub fn read(&mut self, step_id: &str) -> Result<String, io::Error> {
+    pub fn read(&mut self, step_id: &str, keep_file_open: bool) -> Result<String, io::Error> {
         let mut contents = vec![];
         block_in_place(|| {
             Handle::current().block_on(async {
-                self.get_file(step_id)
+                self.get_file(step_id, keep_file_open)
                     .lock()
                     .await
                     .read_to_end(&mut contents)?;
@@ -176,11 +175,15 @@ impl OperationsFileManager {
             })
         })
     }
-    pub fn write(&mut self, step: Arc<StandardRwLock<Steps>>) -> Result<(), io::Error> {
+    pub fn write(
+        &mut self,
+        step: Arc<StandardRwLock<Steps>>,
+        keep_file_open: bool,
+    ) -> Result<(), io::Error> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&step).unwrap();
-                self.get_file(&step.try_read().unwrap().step_id)
+                self.get_file(&step.try_read().unwrap().step_id, keep_file_open)
                     .lock()
                     .await
                     .write_all(lines.as_bytes())?;
@@ -189,24 +192,27 @@ impl OperationsFileManager {
         })
     }
 
-    pub fn create_step_file(&mut self, step_id: &str) -> Result<&Arc<Mutex<File>>, io::Error> {
+    pub fn create_step_file(
+        &mut self,
+        step_id: &str,
+        keep_file_open: bool,
+    ) -> Result<Arc<Mutex<File>>, io::Error> {
         let file = Arc::new(Mutex::new(
             self.open_file(Self::generate_file_name(&self.op_id, step_id))?,
         ));
-        self.files.insert(step_id.to_string(), file);
-        Ok(self.files.get(step_id).unwrap())
+        if keep_file_open {
+            self.files.insert(step_id.to_string(), file);
+            return Ok(self.files.get(step_id).unwrap().clone());
+        }
+        Ok(file.clone())
     }
     pub fn load_step_file(op_id: &str, step_id: &str) -> Result<Steps, io::Error> {
         let file_path = Self::generate_file_name(op_id, step_id);
-        let mut file = OpenOptions::new()
-            .create(true)
-            .read(true)
-            .open(file_path)
-            .unwrap();
+        let mut file = OpenOptions::new().read(true).open(file_path)?;
         let mut contents = vec![];
         file.read_to_end(&mut contents)?;
         let file_content = String::from_utf8(contents).unwrap_or_default();
 
-        Ok(serde_json::from_str(&file_content).unwrap())
+        Ok(serde_json::from_str(&file_content)?)
     }
 }
