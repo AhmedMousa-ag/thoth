@@ -12,6 +12,9 @@ pub struct Model {
     pub is_finished: bool,
     #[sea_orm(nullable)]
     pub result: Option<String>, //Not sure.
+    //Extra info section.
+    pub res_pos: Option<String>,
+    pub res_type: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
