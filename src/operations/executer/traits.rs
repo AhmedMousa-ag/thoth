@@ -42,10 +42,11 @@ impl Executer {
         if sql_step.clone().is_none_or(|stp| !stp.is_finished) {
             let mut sql_step_model = match sql_step {
                 Some(sql_mod) => sql_mod.into_active_model(),
-                None => SqlSteps::new(step_id.clone(), op_id.clone()),
+                None => SqlSteps::insert_row(SqlSteps::new(step_id.clone(), op_id.clone()))
+                    .unwrap()
+                    .into_active_model(),
             };
 
-            SqlSteps::insert_row(sql_step_model.clone()).unwrap();
             let _ = self.op_file_manager.write(Arc::clone(&step), false); // Ignoring this error as it's not critical.
             // Translate the steps into a result.
             let step = DutiesTranslator::translate_step(Arc::clone(&step)); //I think we don't need to return it as it's mutable by reference.
