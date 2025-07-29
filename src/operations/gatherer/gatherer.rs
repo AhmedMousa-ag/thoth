@@ -1,14 +1,16 @@
 use crate::{
+    db::controller::traits::{SQLiteDBTraits, SqlSteps},
+    err,
     errors::thot_errors::ThothErrors,
     grpc::grpc_server::mathop::{Matrix, MatrixRow},
     info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         gatherer::{
-            channels::add_ch_sender,
+            channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
-        planner::charts::structs::NodesOpsMsg,
+        planner::charts::structs::{ExtraInfo, NodesOpsMsg, Numeric},
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
 };
@@ -50,7 +52,51 @@ impl Gatherer {
     fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
         let mut num_sent_message = 0;
         for (_, op_infos) in plan.nodes_duties {
-            for info in op_infos.try_read()?.clone() {
+            'outer_loop: for info in op_infos.try_read()?.clone() {
+                num_sent_message += 1;
+                let sql_step = SqlSteps::find_by_id(info.step_id.clone());
+                if !sql_step.clone().is_none_or(|stp| stp.result.is_none()) {
+                    let sender = get_opened_ch_sender(&info.operation_id);
+                    let sql_step = sql_step.unwrap();
+                    let result: Option<Numeric> = if sql_step.result.is_some() {
+                        serde_json::from_str(&sql_step.result.unwrap()).unwrap_or(None)
+                    } else {
+                        None
+                    };
+
+                    if sender.is_some() && result.is_some() {
+                        let res_pos: Option<Vec<usize>> = if sql_step.res_pos.is_some() {
+                            serde_json::from_str(&sql_step.res_pos.unwrap()).unwrap_or(None)
+                        } else {
+                            None
+                        };
+                        let res_type: Option<crate::operations::planner::charts::structs::Numeric> =
+                            if sql_step.res_type.is_some() {
+                                serde_json::from_str(&sql_step.res_type.unwrap()).unwrap_or(None)
+                            } else {
+                                None
+                            };
+                        let extra_info = ExtraInfo {
+                            res_pos,
+                            res_type: res_type,
+                        };
+                        let gther_res = GatheredResponse {
+                            result: result.unwrap(),
+                            extra_info: Some(extra_info),
+                        };
+                        if let Err(e) = sender.unwrap().send(GatheredMessage {
+                            operation_id: info.operation_id,
+                            step_id: info.step_id,
+                            respond: Some(gther_res),
+                        }) {
+                            err!("Error sending Gathered Message: {}", ThothErrors::from(e));
+                            continue 'outer_loop;
+                        } else {
+                            continue;
+                        }; // If succesfully sent the message then continue to the next element, otherwise get back to the main loop and ask the other nodes.
+                    };
+                    continue 'outer_loop;
+                }
                 spawn(async {
                     GathererOffice::send_message(GatheredMessage {
                         operation_id: info.operation_id,
@@ -58,7 +104,6 @@ impl Gatherer {
                         respond: None,
                     });
                 });
-                num_sent_message += 1
             }
         }
         Ok(num_sent_message)

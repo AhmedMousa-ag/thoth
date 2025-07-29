@@ -5,6 +5,7 @@ use crate::{
         channels_node_info::{NodeInfoTrait, get_current_node_cloned},
         configs::topics::TopicsEnums,
     },
+    db::controller::registerer::DbOpsRegisterer,
     err, info,
     logger::writters::writter::OperationsFileManager,
     operations::{
@@ -70,6 +71,10 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
     fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
+            DbOpsRegisterer::new_step(
+                step.try_read().unwrap().operation_id.clone(),
+                step.try_read().unwrap().step_id.clone(),
+            );
             let mut executer = Executer {
                 op_file_manager: OperationsFileManager::new(
                     step.try_read().unwrap().operation_id.clone(),
@@ -94,6 +99,8 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
     fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let duties = Box::new(NodesOpsMsg::decode_bytes(&message.unwrap()));
+
+            DbOpsRegisterer::new_duties(*duties.clone());
             let node_key = get_current_node_cloned().id;
             let operation_info = duties.nodes_duties.get(&node_key);
             if let Some(op_info) = operation_info {
