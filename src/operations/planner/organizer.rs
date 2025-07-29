@@ -1,6 +1,5 @@
 use crate::{
     connections::channels_node_info::{NodeInfoTrait, get_nodes_info_cloned},
-    db::controller::registerer::DbOpsRegisterer,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
@@ -119,7 +118,6 @@ impl Planner {
                     info!("Will send an execution step");
                     OperationStepExecuter::send_message(Arc::clone(&step));
                 }
-                DbOpsRegisterer::new_step_duty(node_id.clone(), self.operation_id.clone(), step_id);
                 match nodes_duties.get(&node_id) {
                     Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
                     None => {
@@ -151,7 +149,6 @@ impl Planner {
             warn!(
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
-
             Some(Executer {
                 op_file_manager: OperationsFileManager::new(self.operation_id.clone())?,
             })
@@ -209,11 +206,6 @@ impl Planner {
             } else {
                 OperationStepExecuter::send_message(step_one);
             }
-            DbOpsRegisterer::new_step_duty(
-                first_step_node_id.clone(),
-                self.operation_id.clone(),
-                first_step_id,
-            );
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
                 None => {

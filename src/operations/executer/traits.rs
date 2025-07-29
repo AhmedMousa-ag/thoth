@@ -1,6 +1,9 @@
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
-    db::controller::traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
+    db::controller::{
+        registerer::DbOpsRegisterer,
+        traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
+    },
     err,
     logger::writters::writter::OperationsFileManager,
     operations::{
@@ -66,11 +69,19 @@ impl Executer {
                     //Will wait for one second, maybe not all messages weren't processed. //TODO There's a potential an error happened and might cause the process to keep waiting.
                     thread::sleep(Duration::from_secs(1));
                 }
-                let step = OperationsFileManager::load_step_file(&duty.operation_id, &duty.step_id)
-                    .unwrap(); //You might get it from the sqlite, possible you should not use the sqlite, it feels limited to it's one thread access in it's nature.
+                let step = OperationsFileManager::load_step_file(
+                    &duty.operation_id,
+                    &duty.step_id.clone(),
+                )
+                .unwrap(); //You might get it from the sqlite, possible you should not use the sqlite, it feels limited to it's one thread access in it's nature.
                 if step.result.is_none() {
                     self.execute_step(Arc::new(RwLock::new(step)));
                 }
+                DbOpsRegisterer::finished_duty(
+                    duty.operation_id.clone(),
+                    get_current_node_cloned().id,
+                    duty.step_id.clone(),
+                );
             }
             sql_ops_model.is_finished = ActiveValue::Set(true);
             let _ = SqlOperations::update_row(sql_ops_model);

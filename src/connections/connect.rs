@@ -162,7 +162,7 @@ impl GossibConnection {
                                     );
                                     let topic_name=message.topic.as_str();
                                     if topic_name==ops_topic{
-                                        info!("Got Operation Topic: {}",ops_topic); //message.data
+                                        info!("Got Operation Topic: {}",ops_topic);
                                             let ops_msg:Message=Message::decode_bytes(&message.data);
                                             match ops_msg.request {
                                                 RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(ops_msg.message);},
