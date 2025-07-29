@@ -1,21 +1,31 @@
-use sea_orm::ActiveValue::Set;
+use sea_orm::ActiveValue::{self, Set};
 use tokio::spawn;
 
 use crate::{
-    db::controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlSteps},
-    debug, err,
+    db::{
+        controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlOperations, SqlSteps},
+        entities::nodes_duties::ActiveModel as NodesDutiesActiveModel,
+    },
+    err,
     errors::thot_errors::ThothErrors,
     operations::planner::charts::structs::NodesOpsMsg,
 };
 
 pub struct DbOpsRegisterer {}
 impl DbOpsRegisterer {
+    pub fn new_operation(operation_id: String) {
+        spawn(async move {
+            if let Err(e) = SqlOperations::insert_row(SqlOperations::new(operation_id)) {
+                err!("new operations {}", ThothErrors::from(e))
+            };
+        });
+    }
     pub fn new_step(operation_id: String, step_id: String) {
         spawn(async move {
             if let Err(e) =
                 SqlSteps::insert_row(SqlSteps::new(step_id.clone(), operation_id.clone()))
             {
-                err!("Error new step: {}", ThothErrors::from(e))
+                err!("new step {}", ThothErrors::from(e))
             };
         });
     }
@@ -27,16 +37,19 @@ impl DbOpsRegisterer {
                 node_id.clone(),
                 step_id,
             )) {
-                err!("Error new node duty: {}", ThothErrors::from(e))
+                err!("New node duty {}", ThothErrors::from(e))
             };
         });
     }
-    pub fn finished_duty(node_id: String, operation_id: String, step_id: String) {
+    pub fn finished_duty(step_id: String) {
         spawn(async move {
-            let mut sql_duty = SqlNodesDuties::new(operation_id, node_id, step_id);
+            let mut sql_duty = NodesDutiesActiveModel {
+                step_id: ActiveValue::Unchanged(step_id),
+                ..Default::default()
+            };
             sql_duty.is_finished = Set(true);
             if let Err(e) = SqlNodesDuties::update_row(sql_duty) {
-                err!("Error marking duty as finished: {}", ThothErrors::from(e));
+                err!("Marking duty as finished: {}", ThothErrors::from(e));
             };
         });
     }

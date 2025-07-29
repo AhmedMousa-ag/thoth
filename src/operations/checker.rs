@@ -2,7 +2,10 @@
 his module checks if an operations or a step have been done before or not and return the result.
 */
 use crate::{
-    db::controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlOperations},
+    db::controller::{
+        registerer::DbOpsRegisterer,
+        traits::{SQLiteDBTraits, SqlNodesDuties, SqlOperations},
+    },
     errors::thot_errors::ThothErrors,
     operations::planner::charts::structs::{NodesOpsMsg, OperationInfo},
 };
@@ -16,7 +19,10 @@ impl PlanChecker {
     pub fn is_planned_before(operation_id: String) -> bool {
         let model = match SqlOperations::find_by_id(operation_id.clone()) {
             Some(model) => model,
-            None => return false,
+            None => {
+                DbOpsRegisterer::new_operation(operation_id);
+                return false;
+            }
         };
 
         model.is_finished

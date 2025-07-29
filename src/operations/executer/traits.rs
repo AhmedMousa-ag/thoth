@@ -4,7 +4,7 @@ use crate::{
         registerer::DbOpsRegisterer,
         traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
     },
-    err,
+    debug, err,
     errors::thot_errors::ThothErrors,
     logger::writters::writter::OperationsFileManager,
     operations::{
@@ -35,16 +35,36 @@ impl Executer {
 
         let is_op_exists = SqlOperations::find_by_id(op_id.clone()).is_some();
         if !is_op_exists {
-            let _ = SqlOperations::insert_row(SqlOperations::new(op_id.clone()));
+            debug!("Operation doesn't exists will create a new one");
+            if let Err(e) = SqlOperations::insert_row(SqlOperations::new(op_id.clone())) {
+                warn!(
+                    "Inserting sqlite Operations possibly already exists: {}",
+                    ThothErrors::from(e)
+                );
+            };
         }
 
         let sql_step = SqlSteps::find_by_id(step_id.clone());
         if sql_step.clone().is_none_or(|stp| !stp.is_finished) {
             let mut sql_step_model = match sql_step {
                 Some(sql_mod) => sql_mod.into_active_model(),
-                None => SqlSteps::insert_row(SqlSteps::new(step_id.clone(), op_id.clone()))
-                    .unwrap()
-                    .into_active_model(),
+                None => {
+                    let inserted_stp =
+                        SqlSteps::insert_row(SqlSteps::new(step_id.clone(), op_id.clone()));
+                    match inserted_stp {
+                        Ok(stp) => stp.into_active_model(),
+                        Err(e) => {
+                            err!("Inserting step, possibly already exists: {}", e);
+                            SqlSteps::find_by_id(step_id.clone())
+                                .unwrap()
+                                .into_active_model()
+                        }
+                    }
+                } // {
+                  //     warn!("Inserting Step, possibly already exists: {}",e);
+                  //     return SqlSteps::find_by_id(step_id.clone()).unwrap().into_active_model();
+
+                  // }
             };
 
             let _ = self.op_file_manager.write(Arc::clone(&step), false); // Ignoring this error as it's not critical.
@@ -107,11 +127,7 @@ impl Executer {
                 if step.result.is_none() {
                     self.execute_step(Arc::new(RwLock::new(step)));
                 }
-                DbOpsRegisterer::finished_duty(
-                    duty.operation_id.clone(),
-                    get_current_node_cloned().id,
-                    duty.step_id.clone(),
-                );
+                DbOpsRegisterer::finished_duty(duty.step_id.clone());
             }
             sql_ops_model.is_finished = ActiveValue::Set(true);
             let _ = SqlOperations::update_row(sql_ops_model);
