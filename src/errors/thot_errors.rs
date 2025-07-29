@@ -3,6 +3,7 @@ use std::sync::{RwLockReadGuard, RwLockWriteGuard, TryLockError};
 use std::{fmt, io};
 
 use libp2p::TransportError;
+use libp2p::gossipsub::SubscriptionError;
 
 #[derive(Debug, Clone)]
 pub enum ThothErrors {
@@ -93,5 +94,10 @@ impl<T> From<tokio::sync::mpsc::error::SendError<T>> for ThothErrors {
 impl From<serde_json::Error> for ThothErrors {
     fn from(err: serde_json::Error) -> Self {
         ThothErrors::SerdeError(err.to_string())
+    }
+}
+impl From<SubscriptionError> for ThothErrors {
+    fn from(err: SubscriptionError) -> Self {
+        ThothErrors::P2PError(err.to_string())
     }
 }

@@ -3,7 +3,7 @@ use tokio::spawn;
 
 use crate::{
     db::controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlSteps},
-    err,
+    debug, err,
     errors::thot_errors::ThothErrors,
     operations::planner::charts::structs::NodesOpsMsg,
 };
@@ -36,7 +36,7 @@ impl DbOpsRegisterer {
             let mut sql_duty = SqlNodesDuties::new(operation_id, node_id, step_id);
             sql_duty.is_finished = Set(true);
             if let Err(e) = SqlNodesDuties::update_row(sql_duty) {
-                err!("Error marking duty as finished: {}", e);
+                err!("Error marking duty as finished: {}", ThothErrors::from(e));
             };
         });
     }

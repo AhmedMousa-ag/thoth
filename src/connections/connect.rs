@@ -47,7 +47,11 @@ impl GossibConnection {
         for topic in get_topics() {
             // subscribes to our topic
             if let Err(e) = swarm.behaviour_mut().gossipsub.subscribe(topic) {
-                err!("Couldn't subscribe to topic {} due to {}", topic, e);
+                err!(
+                    "Couldn't subscribe to topic {} due to {}",
+                    topic,
+                    ThothErrors::from(e)
+                );
             }
             info!("Subscribed to topic: {}", topic);
         }

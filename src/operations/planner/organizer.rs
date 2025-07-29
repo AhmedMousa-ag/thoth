@@ -1,5 +1,6 @@
 use crate::{
     connections::channels_node_info::{NodeInfoTrait, get_nodes_info_cloned},
+    db::controller::registerer::DbOpsRegisterer,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
@@ -113,6 +114,7 @@ impl Planner {
 
                 if let Some(exec) = &mut executer {
                     warn!("Will execute step internally");
+                    DbOpsRegisterer::new_step(self.operation_id.clone(), step_id);
                     exec.execute_step(Arc::clone(&step));
                 } else {
                     info!("Will send an execution step");
@@ -129,8 +131,8 @@ impl Planner {
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         info!("Finished planning: {}", nodes_ops_msg);
         if let Some(exec) = &mut executer {
+            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone());
             exec.execute_duties(nodes_ops_msg.clone());
-            // return;
         } else {
             info!("Will send an execution message");
             OperationsExecuterOffice::send_message(nodes_ops_msg.clone());
@@ -202,6 +204,7 @@ impl Planner {
                 step_id: first_step_id.clone(),
             };
             if let Some(exec) = &mut executer {
+                DbOpsRegisterer::new_step(self.operation_id.clone(), first_step_id);
                 exec.execute_step(step_one);
             } else {
                 OperationStepExecuter::send_message(step_one);
@@ -219,6 +222,7 @@ impl Planner {
         info!("Finished planning: {:?}", nodes_duties);
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         if let Some(exec) = &mut executer {
+            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone());
             exec.execute_duties(nodes_ops_msg.clone());
             // return;
         } else {

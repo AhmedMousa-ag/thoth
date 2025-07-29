@@ -20,10 +20,8 @@ async fn main() -> Result<(), ThothErrors> {
 
     spawn(async {
         let conn_res = GossibConnection::p2pconnect().await;
-        if conn_res.is_err() {
-            let err = conn_res.err();
-            err!("Error Establishing Connection: {:?}", err);
-            panic!("Error Establishing Connection: {:?}", err);
+        if let Err(e) = conn_res {
+            err!("Error Establishing Connection: {:?}", e;panic=true);
         };
     });
 
