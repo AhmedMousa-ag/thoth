@@ -5,6 +5,7 @@ pub struct Model {
     #[sea_orm(primary_key, unique, auto_increment = false)]
     pub node_id: String, // Instead of using UUID, we are already converting everything into string and UUID several times.
     pub op_id: String,
+    pub step_id: String,
     #[sea_orm(default_value = false)]
     pub is_finished: bool,
     //TODO you might put the result here.

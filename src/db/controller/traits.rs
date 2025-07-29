@@ -1,6 +1,9 @@
 use std::env;
 
-use sea_orm::{ActiveModelBehavior, ActiveModelTrait, ActiveValue, EntityTrait, IntoActiveModel};
+use sea_orm::{
+    ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel,
+    QueryFilter,
+};
 
 use crate::db::entities::{nodes_duties, operations, steps};
 use crate::db::{
@@ -115,11 +118,25 @@ impl SQLiteDBTraits<NodesDuties, NodesDutiesModels> for SqlNodesDuties {
     }
 }
 impl SqlNodesDuties {
-    pub fn new(op_id: String, node_id: String) -> NodesDutiesModels {
+    pub fn new(op_id: String, node_id: String, step_id: String) -> NodesDutiesModels {
         NodesDutiesModels {
             op_id: ActiveValue::Set(op_id),
             node_id: ActiveValue::Set(node_id),
             is_finished: ActiveValue::Set(false),
+            step_id: ActiveValue::Set(step_id),
         }
+    }
+    pub fn find_all_duties(op_id: String) -> Vec<nodes_duties::Model> {
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current()
+                .block_on(async {
+                    let db = get_db_connection().await;
+                    NodesDuties::find()
+                        .filter(nodes_duties::Column::OpId.eq(op_id))
+                        .all(db)
+                        .await
+                })
+                .unwrap()
+        })
     }
 }

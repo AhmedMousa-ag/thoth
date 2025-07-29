@@ -10,6 +10,7 @@ pub enum ThothErrors {
     Io(String),
     Tonic(String),
     P2PError(String),
+    DbError(String),
 }
 
 impl fmt::Display for ThothErrors {
@@ -19,6 +20,7 @@ impl fmt::Display for ThothErrors {
             ThothErrors::Io(msg) => write!(f, "Io error: {}", msg),
             ThothErrors::Tonic(msg) => write!(f, "gRPC Tonic error: {}", msg),
             ThothErrors::P2PError(msg) => write!(f, "P2P error: {}", msg),
+            ThothErrors::DbError(msg) => write!(f, "Sqlite Database error: {}", msg),
         }
     }
 }
@@ -68,5 +70,10 @@ impl From<libp2p::multiaddr::Error> for ThothErrors {
 impl From<TransportError<std::io::Error>> for ThothErrors {
     fn from(err: TransportError<std::io::Error>) -> Self {
         ThothErrors::P2PError(err.to_string())
+    }
+}
+impl From<sea_orm::DbErr> for ThothErrors {
+    fn from(err: sea_orm::DbErr) -> Self {
+        ThothErrors::DbError(err.to_string())
     }
 }

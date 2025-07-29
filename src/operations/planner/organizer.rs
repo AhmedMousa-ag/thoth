@@ -1,9 +1,11 @@
 use crate::{
     connections::channels_node_info::{NodeInfoTrait, get_nodes_info_cloned},
+    db::controller::registerer::DbOpsRegisterer,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
     operations::{
+        checker::PlanChecker,
         executer::types::{Executer, OperationTypes},
         planner::charts::structs::{ExtraInfo, NodesOpsMsg, Numeric, OperationInfo, Steps},
         utils::util,
@@ -43,6 +45,9 @@ impl Planner {
         x: Vec<Vec<f64>>,
         mut y: Vec<Vec<f64>>,
     ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+        if PlanChecker::is_planned_before(self.operation_id.clone()) {
+            return PlanChecker::get_planned_duties_db(self.operation_id.clone());
+        }
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len();
@@ -104,7 +109,7 @@ impl Planner {
                 prev_step = Some(Arc::clone(&step));
                 let op_msg = OperationInfo {
                     operation_id: self.operation_id.clone(),
-                    step_id,
+                    step_id: step_id.clone(),
                 };
 
                 if let Some(exec) = &mut executer {
@@ -114,6 +119,7 @@ impl Planner {
                     info!("Will send an execution step");
                     OperationStepExecuter::send_message(Arc::clone(&step));
                 }
+                DbOpsRegisterer::new_step_duty(node_id.clone(), self.operation_id.clone(), step_id);
                 match nodes_duties.get(&node_id) {
                     Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
                     None => {
@@ -135,6 +141,9 @@ impl Planner {
     }
 
     pub fn plan_average(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+        if PlanChecker::is_planned_before(self.operation_id.clone()) {
+            return PlanChecker::get_planned_duties_db(self.operation_id.clone());
+        }
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -193,14 +202,18 @@ impl Planner {
 
             let op_msg = OperationInfo {
                 operation_id: self.operation_id.clone(),
-                step_id: first_step_id,
+                step_id: first_step_id.clone(),
             };
             if let Some(exec) = &mut executer {
                 exec.execute_step(step_one);
             } else {
                 OperationStepExecuter::send_message(step_one);
             }
-
+            DbOpsRegisterer::new_step_duty(
+                first_step_node_id.clone(),
+                self.operation_id.clone(),
+                first_step_id,
+            );
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
                 None => {
