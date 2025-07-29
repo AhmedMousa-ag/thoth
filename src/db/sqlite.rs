@@ -1,7 +1,10 @@
 use crate::{
     db::{
         configs::config::get_config,
-        entities::{operations::Entity as Operation, steps::Entity as Step},
+        entities::{
+            nodes_duties::Entity as NodesDuties, operations::Entity as Operation,
+            steps::Entity as Step,
+        },
     },
     err, info,
 };
@@ -54,6 +57,17 @@ pub async fn setup_db() {
         Ok(_) => info!("Successfull creation of Operation table."),
         Err(e) => {
             err!("Creating Operation table: {}", e;panic=true);
+        }
+    }
+
+    let stmt: TableCreateStatement = schema
+        .create_table_from_entity(NodesDuties)
+        .if_not_exists()
+        .to_owned();
+    match db.execute(db.get_database_backend().build(&stmt)).await {
+        Ok(_) => info!("Successfull creation of Operation table."),
+        Err(e) => {
+            err!("Creating Nodes Duties table: {}", e;panic=true);
         }
     }
 }
