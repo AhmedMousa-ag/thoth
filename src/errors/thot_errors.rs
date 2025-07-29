@@ -12,6 +12,7 @@ pub enum ThothErrors {
     P2PError(String),
     DbError(String),
     SendChError(String),
+    SerdeError(String),
 }
 
 impl fmt::Display for ThothErrors {
@@ -23,6 +24,9 @@ impl fmt::Display for ThothErrors {
             ThothErrors::P2PError(msg) => write!(f, "P2P error: {}", msg),
             ThothErrors::DbError(msg) => write!(f, "Sqlite Database error: {}", msg),
             ThothErrors::SendChError(msg) => write!(f, "Sending Channel error: {}", msg),
+            ThothErrors::SerdeError(msg) => {
+                write!(f, "Converting Serde to/from types error: {}", msg)
+            }
         }
     }
 }
@@ -83,5 +87,11 @@ impl From<sea_orm::DbErr> for ThothErrors {
 impl<T> From<tokio::sync::mpsc::error::SendError<T>> for ThothErrors {
     fn from(err: tokio::sync::mpsc::error::SendError<T>) -> Self {
         ThothErrors::SendChError(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for ThothErrors {
+    fn from(err: serde_json::Error) -> Self {
+        ThothErrors::SerdeError(err.to_string())
     }
 }
