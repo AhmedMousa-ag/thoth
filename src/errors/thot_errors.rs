@@ -7,20 +7,22 @@ use libp2p::TransportError;
 #[derive(Debug, Clone)]
 pub enum ThothErrors {
     LockError(String),
-    Io(String),
+    IoError(String),
     Tonic(String),
     P2PError(String),
     DbError(String),
+    SendChError(String),
 }
 
 impl fmt::Display for ThothErrors {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ThothErrors::LockError(msg) => write!(f, "Lock error: {}", msg),
-            ThothErrors::Io(msg) => write!(f, "Io error: {}", msg),
+            ThothErrors::IoError(msg) => write!(f, "Io error: {}", msg),
             ThothErrors::Tonic(msg) => write!(f, "gRPC Tonic error: {}", msg),
             ThothErrors::P2PError(msg) => write!(f, "P2P error: {}", msg),
             ThothErrors::DbError(msg) => write!(f, "Sqlite Database error: {}", msg),
+            ThothErrors::SendChError(msg) => write!(f, "Sending Channel error: {}", msg),
         }
     }
 }
@@ -51,13 +53,13 @@ impl<T> From<TryLockError<RwLockReadGuard<'_, T>>> for ThothErrors {
 
 impl From<io::Error> for ThothErrors {
     fn from(err: io::Error) -> Self {
-        ThothErrors::Io(err.to_string())
+        ThothErrors::IoError(err.to_string())
     }
 }
 
 impl From<tonic::transport::Error> for ThothErrors {
     fn from(err: tonic::transport::Error) -> Self {
-        ThothErrors::Io(err.to_string())
+        ThothErrors::IoError(err.to_string())
     }
 }
 
@@ -75,5 +77,11 @@ impl From<TransportError<std::io::Error>> for ThothErrors {
 impl From<sea_orm::DbErr> for ThothErrors {
     fn from(err: sea_orm::DbErr) -> Self {
         ThothErrors::DbError(err.to_string())
+    }
+}
+
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for ThothErrors {
+    fn from(err: tokio::sync::mpsc::error::SendError<T>) -> Self {
+        ThothErrors::SendChError(err.to_string())
     }
 }
