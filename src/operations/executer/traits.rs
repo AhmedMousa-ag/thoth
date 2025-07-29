@@ -5,12 +5,14 @@ use crate::{
         traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
     },
     err,
+    errors::thot_errors::ThothErrors,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
     },
+    warn,
 };
 use sea_orm::{
     ActiveValue::{self, Set},
@@ -51,6 +53,33 @@ impl Executer {
             self.op_file_manager
                 .write(Arc::clone(&step), false)
                 .unwrap();
+            let extra_info = step.try_read().unwrap().extra_info.clone();
+            if extra_info.is_some() {
+                let extra_info = extra_info.unwrap();
+                let res_pos: Option<String> = match serde_json::to_string(&extra_info.res_pos) {
+                    Ok(pos) => Some(pos),
+                    Err(e) => {
+                        warn!(
+                            "Faild to encode extra info res position into string: {}",
+                            ThothErrors::from(e)
+                        );
+                        None
+                    }
+                };
+                sql_step_model.res_pos = Set(res_pos);
+
+                let res_type: Option<String> = match serde_json::to_string(&extra_info.res_type) {
+                    Ok(rs_type) => Some(rs_type),
+                    Err(e) => {
+                        warn!(
+                            "Faild to encode extra info res type into string: {}",
+                            ThothErrors::from(e)
+                        );
+                        None
+                    }
+                };
+                sql_step_model.res_type = Set(res_type);
+            }
             sql_step_model.is_finished = Set(true);
             SqlSteps::update_row(sql_step_model).unwrap();
         }
