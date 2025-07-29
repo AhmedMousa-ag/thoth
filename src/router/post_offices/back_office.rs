@@ -23,7 +23,10 @@ pub fn start_back_office() {
             {
                 match message.request {
                     RequestsTypes::RequestNodeInfo => {
-                        info!("Got request type: {:?}", RequestsTypes::RequestNodeInfo);
+                        info!(
+                            "Backoffice Got request type: {:?}",
+                            RequestsTypes::RequestNodeInfo
+                        );
                         let nodes_info = NodeInfo::update_current_node_info();
                         NodesInfoOffice::send_message(Box::new(nodes_info));
                         info!("{:?}", message);
