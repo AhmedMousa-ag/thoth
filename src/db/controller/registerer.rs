@@ -35,7 +35,9 @@ impl DbOpsRegisterer {
         spawn(async move {
             let mut sql_duty = SqlNodesDuties::new(operation_id, node_id, step_id);
             sql_duty.is_finished = Set(true);
-            SqlNodesDuties::update_row(sql_duty);
+            if let Err(e) = SqlNodesDuties::update_row(sql_duty) {
+                err!("Error marking duty as finished: {}", e);
+            };
         });
     }
     /// Register both a step and a duty in one funciton
