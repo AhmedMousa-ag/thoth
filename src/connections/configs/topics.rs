@@ -3,21 +3,24 @@ use libp2p::gossipsub::IdentTopic;
 use std::collections::HashMap;
 
 pub enum TopicsEnums {
-    OPERATIONS,
+    Operations,
     NodesInfo,
+    Sync,
 }
 
 impl TopicsEnums {
     pub fn as_str(&self) -> &str {
         match self {
-            TopicsEnums::OPERATIONS => "OPERATIONS",
+            TopicsEnums::Operations => "OPERATIONS",
             TopicsEnums::NodesInfo => "NODES_INFO",
+            TopicsEnums::Sync => "SYNC",
         }
     }
     pub fn to_string(&self) -> String {
         match self {
-            TopicsEnums::OPERATIONS => String::from("OPERATIONS"),
+            TopicsEnums::Operations => String::from("OPERATIONS"),
             TopicsEnums::NodesInfo => String::from("NODES_INFO"),
+            TopicsEnums::Sync => String::from("SYNC"),
         }
     }
 }
@@ -25,7 +28,7 @@ impl TopicsEnums {
 lazy_static! {
     static ref TOPICS: HashMap<&'static str, IdentTopic> = {
         let all_topics = [
-            TopicsEnums::OPERATIONS.as_str(),
+            TopicsEnums::Operations.as_str(),
             TopicsEnums::NodesInfo.as_str(),
         ];
 
