@@ -1,9 +1,12 @@
+use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::{self, Set};
 use tokio::spawn;
 
 use crate::{
     db::{
-        controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlOperations, SqlSteps},
+        controller::traits::{
+            SQLiteDBTraits, SqlNodesDuties, SqlOperations, SqlSteps, SqlSyncedOps,
+        },
         entities::nodes_duties::ActiveModel as NodesDutiesActiveModel,
     },
     err,
@@ -13,6 +16,13 @@ use crate::{
 
 pub struct DbOpsRegisterer {}
 impl DbOpsRegisterer {
+    pub fn new_syncer(date_from: DateTime<Utc>, date_to: DateTime<Utc>) {
+        spawn(async move {
+            if let Err(e) = SqlSyncedOps::insert_row(SqlSyncedOps::new(date_from, date_to)) {
+                err!("new synced operation {}", ThothErrors::from(e))
+            };
+        });
+    }
     pub fn new_operation(operation_id: String) {
         spawn(async move {
             if let Err(e) = SqlOperations::insert_row(SqlOperations::new(operation_id)) {

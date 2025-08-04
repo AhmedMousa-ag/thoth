@@ -158,6 +158,15 @@ impl SQLiteDBTraits<SyncedOps, SyncedOpsModel> for SqlSyncedOps {
     }
 }
 impl SqlSyncedOps {
+    pub fn new(date_from: DateTime<Utc>, date_to: DateTime<Utc>) -> synced_ops::ActiveModel {
+        SyncedOpsModel {
+            synced_id: ActiveValue::NotSet,
+            from_date: ActiveValue::Set(date_from),
+            to_date: ActiveValue::Set(date_to),
+            ops_id: ActiveValue::NotSet,
+            is_finished: ActiveValue::Set(false),
+        }
+    }
     pub fn find_by_dates(
         date_from: DateTime<Utc>,
         date_to: DateTime<Utc>,
