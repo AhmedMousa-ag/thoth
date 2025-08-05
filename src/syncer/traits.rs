@@ -1,12 +1,11 @@
 use chrono::Utc;
-use tokio::{select, spawn};
+use tokio::spawn;
 
 use crate::{
     db::controller::{
         registerer::DbOpsRegisterer,
-        traits::{SqlNodesDuties, SqlOperations, SqlSteps, SqlSyncedOps},
+        traits::{SqlOperations, SqlSteps, SqlSyncedOps},
     },
-    operations::planner::charts::structs::{OperationInfo, Steps},
     router::{post_offices::nodes_info::post_office::SyncerOffice, traits::PostOfficeTrait},
     structs::structs::RequestsTypes,
     syncer::{

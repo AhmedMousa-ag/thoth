@@ -18,7 +18,7 @@ use std::str::FromStr;
 
 use crate::{
     err,
-    operations::planner::charts::structs::{NodesDuties, OperationInfo, Steps},
+    operations::planner::charts::structs::{NodesDuties, Steps},
     structs::structs::RequestsTypes,
 };
 use bincode::{Decode, Encode};
