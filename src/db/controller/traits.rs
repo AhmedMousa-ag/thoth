@@ -15,8 +15,7 @@ use crate::db::{
     },
     sqlite::get_db_connection,
 };
-use crate::err;
-use crate::errors::thot_errors::ThothErrors;
+use crate::{err, errors::thot_errors::ThothErrors};
 
 use chrono::{self, DateTime, Utc};
 use tokio::runtime::Handle;
@@ -86,6 +85,27 @@ impl SqlSteps {
             res_type: ActiveValue::NotSet,
         }
     }
+    pub fn get_by_op_id(op_id: String) -> Vec<steps::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                match Steps::find()
+                    .filter(steps::Column::OpId.eq(op_id))
+                    .all(db)
+                    .await
+                {
+                    Ok(ops) => ops,
+                    Err(e) => {
+                        err!(
+                            "Couldn't retreive operations filtered by date due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        Vec::new()
+                    }
+                }
+            })
+        })
+    }
 }
 
 pub struct SqlOperations {}
@@ -106,6 +126,31 @@ impl SqlOperations {
             exec_date: ActiveValue::Set(chrono::offset::Utc::now()),
             is_finished: ActiveValue::Set(false),
         }
+    }
+    pub fn get_by_date(
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> Vec<operations::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                match Operations::find()
+                    .filter(operations::Column::ExecDate.gte(start_date))
+                    .filter(operations::Column::ExecDate.lte(end_date))
+                    .all(db)
+                    .await
+                {
+                    Ok(ops) => ops,
+                    Err(e) => {
+                        err!(
+                            "Couldn't retreive operations filtered by date due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        Vec::new()
+                    }
+                }
+            })
+        })
     }
 }
 
