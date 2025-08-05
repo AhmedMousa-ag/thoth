@@ -5,23 +5,9 @@ use lazy_static::lazy_static;
 use tokio::sync::{Mutex, mpsc::UnboundedSender};
 
 lazy_static! {
-    // static ref GATHERD_CH: (
-    //     UnboundedSender<GatheredMessage>,
-    //     Mutex<UnboundedReceiver<GatheredMessage>>
-    // ) = {
-    //     let (tx, rx) = mpsc::unbounded_channel();
-    //     (tx, Mutex::new(rx))
-    // };
-    static ref OPENED_CH:Mutex<HashMap<String,UnboundedSender<GatheredMessage>>>=Mutex::new(HashMap::new());
+    static ref OPENED_CH: Mutex<HashMap<String, UnboundedSender<GatheredMessage>>> =
+        Mutex::new(HashMap::new());
 }
-
-// pub fn get_sender_tx() -> &'static UnboundedSender<GatheredMessage> {
-//     &GATHERD_CH.0
-// }
-
-// pub fn get_reciver_rx() -> &'static Mutex<UnboundedReceiver<GatheredMessage>> {
-//     &GATHERD_CH.1
-// }
 
 ///Will be added when the gatherer is constructed.
 pub fn add_ch_sender(operation_id: String, ch: UnboundedSender<GatheredMessage>) {
