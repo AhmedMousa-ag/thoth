@@ -19,7 +19,7 @@ impl Syncer {
     fn trigger_sync(&'static self) {
         spawn(async {
             loop {
-                thread::sleep(Duration::from_secs(get_config().sleep_time_min));
+                thread::sleep(Duration::from_secs(get_config().sleep_time_min * 60)); //Convert to seconds.
                 if self.is_syncing {
                     continue;
                 };
