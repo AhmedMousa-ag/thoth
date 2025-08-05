@@ -23,8 +23,10 @@ use crate::{
 };
 use bincode::{Decode, Encode};
 use chrono::{DateTime, Utc};
-
-pub struct Syncer {}
+#[derive(Debug)]
+pub struct Syncer {
+    pub is_syncing: bool,
+}
 
 #[derive(Encode, Decode)]
 pub struct SyncMessage {
@@ -87,7 +89,7 @@ impl OperationType {
 #[derive(Encode, Decode)]
 pub struct SyncOperations {
     pub operation: Option<Vec<OperationType>>,
-    pub start_date: String,
+    pub start_date: Option<String>,
     pub end_date: String,
 }
 
