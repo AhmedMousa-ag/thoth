@@ -6,7 +6,9 @@ use crate::{
         configs::topics::TopicsEnums,
     },
     db::controller::registerer::DbOpsRegisterer,
-    err, info,
+    err,
+    errors::thot_errors::ThothErrors,
+    info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
@@ -21,7 +23,8 @@ use crate::{
         structs::{Message, NodeInfo, RequestsTypes},
         traits::EncodingDecoding,
     },
-    syncer::structs::SyncMessage,
+    syncer::{channels::get_sender, structs::SyncMessage},
+    warn,
 };
 use tokio::spawn;
 pub struct NodesInfoOffice {}
@@ -46,16 +49,6 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
         spawn(async {
             let msg = NodeInfo::decode_bytes(&message.unwrap());
             NodeInfo::add_node(&msg);
-            // TODO you might use this code to trigger event to start the planned operations
-            // InternalCommunications::get_sender_tx()
-            //     .lock()
-            //     .await
-            //     .send(Box::new(Message {
-            //         topic_name: TopicsEnums::NodesInfo.to_string(),
-            //         request: RequestsTypes::ReplyNodeInfoUpdate,
-            //         message: Some(NodeInfo::encode_bytes(&message)),
-            //     }))
-            //     .await.unwrap();
         });
     }
 }
@@ -174,6 +167,11 @@ impl PostOfficeTrait<SyncMessage> for SyncerOffice {
         info!("Sent message in Nodes Office.");
     }
     fn handle_incom_msg(message: Option<Vec<u8>>) {
-        spawn(async {});
+        spawn(async move {
+            let message = SyncMessage::decode_bytes(&message.unwrap());
+            if let Err(e) = get_sender().send(message) {
+                err!("Sending SyncMessage Channel: {}", ThothErrors::from(e));
+            };
+        });
     }
 }

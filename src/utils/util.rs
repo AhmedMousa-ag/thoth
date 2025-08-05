@@ -1,5 +1,7 @@
 use std::{fs, path::Path};
 
+use chrono::{DateTime, TimeZone, Utc};
+
 use crate::{err, info, warn};
 
 pub fn create_directories(path: &str) {
@@ -26,4 +28,13 @@ pub fn create_directories(path: &str) {
             }
         }
     }
+}
+
+pub fn convert_string_datetime(date: Option<String>) -> DateTime<Utc> {
+    let date: DateTime<Utc> = match date {
+        Some(date) => date.parse().unwrap(),
+        //Default to year 2025, you can actually make starting from today coding time sense this is the first time to use :P .
+        None => Utc.with_ymd_and_hms(2025, 1, 1, 0, 0, 0).unwrap(),
+    };
+    date
 }

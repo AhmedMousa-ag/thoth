@@ -38,7 +38,6 @@ pub struct SyncMessage {
 pub enum OperationType {
     Step(Steps),
     NodesDuties(NodesDuties),
-    Operation(OperationInfo),
 }
 
 impl OperationType {
@@ -46,7 +45,6 @@ impl OperationType {
         match self {
             OperationType::Step(_) => format!("{:?}", self),
             OperationType::NodesDuties(_) => format!("{:?}", self),
-            OperationType::Operation(_) => format!("{:?}", self),
         }
     }
     ///Don't use if your type isn't steps.
@@ -67,18 +65,6 @@ impl OperationType {
             OperationType::NodesDuties(val) => val,
             _ => {
                 let msg = "Expected Nodes Duties value.";
-                err!("{}", msg);
-                unreachable!();
-            }
-        }
-    }
-
-    ///Don't use if your type isn't steps.
-    pub fn get_operations_value(&self) -> &OperationInfo {
-        match self {
-            OperationType::Operation(val) => val,
-            _ => {
-                let msg = "Expected Operation Info Value.";
                 err!("{}", msg);
                 unreachable!();
             }
