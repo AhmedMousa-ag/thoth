@@ -2,7 +2,7 @@ use std::env;
 
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait, DbErr, EntityTrait,
-    IntoActiveModel, QueryFilter,
+    IntoActiveModel, QueryFilter, QueryOrder,
 };
 
 use crate::db::entities::{nodes_duties, operations, steps, synced_ops};
@@ -15,6 +15,8 @@ use crate::db::{
     },
     sqlite::get_db_connection,
 };
+use crate::err;
+use crate::errors::thot_errors::ThothErrors;
 
 use chrono::{self, DateTime, Utc};
 use tokio::runtime::Handle;
@@ -206,6 +208,24 @@ impl SqlSyncedOps {
             })
         })
     }
+    pub fn find_by_date_to(
+        date_to: DateTime<Utc>,
+        is_finished: Option<bool>,
+    ) -> Result<Vec<synced_ops::Model>, DbErr> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let mut query = SyncedOps::find().filter(synced_ops::Column::ToDate.gte(date_to));
+                match is_finished {
+                    Some(finished) => {
+                        query = query.filter(synced_ops::Column::IsFinished.eq(finished))
+                    }
+                    None => {}
+                };
+                query.all(db).await
+            })
+        })
+    }
     //TODO by operations.
     pub fn find_by_operation(
         op_id: String,
@@ -222,6 +242,26 @@ impl SqlSyncedOps {
                     None => {}
                 };
                 query.all(db).await
+            })
+        })
+    }
+
+    pub fn get_latest_finished() -> Option<synced_ops::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let query: Result<Option<synced_ops::Model>, DbErr> = SyncedOps::find()
+                    .filter(synced_ops::Column::IsFinished.eq(true))
+                    .order_by_desc(synced_ops::Column::IsFinished)
+                    .one(db)
+                    .await;
+                match query {
+                    Ok(res) => res,
+                    Err(e) => {
+                        err!("Get latest synced operation {}", ThothErrors::from(e));
+                        None
+                    }
+                }
             })
         })
     }
