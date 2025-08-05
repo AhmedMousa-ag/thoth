@@ -4,14 +4,11 @@ use thoth::err;
 use thoth::errors::thot_errors::ThothErrors;
 use thoth::grpc::grpc_server;
 use thoth::logger::logger::LoggerWritter;
-use thoth::router::post_offices::back_office::start_back_office;
 use tokio::spawn;
 #[tokio::main]
 async fn main() -> Result<(), ThothErrors> {
     LoggerWritter::start().await;
     setup_db().await;
-    //TODO Double check as possibly not used at all.
-    start_back_office();
     spawn(async {
         let conn_res = GossibConnection::p2pconnect().await;
         if let Err(e) = conn_res {

@@ -1,21 +1,23 @@
 use std::env;
 
 use sea_orm::{
-    ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait, EntityTrait, IntoActiveModel,
-    QueryFilter,
+    ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait, DbErr, EntityTrait,
+    IntoActiveModel, QueryFilter, QueryOrder,
 };
 
-use crate::db::entities::{nodes_duties, operations, steps};
+use crate::db::entities::{nodes_duties, operations, steps, synced_ops};
 use crate::db::{
     entities::{
         nodes_duties::{ActiveModel as NodesDutiesModels, Entity as NodesDuties},
         operations::{ActiveModel as OperationsModel, Entity as Operations},
         steps::{ActiveModel as StepsModel, Entity as Steps},
+        synced_ops::{ActiveModel as SyncedOpsModel, Entity as SyncedOps},
     },
     sqlite::get_db_connection,
 };
+use crate::{err, errors::thot_errors::ThothErrors};
 
-use chrono;
+use chrono::{self, DateTime, Utc};
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 
@@ -83,6 +85,27 @@ impl SqlSteps {
             res_type: ActiveValue::NotSet,
         }
     }
+    pub fn get_by_op_id(op_id: String) -> Vec<steps::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                match Steps::find()
+                    .filter(steps::Column::OpId.eq(op_id))
+                    .all(db)
+                    .await
+                {
+                    Ok(ops) => ops,
+                    Err(e) => {
+                        err!(
+                            "Couldn't retreive operations filtered by date due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        Vec::new()
+                    }
+                }
+            })
+        })
+    }
 }
 
 pub struct SqlOperations {}
@@ -103,6 +126,31 @@ impl SqlOperations {
             exec_date: ActiveValue::Set(chrono::offset::Utc::now()),
             is_finished: ActiveValue::Set(false),
         }
+    }
+    pub fn get_by_date(
+        start_date: DateTime<Utc>,
+        end_date: DateTime<Utc>,
+    ) -> Vec<operations::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                match Operations::find()
+                    .filter(operations::Column::ExecDate.gte(start_date))
+                    .filter(operations::Column::ExecDate.lte(end_date))
+                    .all(db)
+                    .await
+                {
+                    Ok(ops) => ops,
+                    Err(e) => {
+                        err!(
+                            "Couldn't retreive operations filtered by date due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        Vec::new()
+                    }
+                }
+            })
+        })
     }
 }
 
@@ -137,6 +185,129 @@ impl SqlNodesDuties {
                         .await
                 })
                 .unwrap()
+        })
+    }
+}
+
+pub struct SqlSyncedOps {}
+impl SQLiteDBTraits<SyncedOps, SyncedOpsModel> for SqlSyncedOps {
+    fn find_by_id(id: String) -> Option<<SyncedOps as EntityTrait>::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                SyncedOps::find()
+                    .filter(synced_ops::Column::SyncedId.eq(id))
+                    .one(db)
+                    .await
+                    .unwrap()
+            })
+        })
+    }
+}
+impl SqlSyncedOps {
+    pub fn new(date_from: DateTime<Utc>, date_to: DateTime<Utc>) -> synced_ops::ActiveModel {
+        SyncedOpsModel {
+            synced_id: ActiveValue::NotSet,
+            from_date: ActiveValue::Set(date_from),
+            to_date: ActiveValue::Set(date_to),
+            ops_id: ActiveValue::NotSet,
+            is_finished: ActiveValue::Set(false),
+        }
+    }
+    pub fn find_by_dates(
+        date_from: DateTime<Utc>,
+        date_to: DateTime<Utc>,
+        is_finished: Option<bool>,
+    ) -> Option<synced_ops::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let mut query = SyncedOps::find_by_id((date_from, date_to));
+                match is_finished {
+                    Some(finished) => {
+                        query = query.filter(synced_ops::Column::IsFinished.eq(finished))
+                    }
+                    None => {}
+                };
+                query.one(db).await.unwrap()
+            })
+        })
+    }
+
+    pub fn find_by_date_from(
+        date_from: DateTime<Utc>,
+        is_finished: Option<bool>,
+    ) -> Result<Vec<synced_ops::Model>, DbErr> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let mut query =
+                    SyncedOps::find().filter(synced_ops::Column::FromDate.gte(date_from));
+                match is_finished {
+                    Some(finished) => {
+                        query = query.filter(synced_ops::Column::IsFinished.eq(finished))
+                    }
+                    None => {}
+                };
+                query.all(db).await
+            })
+        })
+    }
+    pub fn find_by_date_to(
+        date_to: DateTime<Utc>,
+        is_finished: Option<bool>,
+    ) -> Result<Vec<synced_ops::Model>, DbErr> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let mut query = SyncedOps::find().filter(synced_ops::Column::ToDate.gte(date_to));
+                match is_finished {
+                    Some(finished) => {
+                        query = query.filter(synced_ops::Column::IsFinished.eq(finished))
+                    }
+                    None => {}
+                };
+                query.all(db).await
+            })
+        })
+    }
+    //TODO by operations.
+    pub fn find_by_operation(
+        op_id: String,
+        is_finished: Option<bool>,
+    ) -> Result<Vec<synced_ops::Model>, DbErr> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let mut query = SyncedOps::find().filter(synced_ops::Column::OpsId.eq(op_id));
+                match is_finished {
+                    Some(finished) => {
+                        query = query.filter(synced_ops::Column::IsFinished.eq(finished))
+                    }
+                    None => {}
+                };
+                query.all(db).await
+            })
+        })
+    }
+
+    pub fn get_latest_finished() -> Option<synced_ops::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let query: Result<Option<synced_ops::Model>, DbErr> = SyncedOps::find()
+                    .filter(synced_ops::Column::IsFinished.eq(true))
+                    .order_by_desc(synced_ops::Column::IsFinished)
+                    .one(db)
+                    .await;
+                match query {
+                    Ok(res) => res,
+                    Err(e) => {
+                        err!("Get latest synced operation {}", ThothErrors::from(e));
+                        None
+                    }
+                }
+            })
         })
     }
 }

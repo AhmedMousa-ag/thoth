@@ -6,7 +6,9 @@ use crate::{
         configs::topics::TopicsEnums,
     },
     db::controller::registerer::DbOpsRegisterer,
-    err, info,
+    err,
+    errors::thot_errors::ThothErrors,
+    info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
@@ -21,13 +23,16 @@ use crate::{
         structs::{Message, NodeInfo, RequestsTypes},
         traits::EncodingDecoding,
     },
+    syncer::{channels::get_sender, structs::SyncMessage},
+    warn,
 };
 use tokio::spawn;
 pub struct NodesInfoOffice {}
 pub struct OperationsExecuterOffice {}
 pub struct OperationStepExecuter {}
-
 pub struct GathererOffice {}
+
+pub struct SyncerOffice {}
 
 impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
     fn send_message(message: Box<NodeInfo>) {
@@ -44,16 +49,6 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
         spawn(async {
             let msg = NodeInfo::decode_bytes(&message.unwrap());
             NodeInfo::add_node(&msg);
-            // TODO you might use this code to trigger event to start the planned operations
-            // InternalCommunications::get_sender_tx()
-            //     .lock()
-            //     .await
-            //     .send(Box::new(Message {
-            //         topic_name: TopicsEnums::NodesInfo.to_string(),
-            //         request: RequestsTypes::ReplyNodeInfoUpdate,
-            //         message: Some(NodeInfo::encode_bytes(&message)),
-            //     }))
-            //     .await.unwrap();
         });
     }
 }
@@ -61,7 +56,7 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
 impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
     fn send_message(msg: Arc<RwLock<Steps>>) {
         let nodes_msg = Box::new(Message {
-            topic_name: TopicsEnums::OPERATIONS.to_string(),
+            topic_name: TopicsEnums::Operations.to_string(),
             request: RequestsTypes::PlansToExecute,
             message: Some(msg.try_read().unwrap().encode_bytes()),
         });
@@ -89,7 +84,7 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
 impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
     fn send_message(msg: Box<NodesOpsMsg>) {
         let nodes_msg = Box::new(Message {
-            topic_name: TopicsEnums::OPERATIONS.to_string(),
+            topic_name: TopicsEnums::Operations.to_string(),
             request: RequestsTypes::StartExecutePlan,
             message: Some(msg.encode_bytes()),
         });
@@ -118,7 +113,7 @@ impl PostOfficeTrait<GatheredMessage> for GathererOffice {
     fn send_message(msg: GatheredMessage) {
         spawn(async move {
             let nodes_msg = Box::new(Message {
-                topic_name: TopicsEnums::OPERATIONS.to_string(),
+                topic_name: TopicsEnums::Operations.to_string(),
                 request: RequestsTypes::RequestGatherPlans,
                 message: Some(msg.encode_bytes()),
             });
@@ -150,12 +145,33 @@ impl GathererOffice {
                 None => return,
             };
             let nodes_msg = Box::new(Message {
-                topic_name: TopicsEnums::OPERATIONS.to_string(),
+                topic_name: TopicsEnums::Operations.to_string(),
                 request: RequestsTypes::ReplyGatherPlansRes,
                 message: Some(res.encode_bytes()),
             });
             ExternalComm::send_message(nodes_msg);
             info!("Sent Gathered replies to other nodes.");
+        });
+    }
+}
+
+impl PostOfficeTrait<SyncMessage> for SyncerOffice {
+    fn send_message(message: SyncMessage) {
+        let rep_message = Box::new(Message {
+            topic_name: TopicsEnums::Sync.to_string(),
+            request: message.message_type.clone(),
+            message: Some(message.encode_bytes()),
+        });
+
+        ExternalComm::send_message(Box::clone(&rep_message));
+        info!("Sent message in Nodes Office.");
+    }
+    fn handle_incom_msg(message: Option<Vec<u8>>) {
+        spawn(async move {
+            let message = SyncMessage::decode_bytes(&message.unwrap());
+            if let Err(e) = get_sender().send(message) {
+                err!("Sending SyncMessage Channel: {}", ThothErrors::from(e));
+            };
         });
     }
 }

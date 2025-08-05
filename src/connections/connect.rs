@@ -15,6 +15,7 @@ use crate::{
             external_com_ch::ExternalComm,
             nodes_info::post_office::{
                 GathererOffice, NodesInfoOffice, OperationStepExecuter, OperationsExecuterOffice,
+                SyncerOffice,
             },
         },
         traits::PostOfficeTrait,
@@ -124,8 +125,9 @@ impl GossibConnection {
     }
 
     async fn listen_messages(swarm: &mut swarm::Swarm<GossipBehaviour>) -> ! {
-        let ops_topic = TopicsEnums::OPERATIONS.as_str();
+        let ops_topic = TopicsEnums::Operations.as_str();
         let node_topic = TopicsEnums::NodesInfo.as_str();
+        let sync_topic = TopicsEnums::Sync.as_str();
         loop {
             select! {
                             rec_message=ExternalComm::recieve_messages()=>{
@@ -165,27 +167,29 @@ impl GossibConnection {
                                         id,peer_id
                                     );
                                     let topic_name=message.topic.as_str();
+                                    let decoded_msg:Message=Message::decode_bytes(&message.data);
                                     if topic_name==ops_topic{
                                         info!("Got Operation Topic: {}",ops_topic);
-                                            let ops_msg:Message=Message::decode_bytes(&message.data);
-                                            match ops_msg.request {
-                                                RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(ops_msg.message);},
-                                                RequestsTypes::StartExecutePlan | RequestsTypes::EndedExecutingPlan=>{OperationsExecuterOffice::handle_incom_msg(ops_msg.message);},
-                                                RequestsTypes::RequestGatherPlans=>{GathererOffice::handle_reply_gather_res(ops_msg.message)},
-                                                RequestsTypes::ReplyGatherPlansRes=>{GathererOffice::handle_incom_msg(ops_msg.message);}
+                                            match decoded_msg.request { //TODO refactor.
+                                                RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(decoded_msg.message);},
+                                                RequestsTypes::StartExecutePlan | RequestsTypes::EndedExecutingPlan=>{OperationsExecuterOffice::handle_incom_msg(decoded_msg.message);},
+                                                RequestsTypes::RequestGatherPlans=>{GathererOffice::handle_reply_gather_res(decoded_msg.message)},
+                                                RequestsTypes::ReplyGatherPlansRes=>{GathererOffice::handle_incom_msg(decoded_msg.message);}
                                                 _=>warn!("Got operation topic message with no Request Type")
 
                                             };
                                     }else if topic_name==node_topic{
                                         info!("Got node info exchange Topic: {}",node_topic);//message.data
-                                            let ops_msg:Message=Message::decode_bytes(&message.data);
-                                            if ops_msg.request==RequestsTypes::RequestNodeInfo{
+                                            if decoded_msg.request==RequestsTypes::RequestNodeInfo{
                                                 NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
-                                            }else if ops_msg.request==RequestsTypes::ReplyNodeInfoUpdate{
-                                                NodesInfoOffice::handle_incom_msg(ops_msg.message);
+                                            }else if decoded_msg.request==RequestsTypes::ReplyNodeInfoUpdate{
+                                                NodesInfoOffice::handle_incom_msg(decoded_msg.message);
                                             }else{
                                                 warn!("Node Info request type couldn't be identified.")
                                             }
+                                    }else if topic_name==sync_topic{
+                                        info!("Got a sync message {}",topic_name);
+                                        SyncerOffice::handle_incom_msg(decoded_msg.message);
                                     }else{
                                         warn!("Couldn't find the topic type");
                                     }

@@ -1,7 +1,10 @@
 use super::structs::{Message, NodeInfo};
-use crate::operations::{
-    gatherer::structs::GatheredMessage,
-    planner::charts::structs::{NodesOpsMsg, Steps},
+use crate::{
+    operations::{
+        gatherer::structs::GatheredMessage,
+        planner::charts::structs::{NodesOpsMsg, Steps},
+    },
+    syncer::structs::SyncMessage,
 };
 use bincode::config;
 
@@ -59,6 +62,18 @@ impl EncodingDecoding for NodesOpsMsg {
 }
 
 impl EncodingDecoding for GatheredMessage {
+    fn encode_bytes(&self) -> Vec<u8> {
+        bincode::encode_to_vec(self, config::standard()).unwrap()
+    }
+
+    fn decode_bytes(bytes: &[u8]) -> Self {
+        let (messages, _): (Self, usize) =
+            bincode::decode_from_slice(bytes, config::standard()).unwrap();
+        messages
+    }
+}
+
+impl EncodingDecoding for SyncMessage {
     fn encode_bytes(&self) -> Vec<u8> {
         bincode::encode_to_vec(self, config::standard()).unwrap()
     }
