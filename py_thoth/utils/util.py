@@ -2,6 +2,7 @@ import grpc
 from proto import mathop_pb2_grpc
 import functools
 from configs.config import CONFIG
+import random
 
 
 def run_client(func):
@@ -11,7 +12,7 @@ def run_client(func):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        with grpc.insecure_channel(CONFIG.remote_address) as channel:
+        with grpc.insecure_channel(random.choice(CONFIG.remote_address)) as channel:
             stub = mathop_pb2_grpc.MathOpsStub(channel)
             # Inject the stub into kwargs
             kwargs["stub"] = stub

@@ -31,4 +31,4 @@ db/*.db
 venv
 # setup build objects
 py_thoth.egg-info
-__pycache__
+__pycache__/
