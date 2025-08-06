@@ -23,7 +23,7 @@ pub enum Relation {
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         match self {
-            Self::Operation => Entity::has_many(super::operations::Entity)
+            Relation::Operation => Entity::belongs_to(super::operations::Entity)
                 .from(Column::OpsId)
                 .to(super::operations::Column::OpId)
                 .into(),

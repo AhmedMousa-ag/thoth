@@ -76,7 +76,7 @@ pub async fn setup_db() {
         .if_not_exists()
         .to_owned();
     match db.execute(db.get_database_backend().build(&stmt)).await {
-        Ok(_) => info!("Successfull creation of Operation table."),
+        Ok(_) => info!("Successfull creation of Nodes Duties table."),
         Err(e) => {
             err!("Creating Nodes Duties table: {}", e;panic=true);
         }
