@@ -22,8 +22,6 @@ pub enum Relation {
     Step,
     #[sea_orm(has_many = "super::nodes_duties::Entity")]
     NodeDuty,
-    #[sea_orm(has_many = "super::synced_ops::Entity")]
-    SyncedOps,
 }
 
 impl Related<super::steps::Entity> for Entity {
@@ -35,12 +33,6 @@ impl Related<super::steps::Entity> for Entity {
 impl Related<super::nodes_duties::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::NodeDuty.def()
-    }
-}
-
-impl Related<super::synced_ops::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::SyncedOps.def()
     }
 }
 
