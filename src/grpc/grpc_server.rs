@@ -141,10 +141,10 @@ impl MathOps for MatrixOperations {
 
 pub async fn start_server() -> Result<(), ThothErrors> {
     info!("Start of gRPC server");
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr = "[::]:50051".parse().unwrap();
     let matrix_ops: MatrixOperations = MatrixOperations::default();
     let mathops_server: MathOpsServer<MatrixOperations> = MathOpsServer::new(matrix_ops);
-    info!("Will start gRPC server now");
+    info!("Will start gRPC server now on address: {:?}", addr);
     Server::builder()
         .add_service(mathops_server)
         .serve(addr)
