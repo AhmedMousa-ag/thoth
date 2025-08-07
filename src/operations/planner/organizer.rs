@@ -5,7 +5,7 @@ use crate::{
     info,
     logger::writters::writter::OperationsFileManager,
     operations::{
-        checker::PlanChecker,
+        checker::{PlanChecker, increase_running_operation},
         executer::types::{Executer, OperationTypes},
         planner::charts::structs::{ExtraInfo, NodesOpsMsg, Numeric, OperationInfo, Steps},
         utils::util,
@@ -115,6 +115,7 @@ impl Planner {
                 if let Some(exec) = &mut executer {
                     warn!("Will execute step internally");
                     DbOpsRegisterer::new_step(self.operation_id.clone(), step_id);
+                    increase_running_operation(self.operation_id.clone());
                     exec.execute_step(Arc::clone(&step));
                 } else {
                     info!("Will send an execution step");
@@ -204,6 +205,7 @@ impl Planner {
                 step_id: first_step_id.clone(),
             };
             if let Some(exec) = &mut executer {
+                increase_running_operation(self.operation_id.clone());
                 DbOpsRegisterer::new_step(self.operation_id.clone(), first_step_id);
                 exec.execute_step(step_one);
             } else {

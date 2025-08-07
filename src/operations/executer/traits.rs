@@ -8,6 +8,7 @@ use crate::{
     errors::thot_errors::ThothErrors,
     logger::writters::writter::OperationsFileManager,
     operations::{
+        checker::decrease_running_operation,
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
@@ -100,8 +101,28 @@ impl Executer {
                 };
                 sql_step_model.res_type = Set(res_type);
             }
+            sql_step_model.result = Set(self.get_result_string(step));
             sql_step_model.is_finished = Set(true);
             SqlSteps::update_row(sql_step_model).unwrap();
+            decrease_running_operation(op_id);
+        }
+    }
+    fn get_result_string(&self, step: Arc<RwLock<Steps>>) -> Option<String> {
+        let step = step.try_read().unwrap();
+        if let Some(result) = &step.result {
+            let res = match serde_json::to_string(result) {
+                Ok(res) => Some(res),
+                Err(e) => {
+                    err!(
+                        "Faild to encode step result into string: {}",
+                        ThothErrors::from(e)
+                    );
+                    None
+                }
+            };
+            res
+        } else {
+            None
         }
     }
     pub fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
