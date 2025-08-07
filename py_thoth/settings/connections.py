@@ -1,4 +1,5 @@
-from ..configs.config import CONFIG
+from ..configs.env_vars import REMOTE_ADDRESS
+import os
 
 
 def change_remote_address(new_address: list[str]):
@@ -7,5 +8,7 @@ def change_remote_address(new_address: list[str]):
 
     :param new_address: A list of strings representing the new remote addresses including the port.
     """
-    CONFIG.setup_remote_address(new_address)
-    print(f"Remote address changed to: {CONFIG.remote_address}")
+    separator = ","
+    list_as_string = separator.join(new_address)
+    os.environ[REMOTE_ADDRESS] = list_as_string
+    print(f"Remote address changed to: {new_address}")
