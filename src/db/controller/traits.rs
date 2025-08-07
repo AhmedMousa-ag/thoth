@@ -62,7 +62,14 @@ impl SQLiteDBTraits<Steps, StepsModel> for SqlSteps {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                Steps::find_by_id(id).one(db).await.unwrap()
+                match Steps::find_by_id(id).one(db).await {
+                    Ok(Some(step)) => Some(step),
+                    Ok(None) => None,
+                    Err(e) => {
+                        err!("Failed to find step by id due to: {}", ThothErrors::from(e));
+                        None
+                    }
+                }
             })
         })
     }
@@ -114,7 +121,17 @@ impl SQLiteDBTraits<Operations, OperationsModel> for SqlOperations {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                Operations::find_by_id(id).one(db).await.unwrap()
+                match Operations::find_by_id(id).one(db).await {
+                    Ok(Some(op)) => Some(op),
+                    Ok(None) => None,
+                    Err(e) => {
+                        err!(
+                            "Failed to find operation by id due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        None
+                    }
+                }
             })
         })
     }
@@ -160,7 +177,17 @@ impl SQLiteDBTraits<NodesDuties, NodesDutiesModels> for SqlNodesDuties {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                NodesDuties::find_by_id(id).one(db).await.unwrap()
+                match NodesDuties::find_by_id(id).one(db).await {
+                    Ok(Some(duty)) => Some(duty),
+                    Ok(None) => None,
+                    Err(e) => {
+                        err!(
+                            "Failed to find node duty by id due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        None
+                    }
+                }
             })
         })
     }
@@ -176,15 +203,23 @@ impl SqlNodesDuties {
     }
     pub fn find_all_duties(op_id: String) -> Vec<nodes_duties::Model> {
         tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current()
-                .block_on(async {
-                    let db = get_db_connection().await;
-                    NodesDuties::find()
-                        .filter(nodes_duties::Column::OpId.eq(op_id))
-                        .all(db)
-                        .await
-                })
-                .unwrap()
+            tokio::runtime::Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                match NodesDuties::find()
+                    .filter(nodes_duties::Column::OpId.eq(op_id))
+                    .all(db)
+                    .await
+                {
+                    Ok(duties) => duties,
+                    Err(e) => {
+                        err!(
+                            "Failed to find node duties by op_id due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        Vec::new()
+                    }
+                }
+            })
         })
     }
 }
@@ -195,11 +230,21 @@ impl SQLiteDBTraits<SyncedOps, SyncedOpsModel> for SqlSyncedOps {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
-                SyncedOps::find()
+                match SyncedOps::find()
                     .filter(synced_ops::Column::SyncedId.eq(id))
                     .one(db)
                     .await
-                    .unwrap()
+                {
+                    Ok(Some(op)) => Some(op),
+                    Ok(None) => None,
+                    Err(e) => {
+                        err!(
+                            "Failed to find operation by id due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        None
+                    }
+                }
             })
         })
     }
@@ -229,7 +274,17 @@ impl SqlSyncedOps {
                     }
                     None => {}
                 };
-                query.one(db).await.unwrap()
+                match query.one(db).await {
+                    Ok(Some(model)) => Some(model),
+                    Ok(None) => None,
+                    Err(e) => {
+                        err!(
+                            "Failed to find synced operation by dates due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        None
+                    }
+                }
             })
         })
     }
