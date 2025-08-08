@@ -1,9 +1,6 @@
-use crate::{
-    debug,
-    grpc::grpc_server::{
-        MathOperations,
-        mathop::{ListAverageOperationRequest, math_ops_server::MathOps},
-    },
+use crate::grpc::grpc_server::{
+    MathOperations,
+    mathop::{ListAverageOperationRequest, math_ops_server::MathOps},
 };
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 10)]

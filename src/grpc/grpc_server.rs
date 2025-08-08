@@ -30,7 +30,7 @@ impl MathOps for MathOperations {
     ) -> Result<Response<MatrixOperationReply>, Status> {
         info!(
             "gRPC: got matrix multiplication request from: {:?}",
-            request.remote_addr().unwrap()
+            request.remote_addr()
         );
         let req_data: MatrixOperationRequest = request.into_inner();
         let operation_id: String = req_data.operation_id;
