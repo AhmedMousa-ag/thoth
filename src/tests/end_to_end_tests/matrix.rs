@@ -52,3 +52,7 @@ async fn test_matrix_multiply() {
     };
     assert_eq!(result.into_inner().result_matrix.unwrap(), expected_result);
 }
+
+//TODO test with same UUID and check caching results.
+
+//TODO test with several nodes in the cluster instead of just one.

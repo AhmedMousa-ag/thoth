@@ -19,3 +19,7 @@ async fn test_plan_average() {
         expected_average
     );
 }
+
+//TODO test with same UUID and check caching results.
+
+//TODO test with several nodes in the cluster instead of just one.
