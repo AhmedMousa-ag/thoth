@@ -24,7 +24,6 @@ use crate::{
         traits::EncodingDecoding,
     },
     syncer::{channels::get_sender, structs::SyncMessage},
-    warn,
 };
 use tokio::spawn;
 pub struct NodesInfoOffice {}

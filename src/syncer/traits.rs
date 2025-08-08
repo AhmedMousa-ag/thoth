@@ -61,19 +61,19 @@ impl Syncer {
                 convert_string_datetime(Some(message.end_date)),
             );
             DbOpsRegisterer::new_syncer(start_date, end_date);
-            let reply_operations: Vec<OperationType> = Vec::new();
+            let _reply_operations: Vec<OperationType> = Vec::new();
             let db_ops = SqlOperations::get_by_date(start_date, end_date);
             //TODO make it lazy instead of sending everything at once.
             for op in db_ops {
                 let steps = SqlSteps::get_by_op_id(op.op_id);
-                for step in steps {
+                for _step in steps {
                     // let step_msg = OperationType::Step();
                     // reply_operations.push(step_msg);
                 }
             }
         });
     }
-    fn perform_register(&'static self, message: SyncOperations) {
+    fn perform_register(&'static self, _message: SyncOperations) {
         spawn(async {});
     }
     fn perform_sync_ops(&'static self) {

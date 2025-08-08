@@ -166,7 +166,7 @@ impl Planner {
         while idx < data_size {
             let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             let first_step_id = Uuid::new_v4().to_string();
-            let node_data = x[idx..ops_slice_size].to_vec();
+            let node_data = x[idx..ops_slice_size].to_vec(); //TODO sometimes it panics, check it.
             let data_len = node_data.len() as f64;
             let step_one = Arc::new(RwLock::new(Steps {
                 operation_id: self.operation_id.clone(),
