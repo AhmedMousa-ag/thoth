@@ -7,4 +7,5 @@ pub mod operations;
 pub mod router;
 pub mod structs;
 pub mod syncer;
+pub mod tests;
 pub mod utils;
