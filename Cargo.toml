@@ -2,6 +2,7 @@
 name = "thoth"
 version = "0.1.0"
 edition = "2024"
+description = "Thoth is a decentralized, distributed data computing."
 
 [dependencies]
 libp2p = { version = "0.54", features = [ "tokio", "gossipsub", "mdns", "noise", "macros", "tcp", "yamux", "quic","ping"] }
