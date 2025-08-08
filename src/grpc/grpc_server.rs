@@ -20,10 +20,10 @@ pub mod mathop {
 }
 
 #[derive(Debug, Default)]
-pub struct MatrixOperations {}
+pub struct MathOperations {}
 
 #[tonic::async_trait]
-impl MathOps for MatrixOperations {
+impl MathOps for MathOperations {
     async fn matrix_multiply(
         &self,
         request: Request<MatrixOperationRequest>,
@@ -101,7 +101,7 @@ impl MathOps for MatrixOperations {
     ) -> Result<Response<ListAverageOperationReply>, Status> {
         info!(
             "gRPC: got list average  request from: {:?}",
-            request.remote_addr().unwrap()
+            request.remote_addr()
         );
         let req_data: ListAverageOperationRequest = request.into_inner();
         let operation_id = req_data.operation_id;
@@ -142,8 +142,8 @@ impl MathOps for MatrixOperations {
 pub async fn start_server() -> Result<(), ThothErrors> {
     info!("Start of gRPC server");
     let addr = "[::]:50051".parse().unwrap();
-    let matrix_ops: MatrixOperations = MatrixOperations::default();
-    let mathops_server: MathOpsServer<MatrixOperations> = MathOpsServer::new(matrix_ops);
+    let matrix_ops: MathOperations = MathOperations::default();
+    let mathops_server: MathOpsServer<MathOperations> = MathOpsServer::new(matrix_ops);
     info!("Will start gRPC server now on address: {:?}", addr);
     Server::builder()
         .add_service(mathops_server)
