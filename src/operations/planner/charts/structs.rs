@@ -1,4 +1,4 @@
-use crate::operations::executer::types::OperationTypes;
+use crate::{operations::executer::types::OperationTypes, structs::numerics::structs::Numeric};
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -6,13 +6,6 @@ use std::{
     fmt::Debug,
     sync::{Arc, RwLock},
 };
-
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
-pub enum Numeric {
-    Scaler(f64),
-    Vector(Vec<f64>),
-    Matrix(Vec<Vec<f64>>),
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct ExtraInfo {

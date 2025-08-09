@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 // use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::UnboundedReceiver;
 
-use crate::operations::planner::charts::structs::{ExtraInfo, Numeric};
+use crate::{operations::planner::charts::structs::ExtraInfo, structs::numerics::structs::Numeric};
 #[derive(Debug)]
 pub struct Gatherer {
     pub reciever_ch: UnboundedReceiver<GatheredMessage>,

@@ -8,9 +8,10 @@ use crate::{
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::OperationTypes,
-        planner::charts::structs::{Numeric, Steps},
+        planner::charts::structs::Steps,
         translator::translate::{MatricesTranslator, ScalerTranslator, VecTranslator},
     },
+    structs::numerics::structs::Numeric,
     warn,
 };
 
