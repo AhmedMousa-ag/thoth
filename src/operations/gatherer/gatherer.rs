@@ -12,7 +12,8 @@ use crate::{
             channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
-        planner::charts::structs::{ExtraInfo, NodesOpsMsg, Numeric},
+        planner::charts::structs::{NodesOpsMsg, Numeric},
+        utils::util::load_sql_step_to_gatherer_res,
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
 };
@@ -39,6 +40,7 @@ impl Gatherer {
                     if stp.result.is_some() {
                         GatheredResponse {
                             result: stp.result.unwrap(),
+                            use_prev_res: stp.use_prev_res,
                             extra_info: stp.extra_info,
                         }
                     } else {
@@ -53,6 +55,7 @@ impl Gatherer {
     // TODO you might move it outside of this struct, but I don't see it worth it.
     fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
         let mut num_sent_message = 0;
+        debug!("Plan Nodes Duties: {:?}", plan);
         //TODO Keep track of execution steps, then get the number of nodes, if only this one available, then wait until all of the steps are done.
         let num_nodes = get_nodes_info_cloned().len();
         for (_, op_infos) in plan.nodes_duties {
@@ -87,31 +90,13 @@ impl Gatherer {
                     );
                     let sql_step = sql_step.unwrap();
                     let result: Option<Numeric> = if sql_step.result.is_some() {
-                        serde_json::from_str(&sql_step.result.unwrap()).unwrap_or(None)
+                        serde_json::from_str(&sql_step.clone().result.unwrap()).unwrap_or(None)
                     } else {
                         None
                     };
                     let sender = get_opened_ch_sender(&info.operation_id);
                     if sender.is_some() && result.is_some() {
-                        let res_pos: Option<Vec<usize>> = if sql_step.res_pos.is_some() {
-                            serde_json::from_str(&sql_step.res_pos.unwrap()).unwrap_or(None)
-                        } else {
-                            None
-                        };
-                        let res_type: Option<crate::operations::planner::charts::structs::Numeric> =
-                            if sql_step.res_type.is_some() {
-                                serde_json::from_str(&sql_step.res_type.unwrap()).unwrap_or(None)
-                            } else {
-                                None
-                            };
-                        let extra_info = ExtraInfo {
-                            res_pos,
-                            res_type: res_type,
-                        };
-                        let gther_res = GatheredResponse {
-                            result: result.unwrap(),
-                            extra_info: Some(extra_info),
-                        };
+                        let gther_res = load_sql_step_to_gatherer_res(&sql_step);
                         info!("Sending Gathered Message Internally: {:?}", gther_res);
                         if let Err(e) = sender.unwrap().send(GatheredMessage {
                             operation_id: info.operation_id,
@@ -155,7 +140,7 @@ impl Gatherer {
         let num_duties = Self::ask_nodes_their_results(plan)?;
         let mut left_to_gather = num_duties.clone();
         let mut res = 0.0;
-
+        let mut num_divide = 0.0;
         while left_to_gather > 0 {
             select! {
              result = self.reciever_ch.recv() => {
@@ -164,13 +149,14 @@ impl Gatherer {
                         info!("Received: {:?}", value);
                         match value.respond{
                         Some(gath_res)=>{
-                            let num = gath_res.result.get_scaler_value();
-                            res+=num;
-                            // if let Some(extra_infos)=gath_res.extra_info{
-
-
-                            // }
-                            left_to_gather-=1;
+                            let num:f64= gath_res.result.clone().into();
+                            debug!("Gathered Result: {}", num);
+                            if gath_res.use_prev_res{
+                                // let prev_res= gath_res.prev_step_res.unwrap_or(Numeric::from(0.0)).get_scaler_value();
+                                res +=  num;
+                                num_divide += 1.0;
+                            }
+                            left_to_gather -= 1;
                         },
                         None=>continue,
                         }
@@ -183,7 +169,8 @@ impl Gatherer {
              }
             }
         }
-        res /= num_duties as f64; // Each step had it's own average, now after we gather each step average, we need to define the last average for all gathered steps.
+        debug!("Gathered List Average: {}, num_divide: {}", res, num_divide);
+        res /= if num_divide != 0.0 { num_divide } else { 1.0 }; // Each step had it's own average, now after we gather each step average, we need to define the last average for all gathered steps.
         Ok(res)
     }
 

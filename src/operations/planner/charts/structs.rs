@@ -1,4 +1,4 @@
-use crate::{operations::executer::types::OperationTypes, warn};
+use crate::operations::executer::types::OperationTypes;
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -13,51 +13,7 @@ pub enum Numeric {
     Vector(Vec<f64>),
     Matrix(Vec<Vec<f64>>),
 }
-impl Numeric {
-    pub fn to_string(&self) -> String {
-        match self {
-            //TODO, fix it.
-            Numeric::Scaler(_) => format!("{:?}", self),
-            Numeric::Vector(_) => format!("{:?}", self),
-            Numeric::Matrix(_) => format!("{:?}", self),
-        }
-    }
-    ///Don't use if your type isn't scaler.
-    pub fn get_scaler_value(&self) -> f64 {
-        match self {
-            Numeric::Scaler(val) => *val,
-            _ => {
-                let msg = "Expected Scaler variant, will return a zero";
-                warn!("{}", msg);
-                0.0
-            }
-        }
-    }
 
-    ///Don't use if your type isn't vector.
-    pub fn get_vector_value(&self) -> Vec<f64> {
-        match self {
-            Numeric::Vector(val) => val.clone(),
-            _ => {
-                let msg = "Expected Vector variant, will return a zero";
-                warn!("{}", msg);
-                vec![0.0]
-            }
-        }
-    }
-
-    ///Don't use if your type isn't a Matrix.
-    pub fn get_matrices_value(&self) -> Vec<Vec<f64>> {
-        match self {
-            Numeric::Matrix(val) => val.clone(),
-            _ => {
-                let msg = "Expected Matrix variant, will return a zero";
-                warn!("{}", msg);
-                vec![vec![0.0]]
-            }
-        }
-    }
-}
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct ExtraInfo {
     pub res_pos: Option<Vec<usize>>, //If it's a matrix or a list, two points should be maximum

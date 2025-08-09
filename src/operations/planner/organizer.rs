@@ -114,7 +114,7 @@ impl Planner {
 
                 if let Some(exec) = &mut executer {
                     warn!("Will execute step internally");
-                    DbOpsRegisterer::new_step(self.operation_id.clone(), step_id);
+                    DbOpsRegisterer::new_step(self.operation_id.clone(), step_id, false);
                     increase_running_operation(self.operation_id.clone());
                     exec.execute_step(Arc::clone(&step));
                 } else {
@@ -165,6 +165,7 @@ impl Planner {
 
         while idx < data_size {
             let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
+            let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             let first_step_id = Uuid::new_v4().to_string();
             let node_data = x[idx..ops_slice_size].to_vec(); //TODO sometimes it panics, check it.
             let data_len = node_data.len() as f64;
@@ -181,10 +182,11 @@ impl Planner {
                 next_step: None,
                 extra_info: None,
             }));
+            let second_step_id = Uuid::new_v4().to_string();
             let step_two = Arc::new(RwLock::new(Steps {
                 node_id: util::get_node_id(&mut node_idx, nodes_num, &nodes_keys),
                 operation_id: self.operation_id.clone(),
-                step_id: Uuid::new_v4().to_string(),
+                step_id: second_step_id.clone(),
                 x: None,
                 y: Some(Numeric::Scaler(data_len)),
                 op_type: OperationTypes::DIVIDE,
@@ -206,15 +208,29 @@ impl Planner {
             };
             if let Some(exec) = &mut executer {
                 increase_running_operation(self.operation_id.clone());
-                DbOpsRegisterer::new_step(self.operation_id.clone(), first_step_id);
+                DbOpsRegisterer::new_step(self.operation_id.clone(), first_step_id.clone(), false);
                 exec.execute_step(step_one);
+                increase_running_operation(self.operation_id.clone());
+                DbOpsRegisterer::new_step(self.operation_id.clone(), second_step_id.clone(), true);
+                exec.execute_step(step_two);
             } else {
                 OperationStepExecuter::send_message(step_one);
+                OperationStepExecuter::send_message(step_two);
             }
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
                 None => {
                     nodes_duties.insert(first_step_node_id, Arc::new(RwLock::new(vec![op_msg])));
+                }
+            }
+            let op_msg = OperationInfo {
+                operation_id: self.operation_id.clone(),
+                step_id: second_step_id,
+            };
+            match nodes_duties.get(&second_step_node_id) {
+                Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
+                None => {
+                    nodes_duties.insert(second_step_node_id, Arc::new(RwLock::new(vec![op_msg])));
                 }
             }
 

@@ -30,11 +30,13 @@ impl DbOpsRegisterer {
             };
         });
     }
-    pub fn new_step(operation_id: String, step_id: String) {
+    pub fn new_step(operation_id: String, step_id: String, use_prev_res: bool) {
         spawn(async move {
-            if let Err(e) =
-                SqlSteps::insert_row(SqlSteps::new(step_id.clone(), operation_id.clone()))
-            {
+            if let Err(e) = {
+                let mut model = SqlSteps::new(step_id.clone(), operation_id.clone());
+                model.use_prev_res = Set(use_prev_res);
+                SqlSteps::insert_row(model)
+            } {
                 err!("new step {}", ThothErrors::from(e))
             };
         });
@@ -64,8 +66,13 @@ impl DbOpsRegisterer {
         });
     }
     /// Register both a step and a duty in one funciton
-    pub fn new_step_duty(node_id: String, operation_id: String, step_id: String) {
-        DbOpsRegisterer::new_step(operation_id.clone(), step_id.clone());
+    pub fn new_step_duty(
+        node_id: String,
+        operation_id: String,
+        step_id: String,
+        use_prev_res: bool,
+    ) {
+        DbOpsRegisterer::new_step(operation_id.clone(), step_id.clone(), use_prev_res);
         DbOpsRegisterer::new_duty(node_id, operation_id, step_id);
     }
     pub fn new_duties(duties: NodesOpsMsg) {

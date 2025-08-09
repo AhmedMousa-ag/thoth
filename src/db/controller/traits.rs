@@ -87,6 +87,7 @@ impl SqlSteps {
             step_id: ActiveValue::Set(step_id),
             file_path: ActiveValue::Set(file_path),
             is_finished: ActiveValue::Set(false),
+            use_prev_res: ActiveValue::Set(false),
             result: ActiveValue::NotSet,
             res_pos: ActiveValue::NotSet,
             res_type: ActiveValue::NotSet,
