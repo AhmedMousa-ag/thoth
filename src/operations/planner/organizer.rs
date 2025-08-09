@@ -7,14 +7,14 @@ use crate::{
     operations::{
         checker::{PlanChecker, increase_running_operation},
         executer::types::{Executer, OperationTypes},
-        planner::charts::structs::{ExtraInfo, NodesOpsMsg, Numeric, OperationInfo, Steps},
+        planner::charts::structs::{ExtraInfo, NodesOpsMsg, OperationInfo, Steps},
         utils::util,
     },
     router::{
         post_offices::nodes_info::post_office::{OperationStepExecuter, OperationsExecuterOffice},
         traits::PostOfficeTrait,
     },
-    structs::structs::NodeInfo,
+    structs::{numerics::structs::Numeric, structs::NodeInfo},
     warn,
 };
 

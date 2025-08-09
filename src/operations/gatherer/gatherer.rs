@@ -12,10 +12,11 @@ use crate::{
             channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
-        planner::charts::structs::{NodesOpsMsg, Numeric},
+        planner::charts::structs::NodesOpsMsg,
         utils::util::load_sql_step_to_gatherer_res,
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
+    structs::numerics::structs::Numeric,
 };
 use tokio::{
     select, spawn,

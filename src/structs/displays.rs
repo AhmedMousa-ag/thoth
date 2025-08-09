@@ -1,6 +1,9 @@
-use crate::operations::{
-    executer::types::OperationTypes,
-    planner::charts::structs::{NodesOpsMsg, Numeric, OperationInfo, Steps},
+use crate::{
+    operations::{
+        executer::types::OperationTypes,
+        planner::charts::structs::{NodesOpsMsg, OperationInfo, Steps},
+    },
+    structs::numerics::structs::Numeric,
 };
 
 use super::structs::{Message, NodeInfo, RequestsTypes};

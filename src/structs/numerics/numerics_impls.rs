@@ -1,4 +1,4 @@
-use crate::{err, operations::planner::charts::structs::Numeric, warn};
+use crate::{err, structs::numerics::structs::Numeric, warn};
 
 impl Numeric {
     pub fn to_string(&self) -> String {

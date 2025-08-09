@@ -1,9 +1,7 @@
 use crate::{
     db::entities::steps,
-    operations::{
-        gatherer::structs::GatheredResponse,
-        planner::charts::structs::{ExtraInfo, Numeric},
-    },
+    operations::{gatherer::structs::GatheredResponse, planner::charts::structs::ExtraInfo},
+    structs::numerics::structs::Numeric,
 };
 
 pub fn transpose<T>(x: Vec<Vec<T>>) -> Vec<Vec<T>> {

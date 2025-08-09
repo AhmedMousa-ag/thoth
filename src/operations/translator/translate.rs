@@ -1,9 +1,10 @@
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     operations::{
-        planner::charts::structs::{NodesDuties, Numeric, OperationInfo, Steps},
+        planner::charts::structs::{NodesDuties, OperationInfo, Steps},
         translator::traits::translator::Translator,
     },
+    structs::numerics::structs::Numeric,
 };
 use std::sync::{Arc, RwLock};
 
