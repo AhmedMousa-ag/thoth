@@ -68,6 +68,7 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
             DbOpsRegisterer::new_step(
                 step.try_read().unwrap().operation_id.clone(),
                 step.try_read().unwrap().step_id.clone(),
+                step.try_read().unwrap().use_prev_res.clone(),
             );
             let mut executer = Executer {
                 op_file_manager: OperationsFileManager::new(

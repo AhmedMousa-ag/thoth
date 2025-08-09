@@ -59,7 +59,7 @@ impl Translator for ScalerTranslator {
             }
         };
 
-        let result = x * y;
+        let result = y * x;
         drop(read_guard);
         self.step.try_write().unwrap().result = Some(Numeric::Scaler(result));
     }
@@ -93,7 +93,7 @@ impl Translator for ScalerTranslator {
                 y = read_guard.y.as_ref().unwrap().get_scaler_value();
             }
         }
-        let result = y * x;
+        let result = x / y;
         drop(read_guard);
         self.step.try_write().unwrap().result = Some(Numeric::Scaler(result));
     }
@@ -132,7 +132,15 @@ impl Translator for VecTranslator {
         drop(read_guard);
         self.step.try_write().unwrap().result = Some(Numeric::Scaler(result));
     }
-    fn divide(&self) {}
+    fn divide(&self) {
+        let read_guard = self.step.try_read().unwrap();
+        let x = read_guard.x.as_ref().unwrap();
+        let y = read_guard.y.as_ref().unwrap();
+        let result = y / x;
+
+        drop(read_guard);
+        self.step.try_write().unwrap().result = Some(result);
+    }
 }
 
 //TODO MatricesTranslator
