@@ -33,15 +33,11 @@ impl DbOpsRegisterer {
     pub fn new_step(
         operation_id: String,
         step_id: String,
-        next_step_res: Option<String>,
-        prev_step_res: Option<String>,
         use_prev_res: bool,
     ) {
         spawn(async move {
             if let Err(e) = {
                 let mut model = SqlSteps::new(step_id.clone(), operation_id.clone());
-                model.next_step_res = Set(next_step_res);
-                model.prev_step_res = Set(prev_step_res);
                 model.use_prev_res = Set(use_prev_res);
                 SqlSteps::insert_row(model)
             } {
@@ -78,15 +74,11 @@ impl DbOpsRegisterer {
         node_id: String,
         operation_id: String,
         step_id: String,
-        next_step_res: Option<String>,
-        prev_step_res: Option<String>,
         use_prev_res: bool,
     ) {
         DbOpsRegisterer::new_step(
             operation_id.clone(),
             step_id.clone(),
-            next_step_res,
-            prev_step_res,
             use_prev_res,
         );
         DbOpsRegisterer::new_duty(node_id, operation_id, step_id);
