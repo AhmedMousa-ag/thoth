@@ -148,7 +148,7 @@ impl GossibConnection {
                             event = swarm.select_next_some() => match event {
                                 SwarmEvent::Behaviour(GossipBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
                                     for (peer_id, _multiaddr) in list {
-                                        info!("mDNS discovered a new peer: {peer_id}");
+                                        info!("mDNS discovered a new peer: {}", peer_id);
                                         swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
                                     }
                                 },

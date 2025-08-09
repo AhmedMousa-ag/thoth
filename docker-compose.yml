@@ -1,7 +1,5 @@
 x-base-node: &base-node
   build: .
-  volumes:
-      - $PWD:/home/thoth/app
   networks:
     thoth-net:
       aliases:
@@ -9,11 +7,15 @@ x-base-node: &base-node
 services:
   node-1:
     <<: *base-node
+    # volumes:
+    #     - $PWD/node_1:/home/thoth/app
     ports:
       - 49221:49221
       - 50051:50051
   node-2:
     <<: *base-node
+    # volumes:
+  #     - $PWD/node_2:/home/thoth/app
     ports:
       - 49222:49221
       - 50052:50051
