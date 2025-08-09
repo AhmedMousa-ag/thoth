@@ -1,25 +1,34 @@
 x-base-node: &base-node
   build: .
   networks:
-    thoth-net:
-      aliases:
-        - thoth-node
+    - thoth-net
+
 services:
   node-1:
     <<: *base-node
+    hostname: node-1
     # volumes:
-    #     - $PWD/node_1:/home/thoth/app
+    #   - $PWD/node_1:/home/thoth/app
     ports:
-      - 49221:49221
-      - 50051:50051
+      - "49221:49221"  
+      - "50051:50051"  
+    networks:
+      thoth-net:
+        aliases:
+          - node-1-alias
+
   node-2:
     <<: *base-node
+    hostname: node-2
     # volumes:
-  #     - $PWD/node_2:/home/thoth/app
+    #   - $PWD/node_2:/home/thoth/app
     ports:
-      - 49222:49221
-      - 50052:50051
-
+      - "49222:49221"  
+      - "50052:50051"  
+    networks:
+      thoth-net:
+        aliases:
+          - node-2-alias
 
 networks:
   thoth-net:
