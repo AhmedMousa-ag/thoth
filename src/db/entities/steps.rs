@@ -15,8 +15,8 @@ pub struct Model {
     //Extra info section.
     pub res_pos: Option<String>,
     pub res_type: Option<String>,
-    pub next_step_res: Option<String>,
-    pub prev_step_res: Option<String>,
+    // pub next_step_res: Option<String>,
+    // pub prev_step_res: Option<String>,
     pub use_prev_res: bool,
 }
 

@@ -30,11 +30,7 @@ impl DbOpsRegisterer {
             };
         });
     }
-    pub fn new_step(
-        operation_id: String,
-        step_id: String,
-        use_prev_res: bool,
-    ) {
+    pub fn new_step(operation_id: String, step_id: String, use_prev_res: bool) {
         spawn(async move {
             if let Err(e) = {
                 let mut model = SqlSteps::new(step_id.clone(), operation_id.clone());
@@ -76,11 +72,7 @@ impl DbOpsRegisterer {
         step_id: String,
         use_prev_res: bool,
     ) {
-        DbOpsRegisterer::new_step(
-            operation_id.clone(),
-            step_id.clone(),
-            use_prev_res,
-        );
+        DbOpsRegisterer::new_step(operation_id.clone(), step_id.clone(), use_prev_res);
         DbOpsRegisterer::new_duty(node_id, operation_id, step_id);
     }
     pub fn new_duties(duties: NodesOpsMsg) {
