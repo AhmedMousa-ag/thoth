@@ -1,4 +1,4 @@
-use crate::{ structs::numerics::structs::Numeric, warn};
+use crate::{structs::numerics::structs::Numeric, warn};
 
 impl Numeric {
     pub fn to_string(&self) -> String {

@@ -1,6 +1,5 @@
 use crate::{err, structs::numerics::structs::Numeric};
 
-
 impl std::ops::Div for Numeric {
     type Output = Self;
     fn div(self, rhs: Self) -> Self::Output {

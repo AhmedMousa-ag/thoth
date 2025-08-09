@@ -1,3 +1,3 @@
-pub mod traits;
-pub mod structs;
 pub mod math_ops;
+pub mod structs;
+pub mod traits;
