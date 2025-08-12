@@ -57,7 +57,7 @@ impl PlanChecker {
         let model = match SqlOperations::find_by_id(operation_id.clone()) {
             Some(model) => model,
             None => {
-                DbOpsRegisterer::new_operation(operation_id);
+                DbOpsRegisterer::new_operation(operation_id, true);
                 return false;
             }
         };

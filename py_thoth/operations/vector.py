@@ -14,4 +14,4 @@ def list_average(a: List[float], **kwargs):
     )
 
     res = stub.ListAverage(req)
-    return res
+    return res.result_average

@@ -1,6 +1,7 @@
 use crate::{
     connections::channels_node_info::{NodeInfoTrait, get_nodes_info_cloned},
     db::controller::registerer::DbOpsRegisterer,
+    debug,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
@@ -114,7 +115,7 @@ impl Planner {
 
                 if let Some(exec) = &mut executer {
                     warn!("Will execute step internally");
-                    DbOpsRegisterer::new_step(self.operation_id.clone(), step_id, false);
+                    DbOpsRegisterer::new_step(self.operation_id.clone(), step_id, false, false);
                     increase_running_operation(self.operation_id.clone());
                     exec.execute_step(Arc::clone(&step));
                 } else {
@@ -132,7 +133,7 @@ impl Planner {
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         info!("Finished planning: {}", nodes_ops_msg);
         if let Some(exec) = &mut executer {
-            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone());
+            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone(), true);
             exec.execute_duties(nodes_ops_msg.clone());
         } else {
             info!("Will send an execution message");
@@ -143,11 +144,13 @@ impl Planner {
 
     pub fn plan_average(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         if PlanChecker::is_planned_before(self.operation_id.clone()) {
+            info!("Already planned, will return.");
             return PlanChecker::get_planned_duties_db(self.operation_id.clone());
         }
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
+        debug!("Available nodes number: {}", nodes_num);
         let mut executer: Option<Executer> = if nodes_num >= 1 {
             warn!(
                 "Only one node available which is considered usesless for Thoth to handle this operation"
@@ -167,7 +170,7 @@ impl Planner {
             let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             let first_step_id = Uuid::new_v4().to_string();
-            let node_data = x[idx..ops_slice_size].to_vec(); //TODO sometimes it panics, check it.
+            let node_data = x[idx..ops_slice_size].to_vec(); //TODO sometimes it panics, check it. I think it's due to nodes being disconnected.
             let data_len = node_data.len() as f64;
             let step_one = Arc::new(RwLock::new(Steps {
                 operation_id: self.operation_id.clone(),
@@ -208,10 +211,20 @@ impl Planner {
             };
             if let Some(exec) = &mut executer {
                 increase_running_operation(self.operation_id.clone());
-                DbOpsRegisterer::new_step(self.operation_id.clone(), first_step_id.clone(), false);
+                DbOpsRegisterer::new_step(
+                    self.operation_id.clone(),
+                    first_step_id.clone(),
+                    false,
+                    false,
+                );
                 exec.execute_step(step_one);
                 increase_running_operation(self.operation_id.clone());
-                DbOpsRegisterer::new_step(self.operation_id.clone(), second_step_id.clone(), true);
+                DbOpsRegisterer::new_step(
+                    self.operation_id.clone(),
+                    second_step_id.clone(),
+                    true,
+                    false,
+                );
                 exec.execute_step(step_two);
             } else {
                 OperationStepExecuter::send_message(step_one);
@@ -240,7 +253,7 @@ impl Planner {
         info!("Finished planning: {:?}", nodes_duties);
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         if let Some(exec) = &mut executer {
-            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone());
+            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone(), true);
             exec.execute_duties(nodes_ops_msg.clone());
             // return;
         } else {

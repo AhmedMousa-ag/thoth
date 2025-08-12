@@ -24,5 +24,6 @@ def matrix_multiply(a: List[List[float]], b: List[List[float]], **kwargs):
         operation_id=operation_id,
     )
 
-    res = stub.MatrixMultiply(req)
+    res = stub.MatrixMultiply(req).result_matrix
+    res = [[cell for cell in row.values] for row in res.rows]
     return res

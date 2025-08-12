@@ -4,7 +4,7 @@ use crate::{
         registerer::DbOpsRegisterer,
         traits::{SQLiteDBTraits, SqlOperations, SqlSteps},
     },
-    err,
+    debug, err,
     errors::thot_errors::ThothErrors,
     logger::writters::writter::OperationsFileManager,
     operations::{
@@ -36,6 +36,7 @@ impl Executer {
 
         let is_op_exists = SqlOperations::find_by_id(op_id.clone()).is_some();
         if !is_op_exists {
+            debug!("Operation id doesn't exists in SQL, will insert new one");
             if let Err(e) = SqlOperations::insert_row(SqlOperations::new(op_id.clone())) {
                 warn!(
                     "Inserting sqlite Operations possibly already exists: {}",
@@ -147,7 +148,7 @@ impl Executer {
                 if step.result.is_none() {
                     self.execute_step(Arc::new(RwLock::new(step)));
                 }
-                DbOpsRegisterer::finished_duty(duty.step_id.clone());
+                DbOpsRegisterer::finished_duty(duty.step_id.clone(), true);
             }
             sql_ops_model.is_finished = ActiveValue::Set(true);
             let _ = SqlOperations::update_row(sql_ops_model);

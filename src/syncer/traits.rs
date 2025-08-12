@@ -48,6 +48,7 @@ impl Syncer {
                 DbOpsRegisterer::new_syncer(
                     convert_string_datetime(start_date),
                     convert_string_datetime(Some(end_date)),
+                    true,
                 );
                 SyncerOffice::send_message(sync_msg);
             }
@@ -60,7 +61,7 @@ impl Syncer {
                 convert_string_datetime(message.start_date),
                 convert_string_datetime(Some(message.end_date)),
             );
-            DbOpsRegisterer::new_syncer(start_date, end_date);
+            DbOpsRegisterer::new_syncer(start_date, end_date, true);
             let _reply_operations: Vec<OperationType> = Vec::new();
             let db_ops = SqlOperations::get_by_date(start_date, end_date);
             //TODO make it lazy instead of sending everything at once.
