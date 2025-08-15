@@ -140,13 +140,24 @@ impl Executer {
                     //Will wait for one second, maybe not all messages weren't processed. //TODO There's a potential an error happened and might cause the process to keep waiting.
                     thread::sleep(Duration::from_secs(1));
                 }
-                let step = OperationsFileManager::load_step_file(
+                match OperationsFileManager::load_step_file(
                     &duty.operation_id,
                     &duty.step_id.clone(),
-                )
-                .unwrap(); //You might get it from the sqlite, possible you should not use the sqlite, it feels limited to it's one thread access in it's nature.
-                if step.result.is_none() {
-                    self.execute_step(Arc::new(RwLock::new(step)));
+                ) {
+                    //You might get it from the sqlite, possible you should not use the sqlite, it feels limited to it's one thread access in it's nature.
+                    Ok(step) => {
+                        if step.result.is_none() {
+                            self.execute_step(Arc::new(RwLock::new(step)));
+                        }
+                    }
+                    Err(e) => {
+                        warn!(
+                            "Faild to load step file for step id {}: {}",
+                            duty.step_id,
+                            ThothErrors::from(e)
+                        );
+                        continue;
+                    }
                 }
                 DbOpsRegisterer::finished_duty(duty.step_id.clone(), true);
             }
