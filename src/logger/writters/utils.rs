@@ -1,13 +1,13 @@
-use std::{fs, io, path::PathBuf};
 use crate::{operations::planner::charts::structs::OperationFile, utils::util::find_binary_search};
 use chrono::{DateTime, Utc};
+use std::{fs, io, path::PathBuf};
 use tokio::spawn;
 
 pub fn pathbuf_str(path: &PathBuf) -> String {
     path.to_string_lossy().into_owned()
 }
 
-pub fn sort_files_and_persist(dir: &str, thread: bool)  {
+pub fn sort_files_and_persist(dir: &str, thread: bool) {
     let dir = dir.to_string();
     let result = move || -> io::Result<()> {
         let files: Vec<PathBuf> = fs::read_dir(dir)?
@@ -18,17 +18,17 @@ pub fn sort_files_and_persist(dir: &str, thread: bool)  {
         // Divide and conquer: recursively sort and rename files in halves
         fn sort_and_rename(files: &[PathBuf], sorted_files: &[PathBuf]) -> io::Result<()> {
             if files.len() <= 1 {
-            return Ok(());
+                return Ok(());
             }
             let mid = files.len() / 2;
             sort_and_rename(&files[..mid], &sorted_files[..mid])?;
             sort_and_rename(&files[mid..], &sorted_files[mid..])?;
 
             for (i, file) in sorted_files.iter().enumerate() {
-            if *file == files[i] {
-                continue;
-            }
-            fs::rename(&file, &file)?;
+                if *file == files[i] {
+                    continue;
+                }
+                fs::rename(&file, &file)?;
             }
             Ok(())
         }
@@ -48,7 +48,6 @@ pub fn sort_files_and_persist(dir: &str, thread: bool)  {
         }
     }
 }
-
 
 pub fn get_files_by_date(
     operations: &mut Vec<OperationFile>,
@@ -71,15 +70,15 @@ pub fn get_files_by_date(
                 .into_iter()
                 .map(|f| serde_json::from_str::<OperationFile>(&f).unwrap())
                 .collect();
-        operations.extend(new_files);
-    }else{
-        let new_files: Vec<String> = files[..end_idx].to_vec();
-        let new_files: Vec<OperationFile> = new_files
-            .into_iter()
-            .map(|f| serde_json::from_str::<OperationFile>(&f).unwrap())
-            .collect();
-        operations.extend(new_files);
-    }
+            operations.extend(new_files);
+        } else {
+            let new_files: Vec<String> = files[..end_idx].to_vec();
+            let new_files: Vec<OperationFile> = new_files
+                .into_iter()
+                .map(|f| serde_json::from_str::<OperationFile>(&f).unwrap())
+                .collect();
+            operations.extend(new_files);
+        }
     } else if let Some(start_idx) = start_idx {
         let new_files: Vec<String> = files[start_idx..].to_vec();
         let new_files: Vec<OperationFile> = new_files

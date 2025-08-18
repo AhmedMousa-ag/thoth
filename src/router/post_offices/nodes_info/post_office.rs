@@ -65,14 +65,9 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
     fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
-            DbOpsRegisterer::new_step(
-                step.clone(),
-                false,
-            );
+            DbOpsRegisterer::new_step(step.clone(), false);
             let mut executer = Executer {
-                op_file_manager: OperationsFileManager::new(
-                    &step.try_read().unwrap().operation_id,
-                ),
+                op_file_manager: OperationsFileManager::new(&step.try_read().unwrap().operation_id),
             };
             executer.execute_step(step);
         });

@@ -1,11 +1,18 @@
 use crate::{
-    errors::thot_errors::ThothErrors, logger::{
+    errors::thot_errors::ThothErrors,
+    logger::{
         channels::{
             get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
             get_warn_reciever,
         },
-        writters::{configs::OPERATIONS_LOCATIONS, utils::{get_files_by_date, pathbuf_str, sort_files_and_persist}, writter::{FileTypes, LogFileManager, OperationsFileManager}},
-    }, operations::planner::charts::structs::{OperationFile, Steps}, utils::util::find_binary_search
+        writters::{
+            configs::OPERATIONS_LOCATIONS,
+            utils::{get_files_by_date, pathbuf_str, sort_files_and_persist},
+            writter::{FileTypes, LogFileManager, OperationsFileManager},
+        },
+    },
+    operations::planner::charts::structs::{OperationFile, Steps},
+    utils::util::find_binary_search,
 };
 use chrono::{DateTime, Utc};
 use std::{
@@ -25,7 +32,7 @@ fn generate_file_path(paths: Vec<String>) -> Result<PathBuf, ThothErrors> {
     for path in paths {
         file_path.push(path);
     }
-    if !file_path.exists(){
+    if !file_path.exists() {
         fs::create_dir_all(&file_path)?;
     }
     Ok(file_path)
@@ -156,7 +163,7 @@ impl FileManagerTrait for LogFileManager {
 
 impl OperationsFileManager {
     // It should handle operations folder, including each step file.
-    pub fn new(op_id: &str) -> Self{
+    pub fn new(op_id: &str) -> Self {
         generate_file_path(vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string()]).unwrap();
         Self {
             op_id: op_id.to_string(),
@@ -167,10 +174,18 @@ impl OperationsFileManager {
         vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string()]
     }
     pub fn get_operations_main_path(op_id: &str) -> Vec<String> {
-        vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string(), "main_operation".to_string()]
+        vec![
+            OPERATIONS_LOCATIONS.to_string(),
+            op_id.to_string(),
+            "main_operation".to_string(),
+        ]
     }
     pub fn get_step_path(op_id: &str, step_id: &str) -> Vec<String> {
-        vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string(), step_id.to_string()]
+        vec![
+            OPERATIONS_LOCATIONS.to_string(),
+            op_id.to_string(),
+            step_id.to_string(),
+        ]
     }
 
     pub fn get_date_path() -> Vec<String> {
@@ -178,10 +193,19 @@ impl OperationsFileManager {
     }
 
     pub fn get_operation_date_path(op_id: &str) -> Vec<String> {
-        vec![OPERATIONS_LOCATIONS.to_string(),  "dates".to_string(), op_id.to_string()]
+        vec![
+            OPERATIONS_LOCATIONS.to_string(),
+            "dates".to_string(),
+            op_id.to_string(),
+        ]
     }
     pub fn get_step_date_path(op_id: &str, step_id: &str) -> Vec<String> {
-        vec![OPERATIONS_LOCATIONS.to_string(),  "dates".to_string(), op_id.to_string(), step_id.to_string()]
+        vec![
+            OPERATIONS_LOCATIONS.to_string(),
+            "dates".to_string(),
+            op_id.to_string(),
+            step_id.to_string(),
+        ]
     }
 
     fn open_file(&self, file_path: &PathBuf) -> Result<File, io::Error> {
@@ -191,16 +215,17 @@ impl OperationsFileManager {
             .truncate(true)
             .open(file_path)?)
     }
-    pub fn get_open_file(&mut self, file_path: &PathBuf, keep_file_open: bool) -> &Arc<Mutex<File>> {
+    pub fn get_open_file(
+        &mut self,
+        file_path: &PathBuf,
+        keep_file_open: bool,
+    ) -> &Arc<Mutex<File>> {
         let id = &pathbuf_str(file_path);
         if !self.files.contains_key(id) {
             self.open_file(file_path);
             let file = Arc::new(Mutex::new(self.open_file(file_path).unwrap()));
             if keep_file_open {
-                self.files.insert(
-                    id.to_string(),
-                    file,
-                );
+                self.files.insert(id.to_string(), file);
                 return self.files.get(id).unwrap();
             }
         }
@@ -211,7 +236,10 @@ impl OperationsFileManager {
         let mut contents = vec![];
         block_in_place(|| {
             Handle::current().block_on(async {
-                 self.get_open_file(id, keep_file_open).try_lock().unwrap().read_to_end(&mut contents)?;
+                self.get_open_file(id, keep_file_open)
+                    .try_lock()
+                    .unwrap()
+                    .read_to_end(&mut contents)?;
                 let file_content = String::from_utf8(contents).unwrap_or_default();
                 Ok(file_content)
             })
@@ -225,10 +253,11 @@ impl OperationsFileManager {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&step).unwrap();
-                let op_id= step.try_read().unwrap().operation_id.clone();
+                let op_id = step.try_read().unwrap().operation_id.clone();
                 let step_id = step.try_read().unwrap().step_id.clone();
                 let step_path = generate_file_path(Self::get_step_path(&op_id, &step_id)).unwrap();
-                let step_date_path = generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
+                let step_date_path =
+                    generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
                 self.get_open_file(&step_path, keep_file_open)
                     .lock()
                     .await
@@ -240,7 +269,7 @@ impl OperationsFileManager {
             })
         })
     }
-    
+
     pub fn write_operation_file(
         &mut self,
         operation_file: &OperationFile,
@@ -250,9 +279,8 @@ impl OperationsFileManager {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&operation_file).unwrap();
                 let op_path = generate_file_path(Self::get_operations_path(&self.op_id)).unwrap();
-                let op_date_path = generate_file_path(Self::get_operation_date_path(&self.op_id)).unwrap();
-
-
+                let op_date_path =
+                    generate_file_path(Self::get_operation_date_path(&self.op_id)).unwrap();
 
                 self.get_open_file(&op_path, keep_file_open)
                     .lock()
@@ -271,11 +299,9 @@ impl OperationsFileManager {
         step_id: Arc<StandardRwLock<Steps>>,
         keep_file_open: bool,
     ) -> Result<Arc<Mutex<File>>, ThothErrors> {
-        let step_id= step_id.read().unwrap().step_id.clone();
+        let step_id = step_id.read().unwrap().step_id.clone();
         let file_path = generate_file_path(Self::get_step_path(&self.op_id, &step_id))?;
-        let file = Arc::new(Mutex::new(
-            self.open_file(&file_path.clone())?,
-        ));
+        let file = Arc::new(Mutex::new(self.open_file(&file_path.clone())?));
         sort_files_and_persist(&pathbuf_str(&file_path), true);
         if keep_file_open {
             self.files.insert(step_id.to_string(), file);
@@ -292,7 +318,11 @@ impl OperationsFileManager {
 
         Ok(serde_json::from_str(&file_content)?)
     }
-    pub fn create_operation_file(&mut self, operation: OperationFile, keep_file_open: bool) -> Result<(), ThothErrors> {
+    pub fn create_operation_file(
+        &mut self,
+        operation: OperationFile,
+        keep_file_open: bool,
+    ) -> Result<(), ThothErrors> {
         self.write_operation_file(&operation, keep_file_open);
         Ok(())
     }
@@ -323,13 +353,16 @@ impl OperationsFileManager {
         }
         files
     }
-    pub fn load_operations_by_date(start_date: Option<DateTime<Utc>>, end_date: Option<DateTime<Utc>>) -> Vec<OperationFile> {
+    pub fn load_operations_by_date(
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+    ) -> Vec<OperationFile> {
         let mut operations = vec![];
         let mut files_locations_vec = Self::get_operation_date_path("");
         files_locations_vec.pop(); // Remove the last element
         let files_locations = pathbuf_str(&generate_file_path(files_locations_vec).unwrap());
         let files = Self::list_directory_files(&files_locations);
-        get_files_by_date(&mut operations, &files, start_date,end_date);
+        get_files_by_date(&mut operations, &files, start_date, end_date);
         operations
     }
     pub fn load_steps_by_op_id(operation_id: &str) -> Vec<Steps> {
@@ -345,6 +378,4 @@ impl OperationsFileManager {
         }
         steps
     }
-
 }
-

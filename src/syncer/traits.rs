@@ -2,10 +2,7 @@ use chrono::Utc;
 use tokio::spawn;
 
 use crate::{
-    db::controller::{
-        registerer::DbOpsRegisterer,
-        traits::{ SqlSyncedOps},
-    },
+    db::controller::{registerer::DbOpsRegisterer, traits::SqlSyncedOps},
     router::{post_offices::nodes_info::post_office::SyncerOffice, traits::PostOfficeTrait},
     structs::structs::RequestsTypes,
     syncer::{
@@ -68,8 +65,8 @@ impl Syncer {
             //TODO make it lazy instead of sending everything at once.
             for op in db_ops {
                 for stp in DbOpsRegisterer::get_steps_by_op_id(&op.operation_id) {
-                    let _steps = DbOpsRegisterer::get_step_file(&op.operation_id, &stp.step_id).unwrap();
-                    
+                    let _steps =
+                        DbOpsRegisterer::get_step_file(&op.operation_id, &stp.step_id).unwrap();
                 }
             }
         });

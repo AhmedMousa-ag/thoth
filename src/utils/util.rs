@@ -39,7 +39,6 @@ pub fn convert_string_datetime(date: Option<String>) -> DateTime<Utc> {
     date
 }
 
-
 pub fn find_binary_search<T: Ord>(list: &[T], target: &T) -> Option<usize> {
     let mut left = 0;
     let mut right = list.len();

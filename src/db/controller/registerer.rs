@@ -6,21 +6,29 @@ use tokio::spawn;
 
 use crate::{
     db::{
-        controller::traits::{
-            SQLiteDBTraits, SqlNodesDuties, SqlSyncedOps,
-        },
+        controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlSyncedOps},
         entities::nodes_duties::ActiveModel as NodesDutiesActiveModel,
-    }, err, errors::thot_errors::ThothErrors, logger::writters::writter::OperationsFileManager, operations::planner::charts::structs::{NodesOpsMsg, OperationFile, Steps}
+    },
+    err,
+    errors::thot_errors::ThothErrors,
+    logger::writters::writter::OperationsFileManager,
+    operations::planner::charts::structs::{NodesOpsMsg, OperationFile, Steps},
 };
 pub struct FileRegisterer {}
 impl FileRegisterer {
-    pub fn new_operation(operation_id: String,thread:bool) {
+    pub fn new_operation(operation_id: String, thread: bool) {
         let fnc = move || {
-            let mut op_file= OperationsFileManager::new(&operation_id);
+            let mut op_file = OperationsFileManager::new(&operation_id);
             let execution_date: DateTime<Utc> = Utc::now();
-            op_file.create_operation_file(OperationFile { operation_id, result: None, execution_date }, false);
+            op_file.create_operation_file(
+                OperationFile {
+                    operation_id,
+                    result: None,
+                    execution_date,
+                },
+                false,
+            );
         };
-        
 
         if thread {
             spawn(async move {
@@ -32,7 +40,10 @@ impl FileRegisterer {
     }
 
     pub fn new_step(step: Arc<RwLock<Steps>>, thread: bool) {
-        let fnc = move || OperationsFileManager::new(&step.try_read().unwrap().operation_id.clone()).write_step(step.clone(), false);
+        let fnc = move || {
+            OperationsFileManager::new(&step.try_read().unwrap().operation_id.clone())
+                .write_step(step.clone(), false)
+        };
         if thread {
             spawn(async move {
                 fnc();
@@ -41,7 +52,6 @@ impl FileRegisterer {
             fnc();
         }
     }
-    
 }
 pub struct DbOpsRegisterer {}
 impl DbOpsRegisterer {
@@ -72,7 +82,7 @@ impl DbOpsRegisterer {
         OperationsFileManager::load_operations_by_date(start_date, end_date)
     }
     pub fn get_step_file(operation_id: &str, step_id: &str) -> Option<Steps> {
-        match OperationsFileManager::load_step_file(operation_id, step_id){
+        match OperationsFileManager::load_step_file(operation_id, step_id) {
             Ok(step) => Some(step),
             Err(e) => {
                 err!(
@@ -85,12 +95,12 @@ impl DbOpsRegisterer {
         }
     }
     pub fn get_steps_by_op_id(operation_id: &str) -> Vec<Steps> {
-     OperationsFileManager::load_steps_by_op_id(operation_id)
+        OperationsFileManager::load_steps_by_op_id(operation_id)
     }
     pub fn new_step(step: Arc<RwLock<Steps>>, thread: bool) {
         FileRegisterer::new_step(step, thread);
-        }
-    
+    }
+
     pub fn finished_step() {}
     pub fn new_duty(node_id: String, operation_id: String, step_id: String, thread: bool) {
         let fnc = move || {
@@ -139,8 +149,13 @@ impl DbOpsRegisterer {
         step: Arc<RwLock<Steps>>,
         thread: bool,
     ) {
-        DbOpsRegisterer::new_step(step.clone(),   thread);
-        DbOpsRegisterer::new_duty(node_id, operation_id, step.try_read().unwrap().step_id.clone(), thread);
+        DbOpsRegisterer::new_step(step.clone(), thread);
+        DbOpsRegisterer::new_duty(
+            node_id,
+            operation_id,
+            step.try_read().unwrap().step_id.clone(),
+            thread,
+        );
     }
     pub fn new_duties(duties: NodesOpsMsg, thread: bool) {
         for (node_id, ops_info) in duties.nodes_duties {

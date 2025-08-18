@@ -2,10 +2,7 @@
 his module checks if an operations or a step have been done before or not and return the result.
 */
 use crate::{
-    db::controller::{
-        registerer::DbOpsRegisterer,
-        traits::{ SqlNodesDuties},
-    },
+    db::controller::{registerer::DbOpsRegisterer, traits::SqlNodesDuties},
     debug,
     errors::thot_errors::ThothErrors,
     operations::planner::charts::structs::{NodesOpsMsg, OperationInfo},

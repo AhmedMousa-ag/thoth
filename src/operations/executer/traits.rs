@@ -1,10 +1,17 @@
 use crate::{
-    connections::channels_node_info::get_current_node_cloned, db::controller::registerer::DbOpsRegisterer, debug, err, errors::thot_errors::ThothErrors, info, logger::writters::writter::OperationsFileManager, operations::{
+    connections::channels_node_info::get_current_node_cloned,
+    db::controller::registerer::DbOpsRegisterer,
+    debug, err,
+    errors::thot_errors::ThothErrors,
+    info,
+    logger::writters::writter::OperationsFileManager,
+    operations::{
         checker::decrease_running_operation,
         executer::types::Executer,
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
-    }, warn
+    },
+    warn,
 };
 
 use std::{
@@ -31,7 +38,10 @@ impl Executer {
 
         let file_step = DbOpsRegisterer::get_step_file(&op_id, &step_id);
         if file_step.is_some_and(|stp| !stp.result.is_none()) {
-            info!("Step id {} already has a result, skipping execution.", step_id);
+            info!(
+                "Step id {} already has a result, skipping execution.",
+                step_id
+            );
             return;
         }
 
@@ -67,7 +77,7 @@ impl Executer {
             let op_id = node_duties.try_read().unwrap()[0].operation_id.clone();
             // let mut sql_ops_model = SqlOperations::new(op_id.clone());
             if DbOpsRegisterer::get_operation_file(&op_id).is_none() {
-                DbOpsRegisterer::new_operation(op_id.clone(),true);
+                DbOpsRegisterer::new_operation(op_id.clone(), true);
             }
             for duty in node_duties.try_read().unwrap().iter() {
                 // DutiesTranslator::new(node_duty)

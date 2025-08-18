@@ -54,7 +54,6 @@ where
     }
 }
 
-
 pub struct SqlNodesDuties {}
 impl SQLiteDBTraits<NodesDuties, NodesDutiesModels> for SqlNodesDuties {
     fn find_by_id(id: String) -> Option<nodes_duties::Model> {

@@ -20,14 +20,11 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {}
 
-
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         err!("No RelationDef"; panic = true);
-       unreachable!()
+        unreachable!()
     }
 }
-
-
 
 impl ActiveModelBehavior for ActiveModel {}

@@ -1,10 +1,7 @@
 use crate::{
     db::{
         configs::config::get_config,
-        entities::{
-            nodes_duties::Entity as NodesDuties,
-             synced_ops::Entity as SyncedOps,
-        },
+        entities::{nodes_duties::Entity as NodesDuties, synced_ops::Entity as SyncedOps},
     },
     err, info,
 };

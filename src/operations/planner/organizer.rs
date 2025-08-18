@@ -225,15 +225,8 @@ impl Planner {
             } else {
                 OperationStepExecuter::send_message(step_one.clone());
                 OperationStepExecuter::send_message(step_two.clone());
-                DbOpsRegisterer::new_step(
-                    step_one,
-                    true,
-                );
-                DbOpsRegisterer::new_step(
-                    step_two.clone(),
-                    true,
-                );
-                
+                DbOpsRegisterer::new_step(step_one, true);
+                DbOpsRegisterer::new_step(step_two.clone(), true);
             }
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
