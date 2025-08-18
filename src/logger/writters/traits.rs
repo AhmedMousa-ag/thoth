@@ -1,13 +1,11 @@
 use crate::{
-    logger::{
+    errors::thot_errors::ThothErrors, logger::{
         channels::{
             get_debug_reciever, get_err_reciever, get_info_reciever, get_ops_reciever,
             get_warn_reciever,
         },
-        writters::writter::{FileTypes, LogFileManager, OperationsFileManager},
-    },
-    operations::planner::charts::structs::Steps,
-    utils::util::create_directories,
+        writters::{configs::OPERATIONS_LOCATIONS, utils::{get_files_by_date, pathbuf_str, sort_files_and_persist}, writter::{FileTypes, LogFileManager, OperationsFileManager}},
+    }, operations::planner::charts::structs::{OperationFile, Steps}, utils::util::find_binary_search
 };
 use chrono::{DateTime, Utc};
 use std::{
@@ -21,6 +19,36 @@ use std::{
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
 use tokio::{spawn, sync::Mutex};
+
+fn generate_file_path(paths: Vec<String>) -> Result<PathBuf, ThothErrors> {
+    let mut file_path = PathBuf::new();
+    for path in paths {
+        file_path.push(path);
+    }
+    if !file_path.exists(){
+        fs::create_dir_all(&file_path)?;
+    }
+    Ok(file_path)
+}
+
+fn create_symbolic_link(target: &Path, link: &Path) -> Result<(), ThothErrors> {
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(target, link).map_err(|e| ThothErrors::from(e))
+    }
+    #[cfg(windows)]
+    {
+        std::os::windows::fs::symlink_file(target, link).map_err(|e| ThothErrors::from(e))
+    }
+    #[cfg(not(any(unix, windows)))]
+    {
+        Err(ThothErrors::from(io::Error::new(
+            io::ErrorKind::Other,
+            "Symbolic links are not supported on this platform",
+        )))
+    }
+}
+
 pub trait FileManagerTrait {
     fn new(file_type: FileTypes) -> Result<Self, io::Error>
     where
@@ -128,51 +156,68 @@ impl FileManagerTrait for LogFileManager {
 
 impl OperationsFileManager {
     // It should handle operations folder, including each step file.
-    pub fn new(op_id: String) -> Result<Self, io::Error> {
-        let file_path = Self::generate_file_name(&op_id, "");
-        create_directories(file_path.as_os_str().to_str().unwrap());
-        Ok(Self {
-            op_id,
-            file_type: FileTypes::OPERATIONS,
+    pub fn new(op_id: &str) -> Self{
+        generate_file_path(vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string()]).unwrap();
+        Self {
+            op_id: op_id.to_string(),
             files: HashMap::new(),
-        })
+        }
+    }
+    pub fn get_operations_path(op_id: &str) -> Vec<String> {
+        vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string()]
+    }
+    pub fn get_operations_main_path(op_id: &str) -> Vec<String> {
+        vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string(), "main_operation".to_string()]
+    }
+    pub fn get_step_path(op_id: &str, step_id: &str) -> Vec<String> {
+        vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string(), step_id.to_string()]
     }
 
-    fn generate_file_name(op_id: &str, step_id: &str) -> PathBuf {
-        Path::new("logs")
-            .join(FileTypes::OPERATIONS.as_str())
-            .join(op_id)
-            .join(step_id)
+    pub fn get_date_path() -> Vec<String> {
+        vec![OPERATIONS_LOCATIONS.to_string(), "dates".to_string()]
     }
 
-    fn open_file(&self, file_path: PathBuf) -> Result<File, io::Error> {
+    pub fn get_operation_date_path(op_id: &str) -> Vec<String> {
+        vec![OPERATIONS_LOCATIONS.to_string(),  "dates".to_string(), op_id.to_string()]
+    }
+    pub fn get_step_date_path(op_id: &str, step_id: &str) -> Vec<String> {
+        vec![OPERATIONS_LOCATIONS.to_string(),  "dates".to_string(), op_id.to_string(), step_id.to_string()]
+    }
+
+    fn open_file(&self, file_path: &PathBuf) -> Result<File, io::Error> {
         Ok(OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
             .open(file_path)?)
     }
-    pub fn get_file(&mut self, step_id: &str, keep_file_open: bool) -> Arc<Mutex<File>> {
-        if !self.files.contains_key(step_id) {
-            return self.create_step_file(step_id, keep_file_open).unwrap();
+    pub fn get_open_file(&mut self, file_path: &PathBuf, keep_file_open: bool) -> &Arc<Mutex<File>> {
+        let id = &pathbuf_str(file_path);
+        if !self.files.contains_key(id) {
+            self.open_file(file_path);
+            let file = Arc::new(Mutex::new(self.open_file(file_path).unwrap()));
+            if keep_file_open {
+                self.files.insert(
+                    id.to_string(),
+                    file,
+                );
+                return self.files.get(id).unwrap();
+            }
         }
-        self.files.get(step_id).unwrap().clone()
+        self.files.get(id).unwrap()
     }
 
-    pub fn read(&mut self, step_id: &str, keep_file_open: bool) -> Result<String, io::Error> {
+    pub fn read(&mut self, id: &PathBuf, keep_file_open: bool) -> Result<String, io::Error> {
         let mut contents = vec![];
         block_in_place(|| {
             Handle::current().block_on(async {
-                self.get_file(step_id, keep_file_open)
-                    .lock()
-                    .await
-                    .read_to_end(&mut contents)?;
+                 self.get_open_file(id, keep_file_open).try_lock().unwrap().read_to_end(&mut contents)?;
                 let file_content = String::from_utf8(contents).unwrap_or_default();
                 Ok(file_content)
             })
         })
     }
-    pub fn write(
+    pub fn write_step(
         &mut self,
         step: Arc<StandardRwLock<Steps>>,
         keep_file_open: bool,
@@ -180,10 +225,42 @@ impl OperationsFileManager {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&step).unwrap();
-                self.get_file(&step.try_read().unwrap().step_id, keep_file_open)
+                let op_id= step.try_read().unwrap().operation_id.clone();
+                let step_id = step.try_read().unwrap().step_id.clone();
+                let step_path = generate_file_path(Self::get_step_path(&op_id, &step_id)).unwrap();
+                let step_date_path = generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
+                self.get_open_file(&step_path, keep_file_open)
                     .lock()
                     .await
                     .write_all(lines.as_bytes())?;
+                sort_files_and_persist(&pathbuf_str(&step_path), true);
+                create_symbolic_link(&step_path, &step_date_path);
+                sort_files_and_persist(&pathbuf_str(&step_date_path), true);
+                Ok(())
+            })
+        })
+    }
+    
+    pub fn write_operation_file(
+        &mut self,
+        operation_file: &OperationFile,
+        keep_file_open: bool,
+    ) -> Result<(), ThothErrors> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let lines = serde_json::to_string(&operation_file).unwrap();
+                let op_path = generate_file_path(Self::get_operations_path(&self.op_id)).unwrap();
+                let op_date_path = generate_file_path(Self::get_operation_date_path(&self.op_id)).unwrap();
+
+
+
+                self.get_open_file(&op_path, keep_file_open)
+                    .lock()
+                    .await
+                    .write_all(lines.as_bytes())?;
+                sort_files_and_persist(&pathbuf_str(&op_path), true);
+                create_symbolic_link(&op_path, &op_date_path);
+                sort_files_and_persist(&pathbuf_str(&op_date_path), true);
                 Ok(())
             })
         })
@@ -191,20 +268,23 @@ impl OperationsFileManager {
 
     pub fn create_step_file(
         &mut self,
-        step_id: &str,
+        step_id: Arc<StandardRwLock<Steps>>,
         keep_file_open: bool,
-    ) -> Result<Arc<Mutex<File>>, io::Error> {
+    ) -> Result<Arc<Mutex<File>>, ThothErrors> {
+        let step_id= step_id.read().unwrap().step_id.clone();
+        let file_path = generate_file_path(Self::get_step_path(&self.op_id, &step_id))?;
         let file = Arc::new(Mutex::new(
-            self.open_file(Self::generate_file_name(&self.op_id, step_id))?,
+            self.open_file(&file_path.clone())?,
         ));
+        sort_files_and_persist(&pathbuf_str(&file_path), true);
         if keep_file_open {
             self.files.insert(step_id.to_string(), file);
-            return Ok(self.files.get(step_id).unwrap().clone());
+            return Ok(self.files.get(&step_id).unwrap().clone());
         }
         Ok(file.clone())
     }
-    pub fn load_step_file(op_id: &str, step_id: &str) -> Result<Steps, io::Error> {
-        let file_path = Self::generate_file_name(op_id, step_id);
+    pub fn load_step_file(op_id: &str, step_id: &str) -> Result<Steps, ThothErrors> {
+        let file_path = generate_file_path(Self::get_step_path(op_id, step_id))?;
         let mut file = OpenOptions::new().read(true).open(file_path)?;
         let mut contents = vec![];
         file.read_to_end(&mut contents)?;
@@ -212,4 +292,59 @@ impl OperationsFileManager {
 
         Ok(serde_json::from_str(&file_content)?)
     }
+    pub fn create_operation_file(&mut self, operation: OperationFile, keep_file_open: bool) -> Result<(), ThothErrors> {
+        self.write_operation_file(&operation, keep_file_open);
+        Ok(())
+    }
+    pub fn load_operation_file(operation_id: &str) -> Option<OperationFile> {
+        let file_path = generate_file_path(Self::get_operations_main_path(operation_id)).ok()?;
+        let mut file = match OpenOptions::new().read(true).open(file_path) {
+            Ok(file) => file,
+            Err(_) => return None,
+        };
+        let mut contents = vec![];
+        match file.read_to_end(&mut contents) {
+            Ok(_) => (),
+            Err(_) => return None,
+        };
+        let file_content = String::from_utf8(contents).unwrap_or_default();
+        Some(serde_json::from_str(&file_content).ok()?)
+    }
+    fn list_directory_files(dir: &str) -> Vec<String> {
+        let mut files = vec![];
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.filter_map(Result::ok) {
+                if let Ok(file_type) = entry.file_type() {
+                    if file_type.is_file() {
+                        files.push(entry.path().to_string_lossy().into_owned());
+                    }
+                }
+            }
+        }
+        files
+    }
+    pub fn load_operations_by_date(start_date: Option<DateTime<Utc>>, end_date: Option<DateTime<Utc>>) -> Vec<OperationFile> {
+        let mut operations = vec![];
+        let mut files_locations_vec = Self::get_operation_date_path("");
+        files_locations_vec.pop(); // Remove the last element
+        let files_locations = pathbuf_str(&generate_file_path(files_locations_vec).unwrap());
+        let files = Self::list_directory_files(&files_locations);
+        get_files_by_date(&mut operations, &files, start_date,end_date);
+        operations
+    }
+    pub fn load_steps_by_op_id(operation_id: &str) -> Vec<Steps> {
+        let mut steps = vec![];
+        let mut files_locations_vec = Self::get_step_date_path(operation_id, "");
+        files_locations_vec.pop(); // Remove the last element
+        let files_locations = pathbuf_str(&generate_file_path(files_locations_vec).unwrap());
+        let files = Self::list_directory_files(&files_locations);
+        for file in files {
+            if let Ok(step) = Self::load_step_file(operation_id, &file) {
+                steps.push(step);
+            }
+        }
+        steps
+    }
+
 }
+

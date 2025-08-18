@@ -1,36 +1,27 @@
 use sea_orm::prelude::*;
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
+
+use crate::err;
+
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "nodes_duties")]
 pub struct Model {
-    #[sea_orm(index)]
+    #[sea_orm(indexed)]
     pub node_id: String, // Instead of using UUID, we are already converting everything into string and UUID several times.
     pub op_id: String,
-    #[sea_orm(primary_key, unique, auto_increment = false)]
+    #[sea_orm(primary_key, auto_increment = false)]
     pub step_id: String,
-    #[sea_orm(default_value = false)]
+    #[sea_orm(default_value = "false")]
     pub is_finished: bool,
     //TODO you might put the result here.
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
-pub enum Relation {
-    Operation,
-}
+pub enum Relation {}
 
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
-        match self {
-            Self::Operation => Entity::belongs_to(super::operations::Entity)
-                .from(Column::OpId)
-                .to(super::operations::Column::OpId)
-                .into(),
-        }
-    }
-}
-
-impl Related<super::operations::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Operation.def()
+        err!("No RelationDef"; panic=true);
+        unreachable!()
     }
 }
 

@@ -1,5 +1,6 @@
 use crate::{operations::executer::types::OperationTypes, structs::numerics::structs::Numeric};
 use bincode::{Decode, Encode};
+use chrono::{Date, DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -28,7 +29,15 @@ pub struct Steps {
     pub use_prev_res: bool, //If true, then this will be used instead of x.
     pub extra_info: Option<ExtraInfo>,
 }
-#[derive(Debug, Encode, Decode, Clone)]
+
+#[derive(Debug, Clone,Serialize, Deserialize)]
+pub struct OperationFile {
+    pub operation_id: String,
+    pub result: Option<Numeric>,
+    pub execution_date: DateTime<Utc>
+}
+
+#[derive(Debug, Encode, Decode, Clone,Serialize, Deserialize)]
 pub struct OperationInfo {
     pub operation_id: String,
     pub step_id: String,
@@ -43,7 +52,7 @@ type NodeOpsMsgType = Vec<OperationInfo>;
 
 pub type NodesDuties = HashMap<String, Arc<RwLock<NodeOpsMsgType>>>;
 ///This one can't be sent between threads in async function
-#[derive(Debug, Encode, Decode, Clone)]
+#[derive(Debug, Encode, Decode, Clone,Serialize, Deserialize)]
 pub struct NodesOpsMsg {
     pub nodes_duties: NodesDuties,
 }

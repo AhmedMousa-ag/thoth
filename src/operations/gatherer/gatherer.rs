@@ -1,22 +1,13 @@
 use crate::{
-    connections::channels_node_info::get_nodes_info_cloned,
-    db::controller::traits::{SQLiteDBTraits, SqlSteps},
-    debug, err,
-    errors::thot_errors::ThothErrors,
-    grpc::grpc_server::mathop::{Matrix, MatrixRow},
-    info,
-    logger::writters::writter::OperationsFileManager,
-    operations::{
+    connections::channels_node_info::get_nodes_info_cloned, db::controller::registerer::DbOpsRegisterer, debug, err, errors::thot_errors::ThothErrors, grpc::grpc_server::mathop::{Matrix, MatrixRow}, info, logger::writters::writter::OperationsFileManager, operations::{
         checker::{get_num_running_operations, is_internal_ops_finished},
         gatherer::{
             channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
         planner::charts::structs::NodesOpsMsg,
-        utils::util::load_sql_step_to_gatherer_res,
-    },
-    router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
-    structs::numerics::structs::Numeric,
+        // utils::util::load_sql_step_to_gatherer_res,
+    }, router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait}, structs::numerics::structs::Numeric
 };
 use tokio::{
     select, spawn,
@@ -81,23 +72,19 @@ impl Gatherer {
                         );
                     }
                 }
-                let sql_step = SqlSteps::find_by_id(info.step_id.clone());
-                debug!("SQL Step: {:?}", sql_step);
-                if !sql_step.clone().is_none_or(|stp| stp.result.is_none()) {
+                let step = DbOpsRegisterer::get_step_file(&info.operation_id,&info.step_id);
+                debug!("SQL Step: {:?}", step);
+                if !step.as_ref().is_none_or(|stp| stp.result.is_none()) {
                     // If it's one node or the result already exists on this node, then the step is already done. and exists. However it doesn't comply if there were multiple nodes.
                     info!(
                         "Step already done on this node, sending the result: {:?}",
                         info
                     );
-                    let sql_step = sql_step.unwrap();
-                    let result: Option<Numeric> = if sql_step.result.is_some() {
-                        serde_json::from_str(&sql_step.clone().result.unwrap()).unwrap_or(None)
-                    } else {
-                        None
-                    };
+                    let sql_step = step.unwrap();
+                    let result = &sql_step.result;
                     let sender = get_opened_ch_sender(&info.operation_id);
                     if sender.is_some() && result.is_some() {
-                        let gther_res = load_sql_step_to_gatherer_res(&sql_step);
+                        let gther_res = GatheredResponse { result: sql_step.result.unwrap(), use_prev_res: sql_step.use_prev_res, extra_info: sql_step.extra_info };
                         info!("Sending Gathered Message Internally: {:?}", gther_res);
                         if let Err(e) = sender.unwrap().send(GatheredMessage {
                             operation_id: info.operation_id,

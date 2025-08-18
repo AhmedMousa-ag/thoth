@@ -58,7 +58,7 @@ impl Planner {
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(self.operation_id.clone())?,
+                op_file_manager: OperationsFileManager::new(&self.operation_id),
             })
         } else {
             None
@@ -115,7 +115,7 @@ impl Planner {
 
                 if let Some(exec) = &mut executer {
                     warn!("Will execute step internally");
-                    DbOpsRegisterer::new_step(self.operation_id.clone(), step_id, false, false);
+                    // DbOpsRegisterer::new_step(step, false);
                     increase_running_operation(self.operation_id.clone());
                     exec.execute_step(Arc::clone(&step));
                 } else {
@@ -156,7 +156,7 @@ impl Planner {
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(self.operation_id.clone())?,
+                op_file_manager: OperationsFileManager::new(&self.operation_id),
             })
         } else {
             None
@@ -211,24 +211,29 @@ impl Planner {
             };
             if let Some(exec) = &mut executer {
                 increase_running_operation(self.operation_id.clone());
-                DbOpsRegisterer::new_step(
-                    self.operation_id.clone(),
-                    first_step_id.clone(),
-                    false,
-                    false,
-                );
+                // DbOpsRegisterer::new_step(
+                //     step_one,
+                //     true,
+                // );
                 exec.execute_step(step_one);
                 increase_running_operation(self.operation_id.clone());
-                DbOpsRegisterer::new_step(
-                    self.operation_id.clone(),
-                    second_step_id.clone(),
-                    true,
-                    false,
-                );
+                // DbOpsRegisterer::new_step(
+                //     step_two,
+                //     true,
+                // );
                 exec.execute_step(step_two);
             } else {
-                OperationStepExecuter::send_message(step_one);
-                OperationStepExecuter::send_message(step_two);
+                OperationStepExecuter::send_message(step_one.clone());
+                OperationStepExecuter::send_message(step_two.clone());
+                DbOpsRegisterer::new_step(
+                    step_one,
+                    true,
+                );
+                DbOpsRegisterer::new_step(
+                    step_two.clone(),
+                    true,
+                );
+                
             }
             match nodes_duties.get(&first_step_node_id) {
                 Some(msg_vec) => msg_vec.try_write()?.push(op_msg),

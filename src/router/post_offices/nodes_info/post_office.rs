@@ -66,16 +66,13 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
         spawn(async {
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
             DbOpsRegisterer::new_step(
-                step.try_read().unwrap().operation_id.clone(),
-                step.try_read().unwrap().step_id.clone(),
-                step.try_read().unwrap().use_prev_res.clone(),
+                step.clone(),
                 false,
             );
             let mut executer = Executer {
                 op_file_manager: OperationsFileManager::new(
-                    step.try_read().unwrap().operation_id.clone(),
-                )
-                .unwrap(),
+                    &step.try_read().unwrap().operation_id,
+                ),
             };
             executer.execute_step(step);
         });
@@ -102,7 +99,7 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
             if let Some(op_info) = operation_info {
                 let op_id = op_info.try_read().unwrap()[0].operation_id.clone();
                 Executer {
-                    op_file_manager: OperationsFileManager::new(op_id).unwrap(),
+                    op_file_manager: OperationsFileManager::new(&op_id),
                 }
                 .execute_duties(duties);
             }

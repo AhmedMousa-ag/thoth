@@ -4,7 +4,7 @@ his module checks if an operations or a step have been done before or not and re
 use crate::{
     db::controller::{
         registerer::DbOpsRegisterer,
-        traits::{SQLiteDBTraits, SqlNodesDuties, SqlOperations},
+        traits::{ SqlNodesDuties},
     },
     debug,
     errors::thot_errors::ThothErrors,
@@ -54,15 +54,7 @@ pub fn get_num_running_operations(operation_id: String) -> u64 {
 pub struct PlanChecker {}
 impl PlanChecker {
     pub fn is_planned_before(operation_id: String) -> bool {
-        let model = match SqlOperations::find_by_id(operation_id.clone()) {
-            Some(model) => model,
-            None => {
-                DbOpsRegisterer::new_operation(operation_id, true);
-                return false;
-            }
-        };
-
-        model.is_finished
+        DbOpsRegisterer::get_operation_file(&operation_id).is_some_and(|op| op.result.is_some())
     }
 
     pub fn get_planned_duties_db(operation_id: String) -> Result<Box<NodesOpsMsg>, ThothErrors> {
