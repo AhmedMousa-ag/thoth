@@ -8,23 +8,23 @@ async fn test_matrix_multiply() {
     let matrix_a = Matrix {
         rows: vec![
             MatrixRow {
-                values: vec![1.0, 2.0],
+                values: vec![1.0, 2.0, 3.0],
             },
             MatrixRow {
-                values: vec![4.0, 5.0],
-            },
-            MatrixRow {
-                values: vec![7.0, 8.0],
+                values: vec![4.0, 5.0, 6.0],
             },
         ],
     };
     let matrix_b = Matrix {
         rows: vec![
             MatrixRow {
-                values: vec![1.0, 2.0],
+                values: vec![7.0, 8.0],
             },
             MatrixRow {
-                values: vec![4.0, 5.0],
+                values: vec![9.0, 10.0],
+            },
+            MatrixRow {
+                values: vec![11.0, 12.0],
             },
         ],
     };
@@ -40,13 +40,10 @@ async fn test_matrix_multiply() {
     let expected_result = Matrix {
         rows: vec![
             MatrixRow {
-                values: vec![9.0, 12.0],
+                values: vec![58.0, 64.0],
             },
             MatrixRow {
-                values: vec![24.0, 33.0],
-            },
-            MatrixRow {
-                values: vec![39.0, 54.0],
+                values: vec![139.0, 154.0],
             },
         ],
     };
