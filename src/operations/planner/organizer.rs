@@ -80,7 +80,7 @@ impl Planner {
 
         for (irow, row) in x.iter().enumerate() {
             //Every row by every column
-            for icol in 0..y_row_len - 1 {
+            for icol in 0..y_row_len {
                 //Iterate every column
                 let col: Vec<f64> = y.iter().map(|yrow| yrow[icol]).collect();
                 let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);

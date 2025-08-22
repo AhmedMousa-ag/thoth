@@ -8,7 +8,17 @@ pub fn pathbuf_str(path: &PathBuf) -> String {
 }
 
 pub fn sort_files_and_persist(dir: &str, thread: bool) {
-    let dir = dir.to_string();
+    // If 'dir' is a file path (has an extension), get its parent directory
+    let dir = {
+        let path = PathBuf::from(dir);
+        if path.extension().is_some() {
+            path.parent()
+                .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_else(|| dir.to_string())
+        } else {
+            dir.to_string()
+        }
+    };
     let result = move || -> io::Result<()> {
         let files: Vec<PathBuf> = fs::read_dir(dir)?
             .filter_map(|entry| entry.ok().map(|e| e.path()))

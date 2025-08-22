@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{
+    db::controller::registerer::DbOpsRegisterer,
     err,
-    logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::OperationTypes,
         planner::charts::structs::Steps,
@@ -87,9 +87,15 @@ impl Translator for ScalerTranslator {
             None => {
                 //if !step_ref.use_prev_res{
                 let step_id = read_guard.prev_step.as_ref().unwrap().clone(); //Get last step.
-                let prev_step =
-                    OperationsFileManager::load_step_file(&read_guard.operation_id, &step_id)
-                        .unwrap();
+                let mut prev_step =
+                    DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
+                while prev_step.is_none() {
+                    // Wait for the previous step to be available
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                    prev_step = DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
+                }
+                let prev_step = prev_step.unwrap();
+
                 x = prev_step.result.unwrap().get_scaler_value();
                 y = read_guard.y.as_ref().unwrap().get_scaler_value();
             }

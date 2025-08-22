@@ -1,5 +1,3 @@
-use std::env;
-
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait, DbErr, EntityTrait,
     IntoActiveModel, QueryFilter, QueryOrder,

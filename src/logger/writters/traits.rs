@@ -1,4 +1,5 @@
 use crate::{
+    debug, err,
     errors::thot_errors::ThothErrors,
     logger::{
         channels::{
@@ -12,12 +13,12 @@ use crate::{
         },
     },
     operations::planner::charts::structs::{OperationFile, Steps},
-    utils::util::find_binary_search,
+    warn,
 };
 use chrono::{DateTime, Utc};
 use std::{
     collections::HashMap,
-    fs::{self, File, OpenOptions},
+    fs::{self, File, OpenOptions, create_dir_all},
     io::{self, prelude::*},
     os::unix::fs::FileExt,
     path::{Path, PathBuf},
@@ -29,12 +30,16 @@ use tokio::{spawn, sync::Mutex};
 
 fn generate_file_path(paths: Vec<String>) -> Result<PathBuf, ThothErrors> {
     let mut file_path = PathBuf::new();
+
     for path in paths {
         file_path.push(path);
+        if file_path.extension().is_none() {
+            if let Err(e) = create_dir_all(&file_path) {
+                warn!("Failed to create directory: {}", e);
+            }
+        }
     }
-    if !file_path.exists() {
-        fs::create_dir_all(&file_path)?;
-    }
+
     Ok(file_path)
 }
 
@@ -174,17 +179,15 @@ impl OperationsFileManager {
         vec![OPERATIONS_LOCATIONS.to_string(), op_id.to_string()]
     }
     pub fn get_operations_main_path(op_id: &str) -> Vec<String> {
-        vec![
-            OPERATIONS_LOCATIONS.to_string(),
-            op_id.to_string(),
-            "main_operation".to_string(),
-        ]
+        let mut path = Self::get_operations_path(op_id);
+        path.push("main_operation.th".to_string());
+        path
     }
     pub fn get_step_path(op_id: &str, step_id: &str) -> Vec<String> {
         vec![
             OPERATIONS_LOCATIONS.to_string(),
             op_id.to_string(),
-            step_id.to_string(),
+            format!("{}.th", step_id),
         ]
     }
 
@@ -196,7 +199,7 @@ impl OperationsFileManager {
         vec![
             OPERATIONS_LOCATIONS.to_string(),
             "dates".to_string(),
-            op_id.to_string(),
+            format!("{}.th", op_id.to_string()),
         ]
     }
     pub fn get_step_date_path(op_id: &str, step_id: &str) -> Vec<String> {
@@ -204,32 +207,49 @@ impl OperationsFileManager {
             OPERATIONS_LOCATIONS.to_string(),
             "dates".to_string(),
             op_id.to_string(),
-            step_id.to_string(),
+            format!("{}.th", step_id),
         ]
     }
 
-    fn open_file(&self, file_path: &PathBuf) -> Result<File, io::Error> {
-        Ok(OpenOptions::new()
+    fn open_file(&self, file_path: &PathBuf) -> Option<File> {
+        match OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
-            .open(file_path)?)
+            .open(file_path)
+        {
+            Ok(file) => Some(file),
+            Err(e) => {
+                err!("Failed to open file: {}, {}", file_path.display(), e);
+                None
+            }
+        }
     }
     pub fn get_open_file(
         &mut self,
         file_path: &PathBuf,
         keep_file_open: bool,
-    ) -> &Arc<Mutex<File>> {
+    ) -> Option<Arc<Mutex<File>>> {
         let id = &pathbuf_str(file_path);
-        if !self.files.contains_key(id) {
-            self.open_file(file_path);
-            let file = Arc::new(Mutex::new(self.open_file(file_path).unwrap()));
-            if keep_file_open {
-                self.files.insert(id.to_string(), file);
-                return self.files.get(id).unwrap();
-            }
+        if self.files.contains_key(id) {
+            return Some(self.files.get(id).unwrap().clone());
         }
-        self.files.get(id).unwrap()
+        debug!(
+            "Key file doesn't exists will create one for path: {}",
+            file_path.display()
+        );
+        let open_file = match self.open_file(file_path) {
+            Some(file) => file,
+            None => return None,
+        };
+
+        let file = Arc::new(Mutex::new(open_file));
+        if keep_file_open {
+            self.files.insert(id.to_string(), file.clone());
+            return Some(self.files.get(id).unwrap().clone());
+        } else {
+            return Some(file);
+        }
     }
 
     pub fn read(&mut self, id: &PathBuf, keep_file_open: bool) -> Result<String, io::Error> {
@@ -237,6 +257,7 @@ impl OperationsFileManager {
         block_in_place(|| {
             Handle::current().block_on(async {
                 self.get_open_file(id, keep_file_open)
+                    .unwrap()
                     .try_lock()
                     .unwrap()
                     .read_to_end(&mut contents)?;
@@ -249,7 +270,7 @@ impl OperationsFileManager {
         &mut self,
         step: Arc<StandardRwLock<Steps>>,
         keep_file_open: bool,
-    ) -> Result<(), io::Error> {
+    ) -> Result<(), ThothErrors> {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&step).unwrap();
@@ -259,11 +280,12 @@ impl OperationsFileManager {
                 let step_date_path =
                     generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
                 self.get_open_file(&step_path, keep_file_open)
+                    .unwrap()
                     .lock()
                     .await
                     .write_all(lines.as_bytes())?;
                 sort_files_and_persist(&pathbuf_str(&step_path), true);
-                create_symbolic_link(&step_path, &step_date_path);
+                create_symbolic_link(&step_path, &step_date_path)?;
                 sort_files_and_persist(&pathbuf_str(&step_date_path), true);
                 Ok(())
             })
@@ -278,16 +300,18 @@ impl OperationsFileManager {
         block_in_place(|| {
             Handle::current().block_on(async {
                 let lines = serde_json::to_string(&operation_file).unwrap();
-                let op_path = generate_file_path(Self::get_operations_path(&self.op_id)).unwrap();
+                let op_path =
+                    generate_file_path(Self::get_operations_main_path(&self.op_id)).unwrap();
                 let op_date_path =
-                    generate_file_path(Self::get_operation_date_path(&self.op_id)).unwrap();
-
+                    generate_file_path(Self::get_operations_main_path(&self.op_id)).unwrap();
+                debug!("Writing operation file at: {}", op_path.display());
                 self.get_open_file(&op_path, keep_file_open)
+                    .unwrap()
                     .lock()
                     .await
                     .write_all(lines.as_bytes())?;
                 sort_files_and_persist(&pathbuf_str(&op_path), true);
-                create_symbolic_link(&op_path, &op_date_path);
+                create_symbolic_link(&op_path, &op_date_path)?;
                 sort_files_and_persist(&pathbuf_str(&op_date_path), true);
                 Ok(())
             })
@@ -301,7 +325,7 @@ impl OperationsFileManager {
     ) -> Result<Arc<Mutex<File>>, ThothErrors> {
         let step_id = step_id.read().unwrap().step_id.clone();
         let file_path = generate_file_path(Self::get_step_path(&self.op_id, &step_id))?;
-        let file = Arc::new(Mutex::new(self.open_file(&file_path.clone())?));
+        let file = Arc::new(Mutex::new(self.open_file(&file_path.clone()).unwrap()));
         sort_files_and_persist(&pathbuf_str(&file_path), true);
         if keep_file_open {
             self.files.insert(step_id.to_string(), file);
@@ -323,11 +347,16 @@ impl OperationsFileManager {
         operation: OperationFile,
         keep_file_open: bool,
     ) -> Result<(), ThothErrors> {
-        self.write_operation_file(&operation, keep_file_open);
+        self.write_operation_file(&operation, keep_file_open)?;
         Ok(())
     }
     pub fn load_operation_file(operation_id: &str) -> Option<OperationFile> {
         let file_path = generate_file_path(Self::get_operations_main_path(operation_id)).ok()?;
+        debug!(
+            "Will load operation id: {}, at path: {}",
+            operation_id,
+            file_path.display()
+        );
         let mut file = match OpenOptions::new().read(true).open(file_path) {
             Ok(file) => file,
             Err(_) => return None,

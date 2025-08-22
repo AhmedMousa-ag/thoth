@@ -5,7 +5,6 @@ use crate::{
     errors::thot_errors::ThothErrors,
     grpc::grpc_server::mathop::{Matrix, MatrixRow},
     info,
-    logger::writters::writter::OperationsFileManager,
     operations::{
         checker::{get_num_running_operations, is_internal_ops_finished},
         gatherer::{
@@ -16,7 +15,6 @@ use crate::{
         // utils::util::load_sql_step_to_gatherer_res,
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
-    structs::numerics::structs::Numeric,
 };
 use tokio::{
     select, spawn,
@@ -35,21 +33,20 @@ impl Gatherer {
         }
     }
     pub fn reply_gathered_msg(mut message: GatheredMessage) -> Option<GatheredMessage> {
-        let res =
-            match OperationsFileManager::load_step_file(&message.operation_id, &message.step_id) {
-                Ok(stp) => {
-                    if stp.result.is_some() {
-                        GatheredResponse {
-                            result: stp.result.unwrap(),
-                            use_prev_res: stp.use_prev_res,
-                            extra_info: stp.extra_info,
-                        }
-                    } else {
-                        return None;
+        let res = match DbOpsRegisterer::get_step_file(&message.operation_id, &message.step_id) {
+            Some(stp) => {
+                if stp.result.is_some() {
+                    GatheredResponse {
+                        result: stp.result.unwrap(),
+                        use_prev_res: stp.use_prev_res,
+                        extra_info: stp.extra_info,
                     }
+                } else {
+                    return None;
                 }
-                Err(_) => return None,
-            };
+            }
+            None => return None,
+        };
         message.respond = Some(res);
         Some(message)
     }
