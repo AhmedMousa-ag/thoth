@@ -2,11 +2,7 @@ use crate::{operations::executer::types::OperationTypes, structs::numerics::stru
 use bincode::{Decode, Encode};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fmt::Debug,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, fmt::Debug};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct ExtraInfo {
@@ -50,8 +46,11 @@ type NodeOpsMsgType = Vec<OperationInfo>;
 //     pub nodes_duties: HashMap<String, Box<NodeOpsMsgType>>,
 // }
 
-pub type NodesDuties = HashMap<String, Arc<RwLock<NodeOpsMsgType>>>;
-///This one can't be sent between threads in async function
+// pub type NodesDuties = HashMap<String, Arc<RwLock<NodeOpsMsgType>>>;
+
+/// Serializable version of NodesDuties for encoding/decoding and serialization/deserialization.
+pub type NodesDuties = HashMap<String, NodeOpsMsgType>;
+
 #[derive(Debug, Encode, Decode, Clone, Serialize, Deserialize)]
 pub struct NodesOpsMsg {
     pub nodes_duties: NodesDuties,

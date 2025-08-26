@@ -1,4 +1,5 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use crate::{
     connections::{
@@ -44,7 +45,7 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
         ExternalComm::send_message(Box::clone(&rep_message));
         info!("Sent message in Nodes Office.");
     }
-    fn handle_incom_msg(message: Option<Vec<u8>>) {
+    async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let msg = NodeInfo::decode_bytes(&message.unwrap());
             NodeInfo::add_node(&msg);
@@ -54,22 +55,25 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
 
 impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
     fn send_message(msg: Arc<RwLock<Steps>>) {
-        let nodes_msg = Box::new(Message {
-            topic_name: TopicsEnums::Operations.to_string(),
-            request: RequestsTypes::PlansToExecute,
-            message: Some(msg.try_read().unwrap().encode_bytes()),
+        spawn(async move {
+            let nodes_msg = Box::new(Message {
+                topic_name: TopicsEnums::Operations.to_string(),
+                request: RequestsTypes::PlansToExecute,
+                message: Some(msg.read().await.encode_bytes()),
+            });
+            ExternalComm::send_message(nodes_msg);
+            info!("Sent step to be executed.");
         });
-        ExternalComm::send_message(nodes_msg);
-        info!("Sent step to be executed.")
     }
-    fn handle_incom_msg(message: Option<Vec<u8>>) {
+
+    async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
-            DbOpsRegisterer::new_step(step.clone(), false);
+            DbOpsRegisterer::new_step(step.clone(), false).await;
             let mut executer = Executer {
-                op_file_manager: OperationsFileManager::new(&step.try_read().unwrap().operation_id),
+                op_file_manager: OperationsFileManager::new(&step.read().await.operation_id),
             };
-            executer.execute_step(step);
+            executer.execute_step(step).await;
         });
     }
 }
@@ -84,7 +88,7 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
         ExternalComm::send_message(nodes_msg);
         info!("Sent plans to be executed.")
     }
-    fn handle_incom_msg(message: Option<Vec<u8>>) {
+    async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let duties = Box::new(NodesOpsMsg::decode_bytes(&message.unwrap()));
 
@@ -92,11 +96,12 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
             let node_key = get_current_node_cloned().id;
             let operation_info = duties.nodes_duties.get(&node_key);
             if let Some(op_info) = operation_info {
-                let op_id = op_info.try_read().unwrap()[0].operation_id.clone();
+                let op_id = op_info[0].operation_id.clone();
                 Executer {
                     op_file_manager: OperationsFileManager::new(&op_id),
                 }
-                .execute_duties(duties);
+                .execute_duties(duties)
+                .await;
             }
         });
     }
@@ -114,10 +119,10 @@ impl PostOfficeTrait<GatheredMessage> for GathererOffice {
             info!("Sent Gathered Requests to be executed.");
         });
     }
-    fn handle_incom_msg(message: Option<Vec<u8>>) {
+    async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let gathered_reply: GatheredMessage = GatheredMessage::decode_bytes(&message.unwrap());
-            let msg_sender = match get_opened_ch_sender(&gathered_reply.operation_id) {
+            let msg_sender = match get_opened_ch_sender(&gathered_reply.operation_id).await {
                 Some(sender) => sender,
                 None => return,
             };
@@ -159,7 +164,7 @@ impl PostOfficeTrait<SyncMessage> for SyncerOffice {
         ExternalComm::send_message(Box::clone(&rep_message));
         info!("Sent message in Nodes Office.");
     }
-    fn handle_incom_msg(message: Option<Vec<u8>>) {
+    async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async move {
             let message = SyncMessage::decode_bytes(&message.unwrap());
             if let Err(e) = get_sender().send(message) {

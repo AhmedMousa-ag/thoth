@@ -2,6 +2,7 @@ use thoth::connections::connect::GossibConnection;
 use thoth::db::sqlite::setup_db;
 use thoth::err;
 use thoth::errors::thot_errors::ThothErrors;
+use thoth::events::back_office::EventsCommunicationOffice;
 use thoth::grpc::grpc_server;
 use thoth::logger::logger::LoggerWritter;
 use tokio::spawn;
@@ -9,6 +10,7 @@ use tokio::spawn;
 async fn main() -> Result<(), ThothErrors> {
     LoggerWritter::start().await;
     setup_db().await;
+    EventsCommunicationOffice::start_back_office();
     spawn(async {
         let conn_res = GossibConnection::p2pconnect().await;
         if let Err(e) = conn_res {

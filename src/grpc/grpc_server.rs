@@ -62,7 +62,7 @@ impl MathOps for MathOperations {
         };
 
         let (y, _y_rows_dim, y_cols_dim) = extract_matrix(y_matrix);
-        let nodes_duties: Box<NodesOpsMsg> = match pln.plan_matrix_naive_multiply(x, y) {
+        let nodes_duties: Box<NodesOpsMsg> = match pln.plan_matrix_naive_multiply(x, y).await {
             Ok(duties) => duties,
             Err(e) => {
                 let err_msg = format!("Failed to create plans due to: {}", e);
@@ -73,7 +73,7 @@ impl MathOps for MathOperations {
                 }));
             }
         };
-        let mut gatherer = Gatherer::new(operation_id);
+        let mut gatherer = Gatherer::new(operation_id).await;
         let num_res = match gatherer
             .gather_matrix_multiply(nodes_duties, (x_rows_dim, y_cols_dim))
             .await
@@ -107,7 +107,7 @@ impl MathOps for MathOperations {
         let operation_id = req_data.operation_id;
         let pln = Planner::new(operation_id.clone());
 
-        let nodes_duties = match pln.plan_average(req_data.x) {
+        let nodes_duties = match pln.plan_average(req_data.x).await {
             Ok(duties) => duties,
             Err(e) => {
                 let err_msg = format!("Failed to create plans due to: {}", e);
@@ -118,7 +118,7 @@ impl MathOps for MathOperations {
                 }));
             }
         };
-        let mut gatherer = Gatherer::new(operation_id);
+        let mut gatherer = Gatherer::new(operation_id).await;
         let num_res = match gatherer.gather_list_average(nodes_duties).await {
             Ok(rs) => rs,
             Err(e) => {

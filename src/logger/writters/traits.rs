@@ -22,7 +22,7 @@ use std::{
     io::{self, prelude::*},
     os::unix::fs::FileExt,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock as StandardRwLock},
+    sync::Arc,
 };
 use tokio::runtime::Handle;
 use tokio::task::block_in_place;
@@ -258,8 +258,8 @@ impl OperationsFileManager {
             Handle::current().block_on(async {
                 self.get_open_file(id, keep_file_open)
                     .unwrap()
-                    .try_lock()
-                    .unwrap()
+                    .lock()
+                    .await
                     .read_to_end(&mut contents)?;
                 let file_content = String::from_utf8(contents).unwrap_or_default();
                 Ok(file_content)
@@ -268,22 +268,22 @@ impl OperationsFileManager {
     }
     pub fn write_step(
         &mut self,
-        step: Arc<StandardRwLock<Steps>>,
+        step_str_lines: String,
+        op_id: String,
+        step_id: String,
         keep_file_open: bool,
     ) -> Result<(), ThothErrors> {
         block_in_place(|| {
             Handle::current().block_on(async {
-                let lines = serde_json::to_string(&step).unwrap();
-                let op_id = step.try_read().unwrap().operation_id.clone();
-                let step_id = step.try_read().unwrap().step_id.clone();
                 let step_path = generate_file_path(Self::get_step_path(&op_id, &step_id)).unwrap();
                 let step_date_path =
                     generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
                 self.get_open_file(&step_path, keep_file_open)
                     .unwrap()
-                    .lock()
-                    .await
-                    .write_all(lines.as_bytes())?;
+                    .try_lock()
+                    .unwrap()
+                    // .await
+                    .write_all(step_str_lines.as_bytes())?;
                 sort_files_and_persist(&pathbuf_str(&step_path), true);
                 create_symbolic_link(&step_path, &step_date_path)?;
                 sort_files_and_persist(&pathbuf_str(&step_date_path), true);
@@ -307,8 +307,8 @@ impl OperationsFileManager {
                 debug!("Writing operation file at: {}", op_path.display());
                 self.get_open_file(&op_path, keep_file_open)
                     .unwrap()
-                    .lock()
-                    .await
+                    .try_lock()
+                    .unwrap()
                     .write_all(lines.as_bytes())?;
                 sort_files_and_persist(&pathbuf_str(&op_path), true);
                 create_symbolic_link(&op_path, &op_date_path)?;
@@ -320,10 +320,9 @@ impl OperationsFileManager {
 
     pub fn create_step_file(
         &mut self,
-        step_id: Arc<StandardRwLock<Steps>>,
+        step_id: String,
         keep_file_open: bool,
     ) -> Result<Arc<Mutex<File>>, ThothErrors> {
-        let step_id = step_id.read().unwrap().step_id.clone();
         let file_path = generate_file_path(Self::get_step_path(&self.op_id, &step_id))?;
         let file = Arc::new(Mutex::new(self.open_file(&file_path.clone()).unwrap()));
         sort_files_and_persist(&pathbuf_str(&file_path), true);

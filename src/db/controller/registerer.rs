@@ -1,8 +1,8 @@
-use std::sync::{Arc, RwLock};
-
 use chrono::{DateTime, Utc};
 use sea_orm::ActiveValue::Set;
+use std::sync::Arc;
 use tokio::spawn;
+use tokio::sync::RwLock;
 
 use crate::{
     db::{
@@ -45,12 +45,18 @@ impl FileRegisterer {
         }
     }
 
-    pub fn new_step(step: Arc<RwLock<Steps>>, thread: bool) {
-        let fnc = move || match OperationsFileManager::new(
-            &step.try_read().unwrap().operation_id.clone(),
-        )
-        .write_step(step.clone(), false)
-        {
+    pub async fn new_step(step: Arc<RwLock<Steps>>, thread: bool) {
+        let read_guard = step.read().await;
+        let op_id = read_guard.operation_id.clone();
+        let step_id = read_guard.step_id.clone();
+        let step_str_lines = serde_json::to_string(&*read_guard).unwrap();
+        drop(read_guard);
+        let fnc = move || match OperationsFileManager::new(&op_id).write_step(
+            step_str_lines,
+            op_id,
+            step_id,
+            false,
+        ) {
             Ok(_) => {}
             Err(e) => {
                 err!("Failed to write step file: {}", ThothErrors::from(e));
@@ -113,8 +119,8 @@ impl DbOpsRegisterer {
     pub fn get_steps_by_op_id(operation_id: &str) -> Vec<Steps> {
         OperationsFileManager::load_steps_by_op_id(operation_id)
     }
-    pub fn new_step(step: Arc<RwLock<Steps>>, thread: bool) {
-        FileRegisterer::new_step(step, thread);
+    pub async fn new_step(step: Arc<RwLock<Steps>>, thread: bool) {
+        FileRegisterer::new_step(step, thread).await;
     }
 
     pub fn finished_step() {}
@@ -159,23 +165,23 @@ impl DbOpsRegisterer {
         }
     }
     /// Register both a step and a duty in one funciton
-    pub fn new_step_duty(
+    pub async fn new_step_duty(
         node_id: String,
         operation_id: String,
         step: Arc<RwLock<Steps>>,
         thread: bool,
     ) {
-        DbOpsRegisterer::new_step(step.clone(), thread);
+        DbOpsRegisterer::new_step(step.clone(), thread).await;
         DbOpsRegisterer::new_duty(
             node_id,
             operation_id,
-            step.try_read().unwrap().step_id.clone(),
+            step.read().await.step_id.clone(),
             thread,
         );
     }
     pub fn new_duties(duties: NodesOpsMsg, thread: bool) {
         for (node_id, ops_info) in duties.nodes_duties {
-            for ops_infos in ops_info.try_read().unwrap().clone() {
+            for ops_infos in ops_info.clone() {
                 DbOpsRegisterer::new_duty(
                     node_id.clone(),
                     ops_infos.operation_id,

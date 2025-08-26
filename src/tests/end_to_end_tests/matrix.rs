@@ -1,6 +1,9 @@
-use crate::grpc::grpc_server::{
-    MathOperations,
-    mathop::{Matrix, MatrixOperationRequest, MatrixRow, math_ops_server::MathOps},
+use crate::{
+    debug,
+    grpc::grpc_server::{
+        MathOperations,
+        mathop::{Matrix, MatrixOperationRequest, MatrixRow, math_ops_server::MathOps},
+    },
 };
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 10)]
@@ -47,7 +50,9 @@ async fn test_matrix_multiply() {
             },
         ],
     };
-    assert_eq!(result.into_inner().result_matrix.unwrap(), expected_result);
+    let res = result.into_inner();
+    debug!("Matrix: {:?}", res);
+    assert_eq!(res.result_matrix.unwrap(), expected_result);
 }
 
 //TODO test with same UUID and check caching results.

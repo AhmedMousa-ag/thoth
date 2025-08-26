@@ -1,4 +1,5 @@
 use crate::{
+    events::events::Event,
     operations::{
         executer::types::OperationTypes,
         planner::charts::structs::{NodesOpsMsg, OperationInfo, Steps},
@@ -79,11 +80,22 @@ impl fmt::Display for NodesOpsMsg {
         let mut msg = String::new();
         for node_id in self.nodes_duties.keys() {
             let mut node_duties = String::new();
-            for node_duty in self.nodes_duties[node_id].try_read().unwrap().iter() {
+            for node_duty in self.nodes_duties[node_id].iter() {
                 node_duties.push_str(&format!("{} ", node_duty));
             }
             msg.push_str(&format!("Node Id: {}, With Duty: {}", node_id, node_duties));
         }
         write!(f, "{}", msg)
+    }
+}
+
+impl fmt::Display for Event {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Event Id: {}, Satisfied: {}",
+            self.id,
+            self.event_type.as_str()
+        )
     }
 }

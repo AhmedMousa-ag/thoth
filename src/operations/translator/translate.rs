@@ -1,3 +1,5 @@
+use tokio::sync::RwLock;
+
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     operations::{
@@ -6,16 +8,16 @@ use crate::{
     },
     structs::numerics::structs::Numeric,
 };
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 pub struct DutiesTranslator {
-    pub node_duty: Arc<RwLock<Vec<OperationInfo>>>,
+    pub node_duty: Vec<OperationInfo>,
 }
 
 impl DutiesTranslator {
     //TODO this function seems useless as all the methodes are static. Unless you're going to do a check before excuting a step. Consider deleting it, seems uselss.
     pub fn new(nodes_duty: NodesDuties) -> Option<Self> {
-        let operations_info: Option<&Arc<RwLock<Vec<OperationInfo>>>> =
+        let operations_info: Option<&Vec<OperationInfo>> =
             nodes_duty.get(&get_current_node_cloned().id);
         match operations_info {
             Some(node_duty) => Some(Self {
@@ -31,11 +33,11 @@ impl DutiesTranslator {
             Numeric::Matrix(_) => Box::new(MatricesTranslator::new(step)),
         }
     }
-    pub fn translate_step(step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
-        let num = if step.try_read().unwrap().x.is_some() {
-            step.try_read().unwrap().x.as_ref().unwrap().clone()
+    pub async fn translate_step(step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
+        let num = if step.read().await.x.is_some() {
+            step.read().await.x.as_ref().unwrap().clone()
         } else {
-            step.try_read().unwrap().y.as_ref().unwrap().clone()
+            step.read().await.y.as_ref().unwrap().clone()
         };
         let translator = DutiesTranslator::create_translator(&num, Arc::clone(&step));
         translator.step(Arc::clone(&step));

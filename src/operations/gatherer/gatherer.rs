@@ -22,12 +22,12 @@ use tokio::{
 };
 
 impl Gatherer {
-    pub fn new(operation_id: String) -> Self {
+    pub async fn new(operation_id: String) -> Self {
         let channels: (
             UnboundedSender<GatheredMessage>,
             UnboundedReceiver<GatheredMessage>,
         ) = mpsc::unbounded_channel();
-        add_ch_sender(operation_id.clone(), channels.0);
+        add_ch_sender(operation_id.clone(), channels.0).await;
         Self {
             reciever_ch: channels.1,
         }
@@ -51,21 +51,21 @@ impl Gatherer {
         Some(message)
     }
     // TODO you might move it outside of this struct, but I don't see it worth it.
-    fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
+    async fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
         let mut num_sent_message = 0;
         debug!("Plan Nodes Duties: {:?}", plan);
         //TODO Keep track of execution steps, then get the number of nodes, if only this one available, then wait until all of the steps are done.
         let num_nodes = get_nodes_info_cloned().len();
         for (_, op_infos) in plan.nodes_duties {
-            for info in op_infos.try_read()?.clone() {
+            for info in op_infos {
                 num_sent_message += 1;
-                if num_nodes == 1 && !is_internal_ops_finished(info.operation_id.clone()) {
+                if num_nodes == 1 && !is_internal_ops_finished(info.operation_id.clone()).await {
                     debug!(
                         "Only one node available, waiting for the operation to finish: {}",
                         info.operation_id
                     );
                     loop {
-                        if is_internal_ops_finished(info.operation_id.clone()) {
+                        if is_internal_ops_finished(info.operation_id.clone()).await {
                             debug!("Operation finished, Will Break: {}", info.operation_id);
                             break;
                         }
@@ -88,7 +88,7 @@ impl Gatherer {
                     );
                     let sql_step = step.unwrap();
                     let result = &sql_step.result;
-                    let sender = get_opened_ch_sender(&info.operation_id);
+                    let sender = get_opened_ch_sender(&info.operation_id).await;
                     if sender.is_some() && result.is_some() {
                         let gther_res = GatheredResponse {
                             result: sql_step.result.unwrap(),
@@ -135,7 +135,7 @@ impl Gatherer {
         &mut self,
         plan: Box<NodesOpsMsg>,
     ) -> Result<f64, ThothErrors> {
-        let num_duties = Self::ask_nodes_their_results(plan)?;
+        let num_duties = Self::ask_nodes_their_results(plan).await?;
         let mut left_to_gather = num_duties.clone();
         let mut res = 0.0;
         let mut num_divide = 0.0;
@@ -177,7 +177,7 @@ impl Gatherer {
         plan: Box<NodesOpsMsg>,
         (rows_dim, cols_dim): (usize, usize),
     ) -> Result<Matrix, ThothErrors> {
-        let mut left_to_gather = Self::ask_nodes_their_results(plan)?;
+        let mut left_to_gather = Self::ask_nodes_their_results(plan).await?;
 
         let mut res: Matrix = Matrix {
             rows: vec![

@@ -171,10 +171,10 @@ impl GossibConnection {
                                     if topic_name==ops_topic{
                                         info!("Got Operation Topic: {}",ops_topic);
                                             match decoded_msg.request { //TODO refactor.
-                                                RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(decoded_msg.message);},
-                                                RequestsTypes::StartExecutePlan | RequestsTypes::EndedExecutingPlan=>{OperationsExecuterOffice::handle_incom_msg(decoded_msg.message);},
-                                                RequestsTypes::RequestGatherPlans=>{GathererOffice::handle_reply_gather_res(decoded_msg.message)},
-                                                RequestsTypes::ReplyGatherPlansRes=>{GathererOffice::handle_incom_msg(decoded_msg.message);}
+                                                RequestsTypes::PlansToExecute=>{OperationStepExecuter::handle_incom_msg(decoded_msg.message).await;},
+                                                RequestsTypes::StartExecutePlan | RequestsTypes::EndedExecutingPlan=>{OperationsExecuterOffice::handle_incom_msg(decoded_msg.message).await;},
+                                                RequestsTypes::RequestGatherPlans=>{GathererOffice::handle_reply_gather_res(decoded_msg.message);},
+                                                RequestsTypes::ReplyGatherPlansRes=>{GathererOffice::handle_incom_msg(decoded_msg.message).await;},
                                                 _=>warn!("Got operation topic message with no Request Type")
 
                                             };
@@ -183,13 +183,13 @@ impl GossibConnection {
                                             if decoded_msg.request==RequestsTypes::RequestNodeInfo{
                                                 NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
                                             }else if decoded_msg.request==RequestsTypes::ReplyNodeInfoUpdate{
-                                                NodesInfoOffice::handle_incom_msg(decoded_msg.message);
+                                                NodesInfoOffice::handle_incom_msg(decoded_msg.message).await;
                                             }else{
                                                 warn!("Node Info request type couldn't be identified.")
                                             }
                                     }else if topic_name==sync_topic{
                                         info!("Got a sync message {}",topic_name);
-                                        SyncerOffice::handle_incom_msg(decoded_msg.message);
+                                        SyncerOffice::handle_incom_msg(decoded_msg.message).await;
                                     }else{
                                         warn!("Couldn't find the topic type");
                                     }

@@ -104,13 +104,16 @@ pub struct EventsHandler {
 impl EventsHandler {
     pub fn new(id: &str) -> Self {
         let listener = EventListener::new(id.to_string());
-        EventsHandler { id: id.to_string(), listener }
+        EventsHandler {
+            id: id.to_string(),
+            listener,
+        }
     }
-    pub fn new_read_step(id:&str) -> Self {
+    pub fn new_read_step(id: &str) -> Self {
         let id = format!("read_{}", id);
         Self::new_step(&id)
     }
-    pub fn new_write_step(id:&str) -> Self {
+    pub fn new_write_step(id: &str) -> Self {
         let id = format!("write_{}", id);
         Self::new_step(&id)
     }
@@ -151,8 +154,8 @@ impl EventsHandler {
         }
         return self;
     }
-    
-    pub fn remove_event(self, thread: bool)->Self {
+
+    pub fn remove_event(self, thread: bool) -> Self {
         let id = self.listener.id.clone();
         let fnc = move || {
             let event = Event {
