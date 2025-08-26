@@ -1,6 +1,6 @@
 pub trait PostOfficeTrait<S> {
     fn send_message(message: S);
-    fn handle_incom_msg(message: Option<Vec<u8>>);
+    fn handle_incom_msg(message: Option<Vec<u8>>) -> impl std::future::Future<Output = ()> + Send;
 }
 pub trait SenderReciverTrait<S, R> {
     fn get_sender_tx() -> S;

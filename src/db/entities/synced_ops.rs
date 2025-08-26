@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use sea_orm::prelude::*;
 
+use crate::err;
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "synced_ops")]
 pub struct Model {
@@ -16,24 +18,12 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
-pub enum Relation {
-    Operation,
-}
+pub enum Relation {}
 
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
-        match self {
-            Relation::Operation => Entity::belongs_to(super::operations::Entity)
-                .from(Column::OpsId)
-                .to(super::operations::Column::OpId)
-                .into(),
-        }
-    }
-}
-
-impl Related<super::operations::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Operation.def()
+        err!("No RelationDef"; panic = true);
+        unreachable!()
     }
 }
 

@@ -18,12 +18,8 @@ use crate::{
     structs::{numerics::structs::Numeric, structs::NodeInfo},
     warn,
 };
-
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-    vec,
-};
+use std::{collections::HashMap, sync::Arc, vec};
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 pub struct Planner {
@@ -41,7 +37,7 @@ impl Planner {
         }
     }
 
-    pub fn plan_matrix_naive_multiply(
+    pub async fn plan_matrix_naive_multiply(
         &self,
         x: Vec<Vec<f64>>,
         mut y: Vec<Vec<f64>>,
@@ -58,13 +54,13 @@ impl Planner {
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(self.operation_id.clone())?,
+                op_file_manager: OperationsFileManager::new(&self.operation_id),
             })
         } else {
             None
         };
         let mut node_idx = 0;
-        let mut nodes_duties: HashMap<String, Arc<RwLock<Vec<OperationInfo>>>> = HashMap::new();
+        let mut nodes_duties: HashMap<String, Vec<OperationInfo>> = HashMap::new();
 
         if x.is_empty() || y.is_empty() {
             warn!("Empty Vectors");
@@ -103,8 +99,8 @@ impl Planner {
                 }));
 
                 if let Some(prev) = prev_step {
-                    step.try_write()?.prev_step = Some(prev.try_read()?.step_id.to_string());
-                    prev.try_write()?.next_step = Some(step.try_read()?.step_id.to_string());
+                    step.write().await.prev_step = Some(prev.read().await.step_id.to_string());
+                    prev.write().await.next_step = Some(step.read().await.step_id.to_string());
                 }
 
                 prev_step = Some(Arc::clone(&step));
@@ -115,17 +111,17 @@ impl Planner {
 
                 if let Some(exec) = &mut executer {
                     warn!("Will execute step internally");
-                    DbOpsRegisterer::new_step(self.operation_id.clone(), step_id, false, false);
+                    // DbOpsRegisterer::new_step(step, false);
                     increase_running_operation(self.operation_id.clone());
-                    exec.execute_step(Arc::clone(&step));
+                    exec.execute_step(Arc::clone(&step)).await;
                 } else {
                     info!("Will send an execution step");
                     OperationStepExecuter::send_message(Arc::clone(&step));
                 }
-                match nodes_duties.get(&node_id) {
-                    Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
+                match nodes_duties.get_mut(&node_id) {
+                    Some(msg_vec) => msg_vec.push(op_msg),
                     None => {
-                        nodes_duties.insert(node_id, Arc::new(RwLock::new(vec![op_msg])));
+                        nodes_duties.insert(node_id, vec![op_msg]);
                     }
                 }
             }
@@ -134,7 +130,7 @@ impl Planner {
         info!("Finished planning: {}", nodes_ops_msg);
         if let Some(exec) = &mut executer {
             DbOpsRegisterer::new_duties(*nodes_ops_msg.clone(), true);
-            exec.execute_duties(nodes_ops_msg.clone());
+            exec.execute_duties(nodes_ops_msg.clone()).await;
         } else {
             info!("Will send an execution message");
             OperationsExecuterOffice::send_message(nodes_ops_msg.clone());
@@ -142,7 +138,7 @@ impl Planner {
         Ok(nodes_ops_msg)
     }
 
-    pub fn plan_average(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+    pub async fn plan_average(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         if PlanChecker::is_planned_before(self.operation_id.clone()) {
             info!("Already planned, will return.");
             return PlanChecker::get_planned_duties_db(self.operation_id.clone());
@@ -156,7 +152,7 @@ impl Planner {
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(self.operation_id.clone())?,
+                op_file_manager: OperationsFileManager::new(&self.operation_id),
             })
         } else {
             None
@@ -164,11 +160,11 @@ impl Planner {
         let ops_slice_size = data_size / nodes_num;
         let mut idx = 0;
         let mut node_idx = 0;
-        let mut nodes_duties: HashMap<String, Arc<RwLock<Vec<OperationInfo>>>> = HashMap::new();
+        let mut nodes_duties: HashMap<String, Vec<OperationInfo>> = HashMap::new();
 
         while idx < data_size {
             let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
-            let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
+            // let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             let first_step_id = Uuid::new_v4().to_string();
             let node_data = x[idx..ops_slice_size].to_vec(); //TODO sometimes it panics, check it. I think it's due to nodes being disconnected.
             let data_len = node_data.len() as f64;
@@ -202,8 +198,8 @@ impl Planner {
                     res_type: Some(Numeric::Scaler(0.0)),
                 }),
             }));
-            step_one.try_write()?.next_step = Some(step_two.try_read()?.step_id.to_string());
-            step_two.try_write()?.prev_step = Some(step_one.try_read()?.step_id.to_string());
+            step_one.write().await.next_step = Some(step_two.read().await.step_id.to_string());
+            step_two.write().await.prev_step = Some(step_one.read().await.step_id.to_string());
 
             let op_msg = OperationInfo {
                 operation_id: self.operation_id.clone(),
@@ -211,39 +207,37 @@ impl Planner {
             };
             if let Some(exec) = &mut executer {
                 increase_running_operation(self.operation_id.clone());
-                DbOpsRegisterer::new_step(
-                    self.operation_id.clone(),
-                    first_step_id.clone(),
-                    false,
-                    false,
-                );
-                exec.execute_step(step_one);
+                // DbOpsRegisterer::new_step(
+                //     step_one,
+                //     true,
+                // );
+                exec.execute_step(step_one).await;
                 increase_running_operation(self.operation_id.clone());
-                DbOpsRegisterer::new_step(
-                    self.operation_id.clone(),
-                    second_step_id.clone(),
-                    true,
-                    false,
-                );
-                exec.execute_step(step_two);
+                // DbOpsRegisterer::new_step(
+                //     step_two,
+                //     true,
+                // );
+                exec.execute_step(step_two).await;
             } else {
-                OperationStepExecuter::send_message(step_one);
-                OperationStepExecuter::send_message(step_two);
+                OperationStepExecuter::send_message(step_one.clone());
+                OperationStepExecuter::send_message(step_two.clone());
+                DbOpsRegisterer::new_step(step_one, true).await;
+                DbOpsRegisterer::new_step(step_two.clone(), true).await;
             }
-            match nodes_duties.get(&first_step_node_id) {
-                Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
+            match nodes_duties.get_mut(&first_step_node_id) {
+                Some(msg_vec) => msg_vec.push(op_msg),
                 None => {
-                    nodes_duties.insert(first_step_node_id, Arc::new(RwLock::new(vec![op_msg])));
+                    nodes_duties.insert(first_step_node_id, vec![op_msg]);
                 }
             }
             let op_msg = OperationInfo {
                 operation_id: self.operation_id.clone(),
-                step_id: second_step_id,
+                step_id: second_step_id.clone(),
             };
-            match nodes_duties.get(&second_step_node_id) {
-                Some(msg_vec) => msg_vec.try_write()?.push(op_msg),
+            match nodes_duties.get_mut(&second_step_id) {
+                Some(msg_vec) => msg_vec.push(op_msg),
                 None => {
-                    nodes_duties.insert(second_step_node_id, Arc::new(RwLock::new(vec![op_msg])));
+                    nodes_duties.insert(second_step_id, vec![op_msg]);
                 }
             }
 
@@ -254,7 +248,7 @@ impl Planner {
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         if let Some(exec) = &mut executer {
             DbOpsRegisterer::new_duties(*nodes_ops_msg.clone(), true);
-            exec.execute_duties(nodes_ops_msg.clone());
+            exec.execute_duties(nodes_ops_msg.clone()).await;
             // return;
         } else {
             OperationsExecuterOffice::send_message(nodes_ops_msg.clone());

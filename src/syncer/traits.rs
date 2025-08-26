@@ -2,10 +2,7 @@ use chrono::Utc;
 use tokio::spawn;
 
 use crate::{
-    db::controller::{
-        registerer::DbOpsRegisterer,
-        traits::{SqlOperations, SqlSteps, SqlSyncedOps},
-    },
+    db::controller::{registerer::DbOpsRegisterer, traits::SqlSyncedOps},
     router::{post_offices::nodes_info::post_office::SyncerOffice, traits::PostOfficeTrait},
     structs::structs::RequestsTypes,
     syncer::{
@@ -63,13 +60,13 @@ impl Syncer {
             );
             DbOpsRegisterer::new_syncer(start_date, end_date, true);
             let _reply_operations: Vec<OperationType> = Vec::new();
-            let db_ops = SqlOperations::get_by_date(start_date, end_date);
+
+            let db_ops = DbOpsRegisterer::get_operation_by_date(Some(start_date), Some(end_date));
             //TODO make it lazy instead of sending everything at once.
             for op in db_ops {
-                let steps = SqlSteps::get_by_op_id(op.op_id);
-                for _step in steps {
-                    // let step_msg = OperationType::Step();
-                    // reply_operations.push(step_msg);
+                for stp in DbOpsRegisterer::get_steps_by_op_id(&op.operation_id) {
+                    let _steps =
+                        DbOpsRegisterer::get_step_file(&op.operation_id, &stp.step_id).unwrap();
                 }
             }
         });

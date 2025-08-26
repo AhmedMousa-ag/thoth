@@ -1,11 +1,10 @@
 use crate::{
     connections::channels_node_info::get_nodes_info_cloned,
-    db::controller::traits::{SQLiteDBTraits, SqlSteps},
+    db::controller::registerer::DbOpsRegisterer,
     debug, err,
     errors::thot_errors::ThothErrors,
     grpc::grpc_server::mathop::{Matrix, MatrixRow},
     info,
-    logger::writters::writter::OperationsFileManager,
     operations::{
         checker::{get_num_running_operations, is_internal_ops_finished},
         gatherer::{
@@ -13,10 +12,9 @@ use crate::{
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
         planner::charts::structs::NodesOpsMsg,
-        utils::util::load_sql_step_to_gatherer_res,
+        // utils::util::load_sql_step_to_gatherer_res,
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
-    structs::numerics::structs::Numeric,
 };
 use tokio::{
     select, spawn,
@@ -24,51 +22,50 @@ use tokio::{
 };
 
 impl Gatherer {
-    pub fn new(operation_id: String) -> Self {
+    pub async fn new(operation_id: String) -> Self {
         let channels: (
             UnboundedSender<GatheredMessage>,
             UnboundedReceiver<GatheredMessage>,
         ) = mpsc::unbounded_channel();
-        add_ch_sender(operation_id.clone(), channels.0);
+        add_ch_sender(operation_id.clone(), channels.0).await;
         Self {
             reciever_ch: channels.1,
         }
     }
     pub fn reply_gathered_msg(mut message: GatheredMessage) -> Option<GatheredMessage> {
-        let res =
-            match OperationsFileManager::load_step_file(&message.operation_id, &message.step_id) {
-                Ok(stp) => {
-                    if stp.result.is_some() {
-                        GatheredResponse {
-                            result: stp.result.unwrap(),
-                            use_prev_res: stp.use_prev_res,
-                            extra_info: stp.extra_info,
-                        }
-                    } else {
-                        return None;
+        let res = match DbOpsRegisterer::get_step_file(&message.operation_id, &message.step_id) {
+            Some(stp) => {
+                if stp.result.is_some() {
+                    GatheredResponse {
+                        result: stp.result.unwrap(),
+                        use_prev_res: stp.use_prev_res,
+                        extra_info: stp.extra_info,
                     }
+                } else {
+                    return None;
                 }
-                Err(_) => return None,
-            };
+            }
+            None => return None,
+        };
         message.respond = Some(res);
         Some(message)
     }
     // TODO you might move it outside of this struct, but I don't see it worth it.
-    fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
+    async fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
         let mut num_sent_message = 0;
         debug!("Plan Nodes Duties: {:?}", plan);
         //TODO Keep track of execution steps, then get the number of nodes, if only this one available, then wait until all of the steps are done.
         let num_nodes = get_nodes_info_cloned().len();
         for (_, op_infos) in plan.nodes_duties {
-            for info in op_infos.try_read()?.clone() {
+            for info in op_infos {
                 num_sent_message += 1;
-                if num_nodes == 1 && !is_internal_ops_finished(info.operation_id.clone()) {
+                if num_nodes == 1 && !is_internal_ops_finished(info.operation_id.clone()).await {
                     debug!(
                         "Only one node available, waiting for the operation to finish: {}",
                         info.operation_id
                     );
                     loop {
-                        if is_internal_ops_finished(info.operation_id.clone()) {
+                        if is_internal_ops_finished(info.operation_id.clone()).await {
                             debug!("Operation finished, Will Break: {}", info.operation_id);
                             break;
                         }
@@ -81,23 +78,23 @@ impl Gatherer {
                         );
                     }
                 }
-                let sql_step = SqlSteps::find_by_id(info.step_id.clone());
-                debug!("SQL Step: {:?}", sql_step);
-                if !sql_step.clone().is_none_or(|stp| stp.result.is_none()) {
+                let step = DbOpsRegisterer::get_step_file(&info.operation_id, &info.step_id);
+                debug!("SQL Step: {:?}", step);
+                if !step.as_ref().is_none_or(|stp| stp.result.is_none()) {
                     // If it's one node or the result already exists on this node, then the step is already done. and exists. However it doesn't comply if there were multiple nodes.
                     info!(
                         "Step already done on this node, sending the result: {:?}",
                         info
                     );
-                    let sql_step = sql_step.unwrap();
-                    let result: Option<Numeric> = if sql_step.result.is_some() {
-                        serde_json::from_str(&sql_step.clone().result.unwrap()).unwrap_or(None)
-                    } else {
-                        None
-                    };
-                    let sender = get_opened_ch_sender(&info.operation_id);
+                    let sql_step = step.unwrap();
+                    let result = &sql_step.result;
+                    let sender = get_opened_ch_sender(&info.operation_id).await;
                     if sender.is_some() && result.is_some() {
-                        let gther_res = load_sql_step_to_gatherer_res(&sql_step);
+                        let gther_res = GatheredResponse {
+                            result: sql_step.result.unwrap(),
+                            use_prev_res: sql_step.use_prev_res,
+                            extra_info: sql_step.extra_info,
+                        };
                         info!("Sending Gathered Message Internally: {:?}", gther_res);
                         if let Err(e) = sender.unwrap().send(GatheredMessage {
                             operation_id: info.operation_id,
@@ -138,7 +135,7 @@ impl Gatherer {
         &mut self,
         plan: Box<NodesOpsMsg>,
     ) -> Result<f64, ThothErrors> {
-        let num_duties = Self::ask_nodes_their_results(plan)?;
+        let num_duties = Self::ask_nodes_their_results(plan).await?;
         let mut left_to_gather = num_duties.clone();
         let mut res = 0.0;
         let mut num_divide = 0.0;
@@ -180,7 +177,7 @@ impl Gatherer {
         plan: Box<NodesOpsMsg>,
         (rows_dim, cols_dim): (usize, usize),
     ) -> Result<Matrix, ThothErrors> {
-        let mut left_to_gather = Self::ask_nodes_their_results(plan)?;
+        let mut left_to_gather = Self::ask_nodes_their_results(plan).await?;
 
         let mut res: Matrix = Matrix {
             rows: vec![

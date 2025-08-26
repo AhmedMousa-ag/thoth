@@ -31,6 +31,5 @@ pub struct LogFileManager {
 }
 pub struct OperationsFileManager {
     pub op_id: String,
-    pub file_type: FileTypes, //TODO maybe you should re-think it
     pub files: HashMap<String, Arc<Mutex<File>>>,
 }

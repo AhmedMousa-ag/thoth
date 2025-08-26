@@ -38,3 +38,20 @@ pub fn convert_string_datetime(date: Option<String>) -> DateTime<Utc> {
     };
     date
 }
+
+pub fn find_binary_search<T: Ord>(list: &[T], target: &T) -> Option<usize> {
+    let mut left = 0;
+    let mut right = list.len();
+
+    while left < right {
+        let mid = left + (right - left) / 2;
+        if &list[mid] == target {
+            return Some(mid);
+        } else if &list[mid] < target {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
+    }
+    None
+}

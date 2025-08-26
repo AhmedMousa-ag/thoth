@@ -1,16 +1,12 @@
-use std::env;
-
 use sea_orm::{
     ActiveModelBehavior, ActiveModelTrait, ActiveValue, ColumnTrait, DbErr, EntityTrait,
     IntoActiveModel, QueryFilter, QueryOrder,
 };
 
-use crate::db::entities::{nodes_duties, operations, steps, synced_ops};
+use crate::db::entities::{nodes_duties, synced_ops};
 use crate::db::{
     entities::{
         nodes_duties::{ActiveModel as NodesDutiesModels, Entity as NodesDuties},
-        operations::{ActiveModel as OperationsModel, Entity as Operations},
-        steps::{ActiveModel as StepsModel, Entity as Steps},
         synced_ops::{ActiveModel as SyncedOpsModel, Entity as SyncedOps},
     },
     sqlite::get_db_connection,
@@ -51,122 +47,6 @@ where
             Handle::current().block_on(async {
                 let db = get_db_connection().await;
                 row.update(db).await
-            })
-        })
-    }
-}
-
-pub struct SqlSteps {}
-impl SQLiteDBTraits<Steps, StepsModel> for SqlSteps {
-    fn find_by_id(id: String) -> Option<steps::Model> {
-        block_in_place(|| {
-            Handle::current().block_on(async {
-                let db = get_db_connection().await;
-                match Steps::find_by_id(id).one(db).await {
-                    Ok(Some(step)) => Some(step),
-                    Ok(None) => None,
-                    Err(e) => {
-                        err!("Failed to find step by id due to: {}", ThothErrors::from(e));
-                        None
-                    }
-                }
-            })
-        })
-    }
-}
-impl SqlSteps {
-    pub fn new(step_id: String, op_id: String) -> StepsModel {
-        let file_path = env::current_dir()
-            .unwrap()
-            .join(&op_id)
-            .to_str()
-            .unwrap()
-            .to_string();
-        StepsModel {
-            op_id: ActiveValue::Set(op_id),
-            step_id: ActiveValue::Set(step_id),
-            file_path: ActiveValue::Set(file_path),
-            is_finished: ActiveValue::Set(false),
-            use_prev_res: ActiveValue::Set(false),
-            result: ActiveValue::NotSet,
-            res_pos: ActiveValue::NotSet,
-            res_type: ActiveValue::NotSet,
-        }
-    }
-    pub fn get_by_op_id(op_id: String) -> Vec<steps::Model> {
-        block_in_place(|| {
-            Handle::current().block_on(async {
-                let db = get_db_connection().await;
-                match Steps::find()
-                    .filter(steps::Column::OpId.eq(op_id))
-                    .all(db)
-                    .await
-                {
-                    Ok(ops) => ops,
-                    Err(e) => {
-                        err!(
-                            "Couldn't retreive operations filtered by date due to: {}",
-                            ThothErrors::from(e)
-                        );
-                        Vec::new()
-                    }
-                }
-            })
-        })
-    }
-}
-
-pub struct SqlOperations {}
-impl SQLiteDBTraits<Operations, OperationsModel> for SqlOperations {
-    fn find_by_id(id: String) -> Option<operations::Model> {
-        block_in_place(|| {
-            Handle::current().block_on(async {
-                let db = get_db_connection().await;
-                match Operations::find_by_id(id).one(db).await {
-                    Ok(Some(op)) => Some(op),
-                    Ok(None) => None,
-                    Err(e) => {
-                        err!(
-                            "Failed to find operation by id due to: {}",
-                            ThothErrors::from(e)
-                        );
-                        None
-                    }
-                }
-            })
-        })
-    }
-}
-impl SqlOperations {
-    pub fn new(op_id: String) -> OperationsModel {
-        OperationsModel {
-            op_id: ActiveValue::Set(op_id),
-            exec_date: ActiveValue::Set(chrono::offset::Utc::now()),
-            is_finished: ActiveValue::Set(false),
-        }
-    }
-    pub fn get_by_date(
-        start_date: DateTime<Utc>,
-        end_date: DateTime<Utc>,
-    ) -> Vec<operations::Model> {
-        block_in_place(|| {
-            Handle::current().block_on(async {
-                let db = get_db_connection().await;
-                match Operations::find()
-                    .filter(operations::Column::ExecDate.gte(start_date))
-                    .filter(operations::Column::ExecDate.lte(end_date))
-                    .all(db)
-                    .await
-                {
-                    Ok(ops) => ops,
-                    Err(e) => {
-                        err!(
-                            "Couldn't retreive operations filtered by date due to: {}",
-                            ThothErrors::from(e)
-                        );
-                        Vec::new()
-                    }
-                }
             })
         })
     }

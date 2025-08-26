@@ -16,8 +16,8 @@ pub fn start_back_office() {
         info!("Started Communications back office");
         loop {
             if let Some(message) = InternalCommunications::get_reciver_rx()
-                .lock()
-                .await
+                .try_lock()
+                .unwrap()
                 .recv()
                 .await
             {

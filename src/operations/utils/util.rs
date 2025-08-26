@@ -1,8 +1,7 @@
-use crate::{
-    db::entities::steps,
-    operations::{gatherer::structs::GatheredResponse, planner::charts::structs::ExtraInfo},
-    structs::numerics::structs::Numeric,
-};
+// use crate::{
+//     // operations::{gatherer::structs::GatheredResponse, planner::charts::structs::ExtraInfo},
+//     // structs::numerics::structs::Numeric,
+// };
 
 pub fn transpose<T>(x: Vec<Vec<T>>) -> Vec<Vec<T>> {
     if x.is_empty() || x[0].is_empty() {
@@ -32,14 +31,14 @@ pub fn get_node_id(idx: &mut usize, nodes_num: usize, nodes_keys: &Vec<String>) 
     key.to_string()
 }
 
-pub fn load_sql_step_to_gatherer_res(sql_step: &steps::Model) -> GatheredResponse {
-    let extra_info = ExtraInfo {
-        res_pos: serde_json::from_str(&sql_step.res_pos.clone().unwrap_or_default()).ok(),
-        res_type: serde_json::from_str(&sql_step.res_type.clone().unwrap_or_default()).ok(),
-    };
-    GatheredResponse {
-        result: Numeric::from_string(sql_step.result.clone()).unwrap_or(Numeric::Scaler(0.0)),
-        use_prev_res: sql_step.use_prev_res,
-        extra_info: Some(extra_info),
-    }
-}
+// pub fn load_sql_step_to_gatherer_res(sql_step: &steps::Model) -> GatheredResponse {
+//     let extra_info = ExtraInfo {
+//         res_pos: serde_json::from_str(&sql_step.res_pos.clone().unwrap_or_default()).ok(),
+//         res_type: serde_json::from_str(&sql_step.res_type.clone().unwrap_or_default()).ok(),
+//     };
+//     GatheredResponse {
+//         result: Numeric::from_string(sql_step.result.clone()).unwrap_or(Numeric::Scaler(0.0)),
+//         use_prev_res: sql_step.use_prev_res,
+//         extra_info: Some(extra_info),
+//     }
+// }

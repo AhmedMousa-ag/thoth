@@ -1,10 +1,7 @@
 use crate::{
     db::{
         configs::config::get_config,
-        entities::{
-            nodes_duties::Entity as NodesDuties, operations::Entity as Operation,
-            steps::Entity as Step, synced_ops::Entity as SyncedOps,
-        },
+        entities::{nodes_duties::Entity as NodesDuties, synced_ops::Entity as SyncedOps},
     },
     err, info,
 };
@@ -36,29 +33,6 @@ pub async fn setup_db() {
     let db: &DbConn = get_db_connection().await;
 
     let schema = Schema::new(DbBackend::Sqlite);
-
-    let stmt: TableCreateStatement = schema
-        .create_table_from_entity(Step)
-        .if_not_exists()
-        .to_owned();
-
-    match db.execute(db.get_database_backend().build(&stmt)).await {
-        Ok(_) => info!("Successfull creation of Step table."),
-        Err(e) => {
-            err!("Creating Step table: {}", e;panic=true);
-        }
-    }
-
-    let stmt: TableCreateStatement = schema
-        .create_table_from_entity(Operation)
-        .if_not_exists()
-        .to_owned();
-    match db.execute(db.get_database_backend().build(&stmt)).await {
-        Ok(_) => info!("Successfull creation of Operation table."),
-        Err(e) => {
-            err!("Creating Operation table: {}", e;panic=true);
-        }
-    }
 
     let stmt: TableCreateStatement = schema
         .create_table_from_entity(SyncedOps)
