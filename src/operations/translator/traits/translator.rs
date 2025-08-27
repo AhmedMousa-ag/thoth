@@ -111,9 +111,9 @@ impl Translator for ScalerTranslator {
                         let step_id = read_guard.prev_step.as_ref().unwrap().clone(); //Get last step.
                         let mut prev_step =
                             DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
-                        while prev_step.is_none() {
+                        while prev_step.is_none() || prev_step.as_ref().unwrap().result.is_none() {
                             // Wait for the previous step to be available
-                            std::thread::sleep(std::time::Duration::from_millis(100));
+                            std::thread::sleep(std::time::Duration::from_millis(1));
                             prev_step =
                                 DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
                         }
