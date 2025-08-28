@@ -83,21 +83,11 @@ impl Gatherer {
     }
     pub fn reply_gathered_msg(mut message: GatheredMessage) -> Option<GatheredMessage> {
         let res = match DbOpsRegisterer::get_step_file(&message.operation_id, &message.step_id) {
-            Some(stp) => {
-                if stp.result.is_some() {
-                    GatheredResponse {
-                        result: stp.result.unwrap(),
-                        use_prev_res: stp.use_prev_res,
-                        extra_info: stp.extra_info,
-                    }
-                } else {
-                    warn!(
-                        "Step result is None, cannot reply gathered message: {:?}",
-                        stp
-                    );
-                    return None;
-                }
-            }
+            Some(stp) => GatheredResponse {
+                result: stp.result.unwrap(),
+                use_prev_res: stp.use_prev_res,
+                extra_info: stp.extra_info,
+            },
             None => {
                 warn!("Step is not found, cannot reply gathered message");
                 return None;
