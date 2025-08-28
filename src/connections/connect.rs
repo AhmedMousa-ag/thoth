@@ -203,7 +203,7 @@ impl GossibConnection {
                                     // Wait one second to allow the connection to be fully established before sending the message.
                                     tokio::time::sleep(Duration::from_secs(1)).await;
                                     NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
-                                    // NodeInfo::request_other_nodes_info();
+                                    NodeInfo::request_other_nodes_info();
 
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
