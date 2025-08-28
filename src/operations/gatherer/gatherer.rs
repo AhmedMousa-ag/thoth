@@ -54,7 +54,7 @@ async fn get_result_internally(info: OperationInfo) {
         let sender = get_opened_ch_sender(&info.operation_id).await;
         if sender.is_some() && result.is_some() {
             let gther_res = GatheredResponse {
-                result: sql_step.result.unwrap(),
+                result: sql_step.result,
                 use_prev_res: sql_step.use_prev_res,
                 extra_info: sql_step.extra_info,
             };
@@ -84,7 +84,7 @@ impl Gatherer {
     pub fn reply_gathered_msg(mut message: GatheredMessage) -> Option<GatheredMessage> {
         let res = match DbOpsRegisterer::get_step_file(&message.operation_id, &message.step_id) {
             Some(stp) => GatheredResponse {
-                result: stp.result.unwrap(),
+                result: stp.result,
                 use_prev_res: stp.use_prev_res,
                 extra_info: stp.extra_info,
             },
@@ -167,9 +167,10 @@ impl Gatherer {
                         }
                         match value.respond{
                         Some(gath_res)=>{
-                            let num:f64= gath_res.result.clone().into();
-                            debug!("Gathered Result: {}", num);
+
                             if gath_res.use_prev_res{
+                                let num:f64= gath_res.result.unwrap().clone().into();
+                                debug!("Gathered Result: {}", num);
                                 // let prev_res= gath_res.prev_step_res.unwrap_or(Numeric::from(0.0)).get_scaler_value();
                                 res +=  num;
                                 num_divide += 1.0;
@@ -220,7 +221,7 @@ impl Gatherer {
                         }
                         match value.respond{
                         Some(gath_res)=>{
-                            let num = gath_res.result.get_scaler_value();
+                            let num = gath_res.result.unwrap().get_scaler_value();
                             if let Some(extra_infos)=gath_res.extra_info{
                                 let poses= extra_infos.res_pos.unwrap_or(vec![0,0]); // It shall never be None in case of metrics.
                                 let (x_pos,y_pos) = (poses[0],poses[1]);

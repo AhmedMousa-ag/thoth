@@ -9,7 +9,7 @@ pub struct Gatherer {
 }
 #[derive(Debug, Encode, Decode, Clone)]
 pub struct GatheredResponse {
-    pub result: Numeric,
+    pub result: Option<Numeric>,
     pub use_prev_res: bool,
     pub extra_info: Option<ExtraInfo>,
 }
