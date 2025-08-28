@@ -7,7 +7,7 @@ use crate::{
         configs::topics::TopicsEnums,
     },
     db::controller::registerer::DbOpsRegisterer,
-    err,
+    debug, err,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
@@ -69,6 +69,7 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
 
     async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
+            debug!("Received step to be executed.");
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
             DbOpsRegisterer::new_step(step.clone(), false).await;
             let mut executer = Executer {
