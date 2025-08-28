@@ -42,28 +42,12 @@ impl Executer {
         decrease_running_operation(op_id);
     }
 
-    // fn get_result_string(&self, step: Arc<RwLock<Steps>>) -> Option<String> {
-    //     let step = step.read().await;
-    //     if let Some(result) = &step.result {
-    //         let res = match serde_json::to_string(result) {
-    //             Ok(res) => Some(res),
-    //             Err(e) => {
-    //                 err!(
-    //                     "Faild to encode step result into string: {}",
-    //                     ThothErrors::from(e)
-    //                 );
-    //                 None
-    //             }
-    //         };
-    //         res
-    //     } else {
-    //         None
-    //     }
-    // }
 
     pub async fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
+        debug!("Will execute duties assigned to this node.");
         // Check for every step result.
         if let Some(node_duties) = duties.nodes_duties.get(&get_current_node_cloned().id) {
+            debug!("Started executing duties assigned to this node.");
             let op_id = node_duties[0].operation_id.clone();
             // let mut sql_ops_model = SqlOperations::new(op_id.clone());
             if DbOpsRegisterer::get_operation_file(&op_id).is_none() {

@@ -14,7 +14,7 @@ use crate::{
         planner::charts::structs::{NodesOpsMsg, OperationInfo},
         // utils::util::load_sql_step_to_gatherer_res,
     },
-    router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
+    router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait}, warn,
 };
 use tokio::{
     select, spawn,
@@ -91,10 +91,11 @@ impl Gatherer {
                         extra_info: stp.extra_info,
                     }
                 } else {
+                    warn!("Step result is None, cannot reply gathered message: {:?}", stp);
                     return None;
                 }
             }
-            None => return None,
+            None => {warn!("Step is not found, cannot reply gathered message");return None},
         };
         message.respond = Some(res);
         debug!("Replying Gathered Message: {:?}", message);
