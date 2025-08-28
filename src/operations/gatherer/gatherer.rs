@@ -168,7 +168,7 @@ impl Gatherer {
                         match value.respond{
                         Some(gath_res)=>{
 
-                            if gath_res.use_prev_res{
+                            if gath_res.use_prev_res && gath_res.result.is_some(){
                                 let num:f64= gath_res.result.unwrap().clone().into();
                                 debug!("Gathered Result: {}", num);
                                 // let prev_res= gath_res.prev_step_res.unwrap_or(Numeric::from(0.0)).get_scaler_value();
