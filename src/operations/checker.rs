@@ -39,11 +39,12 @@ pub fn decrease_running_operation(operation_id: &str) {
     });
 }
 pub async fn is_internal_ops_finished(operation_id: String) -> bool {
-    RUNNING_OPERATIONS
-        .read()
-        .await
-        .get(&operation_id)
-        .is_some_and(|&num| num == 0)
+    let run_ops = RUNNING_OPERATIONS.read().await.clone();
+    let run_ops_num = run_ops.get(&operation_id);
+    if run_ops_num.is_none() || *run_ops_num.unwrap() == 0 {
+        return true;
+    }
+    false
 }
 pub fn get_num_running_operations(operation_id: String) -> u64 {
     RUNNING_OPERATIONS

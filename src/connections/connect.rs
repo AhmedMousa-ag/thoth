@@ -55,6 +55,9 @@ impl GossibConnection {
                 );
             }
             info!("Subscribed to topic: {}", topic);
+            // After subscribing, send our node info to other nodes. NOTE: putting in established connection event is useless because the subscription must be done first which doesn't happen yet there.
+            NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+            NodeInfo::request_other_nodes_info();
         }
         swarm
     }
@@ -201,9 +204,9 @@ impl GossibConnection {
                                 SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
                                     info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
                                     // Wait one second to allow the connection to be fully established before sending the message.
-                                    tokio::time::sleep(Duration::from_secs(1)).await;
-                                    NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
-                                    NodeInfo::request_other_nodes_info();
+                                    // tokio::time::sleep(Duration::from_secs(1)).await;
+                                    // NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                                    // NodeInfo::request_other_nodes_info();
 
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
