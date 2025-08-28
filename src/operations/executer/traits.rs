@@ -21,7 +21,7 @@ impl Executer {
     pub async fn execute_step(&mut self, step: Arc<RwLock<Steps>>) {
         let step_id = step.read().await.step_id.clone();
         let op_id = step.read().await.operation_id.clone();
-
+        debug!("Executing step id: {}", step_id);
         let is_op_exists = DbOpsRegisterer::get_operation_file(&op_id).is_some();
         if !is_op_exists {
             debug!("Operation id doesn't exists in SQL, will insert new one");
