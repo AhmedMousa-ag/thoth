@@ -52,27 +52,11 @@ impl Translator for ScalerTranslator {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let read_guard = self.step.read().await;
-                let x = match read_guard.x.as_ref().unwrap() {
-                    Numeric::Scaler(val) => val,
-                    _ => {
-                        let msg = "Expected Vector variant in Vector Translator";
-                        err!("{}",msg;panic=true);
-                        unreachable!("{}", msg);
-                    }
-                };
-                let y = match read_guard.y.as_ref().unwrap() {
-                    Numeric::Scaler(val) => val,
-                    _ => {
-                        let msg = "Expected Vector variant in Vector Translator";
-                        err!("{}",msg;panic=true);
-                        unreachable!("{}", msg);
-                    }
-                };
-
+                let x = read_guard.x.as_ref().unwrap();
+                let y = read_guard.y.as_ref().unwrap();
                 let result = y * x;
                 drop(read_guard);
-
-                self.step.write().await.result = Some(Numeric::Scaler(result));
+                self.step.write().await.result = Some(result);
             });
         });
     }
@@ -82,14 +66,14 @@ impl Translator for ScalerTranslator {
             rt.block_on(async {
                 let read_guard = self.step.read().await;
 
-                let x = read_guard.x.as_ref().unwrap().get_scaler_value();
+                let x = read_guard.x.as_ref().unwrap();
 
-                let y = read_guard.y.as_ref().unwrap().get_scaler_value();
+                let y = read_guard.y.as_ref().unwrap();
 
                 let result = x + y;
                 drop(read_guard);
 
-                self.step.write().await.result = Some(Numeric::Scaler(result));
+                self.step.write().await.result = Some(result);
             });
         });
     }

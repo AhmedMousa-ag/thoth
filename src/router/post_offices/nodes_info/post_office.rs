@@ -14,7 +14,7 @@ use crate::{
     operations::{
         executer::types::Executer,
         gatherer::{
-            channels::get_opened_ch_sender,
+            channels::get_opened_ch_sender as get_gatherer_ch_sender,
             structs::{GatheredMessage, Gatherer},
         },
         planner::charts::structs::{NodesOpsMsg, Steps},
@@ -25,6 +25,7 @@ use crate::{
         traits::EncodingDecoding,
     },
     syncer::{channels::get_sender, structs::SyncMessage},
+    warn,
 };
 use tokio::spawn;
 pub struct NodesInfoOffice {}
@@ -122,9 +123,12 @@ impl PostOfficeTrait<GatheredMessage> for GathererOffice {
     async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let gathered_reply: GatheredMessage = GatheredMessage::decode_bytes(&message.unwrap());
-            let msg_sender = match get_opened_ch_sender(&gathered_reply.operation_id).await {
+            let msg_sender = match get_gatherer_ch_sender(&gathered_reply.operation_id).await {
                 Some(sender) => sender,
-                None => return,
+                None => {
+                    warn!("Tried to get gatherer sende channel but not found.");
+                    return;
+                }
             };
             match msg_sender.send(gathered_reply) {
                 Ok(_) => {}

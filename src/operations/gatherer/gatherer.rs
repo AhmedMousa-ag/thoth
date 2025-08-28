@@ -1,5 +1,5 @@
 use crate::{
-    connections::channels_node_info::get_nodes_info_cloned,
+    connections::channels_node_info::{get_current_node_cloned, get_nodes_info_cloned},
     db::controller::registerer::DbOpsRegisterer,
     debug, err,
     errors::thot_errors::ThothErrors,
@@ -11,7 +11,7 @@ use crate::{
             channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
-        planner::charts::structs::NodesOpsMsg,
+        planner::charts::structs::{NodesOpsMsg, OperationInfo},
         // utils::util::load_sql_step_to_gatherer_res,
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
@@ -20,6 +20,55 @@ use tokio::{
     select, spawn,
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
 };
+
+async fn get_result_internally(info: OperationInfo) {
+    debug!(
+        "Only one node available, waiting for the operation to finish: {}",
+        info.operation_id
+    );
+    loop {
+        //TODO make it event based rather than polling based.
+        debug!(
+            "Checking if operation is finished: {}, num of operations: {}",
+            info.operation_id,
+            get_num_running_operations(info.operation_id.clone())
+        );
+
+        if is_internal_ops_finished(info.operation_id.clone()).await {
+            debug!("Operation finished, Will Break: {}", info.operation_id);
+            break;
+        }
+        // Wait until the operation is finished, then continue.
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+
+    let step = DbOpsRegisterer::get_step_file(&info.operation_id, &info.step_id);
+    if !step.as_ref().is_none_or(|stp| stp.result.is_none()) {
+        // If it's one node or the result already exists on this node, then the step is already done. and exists. However it doesn't comply if there were multiple nodes.
+        info!(
+            "Step already done on this node, sending the result: {:?}",
+            info
+        );
+        let sql_step = step.unwrap();
+        let result = &sql_step.result;
+        let sender = get_opened_ch_sender(&info.operation_id).await;
+        if sender.is_some() && result.is_some() {
+            let gther_res = GatheredResponse {
+                result: sql_step.result.unwrap(),
+                use_prev_res: sql_step.use_prev_res,
+                extra_info: sql_step.extra_info,
+            };
+            info!("Sending Gathered Message Internally: {:?}", gther_res);
+            if let Err(e) = sender.unwrap().send(GatheredMessage {
+                operation_id: info.operation_id,
+                step_id: info.step_id,
+                respond: Some(gther_res),
+            }) {
+                err!("Error sending Gathered Message: {}", ThothErrors::from(e));
+            };
+        };
+    }
+}
 
 impl Gatherer {
     pub async fn new(operation_id: String) -> Self {
@@ -48,63 +97,26 @@ impl Gatherer {
             None => return None,
         };
         message.respond = Some(res);
+        debug!("Replying Gathered Message: {:?}", message);
         Some(message)
     }
     // TODO you might move it outside of this struct, but I don't see it worth it.
     async fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
         let mut num_sent_message = 0;
         debug!("Plan Nodes Duties: {:?}", plan);
+        let current_node_id = get_current_node_cloned().id;
         //TODO Keep track of execution steps, then get the number of nodes, if only this one available, then wait until all of the steps are done.
         let num_nodes = get_nodes_info_cloned().len();
-        for (_, op_infos) in plan.nodes_duties {
+        for (node_id, op_infos) in plan.nodes_duties {
             for info in op_infos {
                 num_sent_message += 1;
                 if num_nodes == 1 && !is_internal_ops_finished(info.operation_id.clone()).await {
-                    debug!(
-                        "Only one node available, waiting for the operation to finish: {}",
-                        info.operation_id
-                    );
-                    loop {
-                        if is_internal_ops_finished(info.operation_id.clone()).await {
-                            debug!("Operation finished, Will Break: {}", info.operation_id);
-                            break;
-                        }
-                        // Wait until the operation is finished, then continue.
-                        std::thread::sleep(std::time::Duration::from_millis(100));
-                        debug!(
-                            "Waiting for the operation to finish: {}, num of operations: {}",
-                            info.operation_id,
-                            get_num_running_operations(info.operation_id.clone())
-                        );
-                    }
-                }
-                let step = DbOpsRegisterer::get_step_file(&info.operation_id, &info.step_id);
-                debug!("SQL Step: {:?}", step);
-                if !step.as_ref().is_none_or(|stp| stp.result.is_none()) {
-                    // If it's one node or the result already exists on this node, then the step is already done. and exists. However it doesn't comply if there were multiple nodes.
-                    info!(
-                        "Step already done on this node, sending the result: {:?}",
-                        info
-                    );
-                    let sql_step = step.unwrap();
-                    let result = &sql_step.result;
-                    let sender = get_opened_ch_sender(&info.operation_id).await;
-                    if sender.is_some() && result.is_some() {
-                        let gther_res = GatheredResponse {
-                            result: sql_step.result.unwrap(),
-                            use_prev_res: sql_step.use_prev_res,
-                            extra_info: sql_step.extra_info,
-                        };
-                        info!("Sending Gathered Message Internally: {:?}", gther_res);
-                        if let Err(e) = sender.unwrap().send(GatheredMessage {
-                            operation_id: info.operation_id,
-                            step_id: info.step_id,
-                            respond: Some(gther_res),
-                        }) {
-                            err!("Error sending Gathered Message: {}", ThothErrors::from(e));
-                        };
-                    };
+                    get_result_internally(info).await;
                     // If succesfully sent the message then continue to the next element, otherwise get back to the main loop and ask the other nodes.
+                    continue;
+                }
+                if node_id == current_node_id {
+                    get_result_internally(info).await;
                     continue;
                 }
                 //Send the operation to all nodes, even if the result is None. which it's asking for the result.

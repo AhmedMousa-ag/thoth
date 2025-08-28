@@ -136,7 +136,6 @@ impl GossibConnection {
                                     match get_topic(message.topic_name.as_str()){
                                         Some(topic) =>{
                                             info!("Will send a message to topic: {}",topic);
-                                            info!("The message is: {:?} ",message);
                                         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
                                             err!("Error publishing message: {:?}",e);
                                         };}

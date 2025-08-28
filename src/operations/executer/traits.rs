@@ -3,10 +3,7 @@ use tokio::sync::RwLock;
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     db::controller::registerer::DbOpsRegisterer,
-    debug,
-    errors::thot_errors::ThothErrors,
-    info,
-    logger::writters::writter::OperationsFileManager,
+    debug, info,
     operations::{
         checker::decrease_running_operation,
         executer::types::Executer,
@@ -16,7 +13,7 @@ use crate::{
     warn,
 };
 
-use std::{sync::Arc, thread, time::Duration};
+use std::sync::Arc;
 
 impl Executer {
     pub async fn execute_step(&mut self, step: Arc<RwLock<Steps>>) {
@@ -74,26 +71,19 @@ impl Executer {
             }
             for duty in node_duties.iter() {
                 // DutiesTranslator::new(node_duty)
-                while DbOpsRegisterer::get_step_file(&duty.operation_id, &duty.step_id).is_none() {
-                    //Will wait for one second, maybe not all messages weren't processed. //TODO There's a potential an error happened and might cause the process to keep waiting.
-                    thread::sleep(Duration::from_secs(1));
-                }
-                match OperationsFileManager::load_step_file(
-                    &duty.operation_id,
-                    &duty.step_id.clone(),
-                ) {
+                // while DbOpsRegisterer::get_step_file(&duty.operation_id, &duty.step_id).is_none() {
+                //     //Will wait for one second, maybe not all messages weren't processed. //TODO There's a potential an error happened and might cause the process to keep waiting.
+                //     thread::sleep(Duration::from_secs(1));
+                // }
+                match DbOpsRegisterer::get_step_file(&duty.operation_id, &duty.step_id.clone()) {
                     //You might get it from the sqlite, possible you should not use the sqlite, it feels limited to it's one thread access in it's nature.
-                    Ok(step) => {
+                    Some(step) => {
                         if step.result.is_none() {
                             self.execute_step(Arc::new(RwLock::new(step))).await;
                         }
                     }
-                    Err(e) => {
-                        warn!(
-                            "Faild to load step file for step id {}: {}",
-                            duty.step_id,
-                            ThothErrors::from(e)
-                        );
+                    None => {
+                        warn!("Faild to load step file for step id: {}", duty.step_id);
                         continue;
                     }
                 }

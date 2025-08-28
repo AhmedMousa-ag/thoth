@@ -169,14 +169,13 @@ impl Planner {
 
             // [1,2,3,4,5]
             // [1,2],[3,4],[5]
-            let node_data = if idx+ops_slice_size < data_size {
-                x[idx..idx+ops_slice_size].to_vec()
+            let node_data = if idx + ops_slice_size < data_size {
+                x[idx..idx + ops_slice_size].to_vec()
             } else {
                 x[idx..].to_vec()
             };
             let data_len = node_data.len() as f64;
-           
-           
+
             let step_one = Arc::new(RwLock::new(Steps {
                 operation_id: self.operation_id.clone(),
                 step_id: first_step_id.clone(),
