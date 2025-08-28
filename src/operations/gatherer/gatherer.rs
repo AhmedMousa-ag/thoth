@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     connections::channels_node_info::{get_current_node_cloned, get_nodes_info_cloned},
     db::controller::registerer::DbOpsRegisterer,
@@ -14,7 +16,8 @@ use crate::{
         planner::charts::structs::{NodesOpsMsg, OperationInfo},
         // utils::util::load_sql_step_to_gatherer_res,
     },
-    router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait}, warn,
+    router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
+    warn,
 };
 use tokio::{
     select, spawn,
@@ -22,10 +25,7 @@ use tokio::{
 };
 
 async fn get_result_internally(info: OperationInfo) {
-    debug!(
-        "Only one node available, waiting for the operation to finish: {}",
-        info.operation_id
-    );
+    debug!("Waiting for the operation to finish: {}", info.operation_id);
     loop {
         //TODO make it event based rather than polling based.
         debug!(
@@ -91,32 +91,45 @@ impl Gatherer {
                         extra_info: stp.extra_info,
                     }
                 } else {
-                    warn!("Step result is None, cannot reply gathered message: {:?}", stp);
+                    warn!(
+                        "Step result is None, cannot reply gathered message: {:?}",
+                        stp
+                    );
                     return None;
                 }
             }
-            None => {warn!("Step is not found, cannot reply gathered message");return None},
+            None => {
+                warn!("Step is not found, cannot reply gathered message");
+                return None;
+            }
         };
         message.respond = Some(res);
         debug!("Replying Gathered Message: {:?}", message);
         Some(message)
     }
     // TODO you might move it outside of this struct, but I don't see it worth it.
-    async fn ask_nodes_their_results(plan: Box<NodesOpsMsg>) -> Result<usize, ThothErrors> {
-        let mut num_sent_message = 0;
+    async fn ask_nodes_their_results(
+        plan: Box<NodesOpsMsg>,
+    ) -> Result<HashMap<String, bool>, ThothErrors> {
+        let mut sent_messages = HashMap::new();
         debug!("Plan Nodes Duties: {:?}", plan);
         let current_node_id = get_current_node_cloned().id;
         //TODO Keep track of execution steps, then get the number of nodes, if only this one available, then wait until all of the steps are done.
         let num_nodes = get_nodes_info_cloned().len();
         for (node_id, op_infos) in plan.nodes_duties {
             for info in op_infos {
-                num_sent_message += 1;
+                sent_messages.insert(info.step_id.clone(), true);
                 if num_nodes == 1 && !is_internal_ops_finished(info.operation_id.clone()).await {
                     get_result_internally(info).await;
                     // If succesfully sent the message then continue to the next element, otherwise get back to the main loop and ask the other nodes.
                     continue;
                 }
+                debug!("Node ID: {}, Current Node ID: {}", node_id, current_node_id);
                 if node_id == current_node_id {
+                    debug!(
+                        "Operation is for the current node, getting the result internally: {:?}",
+                        info
+                    );
                     get_result_internally(info).await;
                     continue;
                 }
@@ -141,23 +154,27 @@ impl Gatherer {
                 });
             }
         }
-        Ok(num_sent_message)
+        Ok(sent_messages)
     }
 
     pub async fn gather_list_average(
         &mut self,
         plan: Box<NodesOpsMsg>,
     ) -> Result<f64, ThothErrors> {
-        let num_duties = Self::ask_nodes_their_results(plan).await?;
-        let mut left_to_gather = num_duties.clone();
+        let mut duties_maps = Self::ask_nodes_their_results(plan).await?;
         let mut res = 0.0;
         let mut num_divide = 0.0;
-        while left_to_gather > 0 {
+        while duties_maps.len() > 0 {
+            debug!("Number of duties: {}", duties_maps.len());
             select! {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
                         info!("Received: {:?}", value);
+                        if duties_maps.get(&value.step_id).is_none(){
+                            warn!("Received a step_id that is not in duties map: {}", value.step_id);
+                            continue;
+                        }
                         match value.respond{
                         Some(gath_res)=>{
                             let num:f64= gath_res.result.clone().into();
@@ -167,7 +184,7 @@ impl Gatherer {
                                 res +=  num;
                                 num_divide += 1.0;
                             }
-                            left_to_gather -= 1;
+                            duties_maps.remove(&value.step_id);
                         },
                         None=>continue,
                         }
@@ -190,7 +207,7 @@ impl Gatherer {
         plan: Box<NodesOpsMsg>,
         (rows_dim, cols_dim): (usize, usize),
     ) -> Result<Matrix, ThothErrors> {
-        let mut left_to_gather = Self::ask_nodes_their_results(plan).await?;
+        let mut duties_maps = Self::ask_nodes_their_results(plan).await?;
 
         let mut res: Matrix = Matrix {
             rows: vec![
@@ -201,12 +218,16 @@ impl Gatherer {
             ],
         };
         // let mut left_to_gather = rows_dim * cols_dim;
-        while left_to_gather > 0 {
+        while duties_maps.len() > 0 {
             select! {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
                         info!("Received: {:?}", value);
+                        if duties_maps.get(&value.step_id).is_none(){
+                            warn!("Received a step_id that is not in duties map: {}", value.step_id);
+                            continue;
+                        }
                         match value.respond{
                         Some(gath_res)=>{
                             let num = gath_res.result.get_scaler_value();
@@ -216,7 +237,7 @@ impl Gatherer {
                                 res.rows[x_pos].values[y_pos]= num;
 
                             }
-                            left_to_gather-=1;
+                            duties_maps.remove(&value.step_id);
 
                         },
                         None=>continue,

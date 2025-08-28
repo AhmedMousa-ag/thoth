@@ -27,13 +27,13 @@ pub fn increase_running_operation(operation_id: String) {
     });
 }
 
-pub fn decrease_running_operation(operation_id: String) {
+pub fn decrease_running_operation(operation_id: &str) {
     tokio::task::block_in_place(|| {
         Handle::current().block_on(async {
             let mut running_operations = RUNNING_OPERATIONS.write().await;
-            let num_operations = running_operations.get(&operation_id).unwrap_or(&0).clone();
+            let num_operations = running_operations.get(operation_id).unwrap_or(&0).clone();
             if num_operations > 0 {
-                running_operations.insert(operation_id, num_operations - 1);
+                running_operations.insert(operation_id.to_string(), num_operations - 1);
             }
         })
     });

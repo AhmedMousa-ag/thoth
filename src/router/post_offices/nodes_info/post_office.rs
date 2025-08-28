@@ -142,19 +142,23 @@ impl GathererOffice {
     pub fn handle_reply_gather_res(message: Option<Vec<u8>>) {
         spawn(async {
             let gathered_msg: GatheredMessage = GatheredMessage::decode_bytes(&message.unwrap());
-            let res = match Gatherer::reply_gathered_msg(gathered_msg) {
-                Some(res) => res,
-                None => return,
-            };
-            let nodes_msg = Box::new(Message {
-                topic_name: TopicsEnums::Operations.to_string(),
-                request: RequestsTypes::ReplyGatherPlansRes,
-                message: Some(res.encode_bytes()),
-            });
-            ExternalComm::send_message(nodes_msg);
-            info!("Sent Gathered replies to other nodes.");
+            reply_gather_res(gathered_msg);
         });
     }
+}
+
+pub fn reply_gather_res(gathered_msg: GatheredMessage) {
+    let res = match Gatherer::reply_gathered_msg(gathered_msg) {
+        Some(res) => res,
+        None => return,
+    };
+    let nodes_msg = Box::new(Message {
+        topic_name: TopicsEnums::Operations.to_string(),
+        request: RequestsTypes::ReplyGatherPlansRes,
+        message: Some(res.encode_bytes()),
+    });
+    ExternalComm::send_message(nodes_msg);
+    info!("Sent Gathered replies to other nodes.");
 }
 
 impl PostOfficeTrait<SyncMessage> for SyncerOffice {

@@ -7,9 +7,11 @@ use crate::{
     operations::{
         checker::decrease_running_operation,
         executer::types::Executer,
+        gatherer::structs::GatheredMessage,
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
     },
+    router::post_offices::nodes_info::post_office::reply_gather_res,
     warn,
 };
 
@@ -39,9 +41,13 @@ impl Executer {
         let step = DutiesTranslator::translate_step(Arc::clone(&step)).await; //I think we don't need to return it as it's mutable by reference.
         DbOpsRegisterer::new_step(Arc::clone(&step), true).await;
 
-        decrease_running_operation(op_id);
+        decrease_running_operation(&op_id);
+        reply_gather_res(GatheredMessage {
+            operation_id: op_id,
+            step_id,
+            respond: None,
+        }); // Returning it now in case it finished before.
     }
-
 
     pub async fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
         debug!("Will execute duties assigned to this node.");
