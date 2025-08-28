@@ -56,6 +56,7 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
 
 impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
     fn send_message(msg: Arc<RwLock<Steps>>) {
+        debug!("Sending step to other nodes to be executed.");
         spawn(async move {
             let nodes_msg = Box::new(Message {
                 topic_name: TopicsEnums::Operations.to_string(),

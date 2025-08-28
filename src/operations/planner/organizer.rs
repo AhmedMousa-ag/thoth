@@ -147,7 +147,7 @@ impl Planner {
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
         debug!("Available nodes number: {}", nodes_num);
-        let mut executer: Option<Executer> = if nodes_num >= 1 {
+        let mut executer: Option<Executer> = if nodes_num <= 1 {
             warn!(
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );

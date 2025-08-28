@@ -200,7 +200,8 @@ impl GossibConnection {
                                 },
                                 SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
                                     info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
-
+                                    // Wait one second to allow the connection to be fully established before sending the message.
+                                    tokio::time::sleep(Duration::from_secs(1)).await;
                                     NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
                                     // NodeInfo::request_other_nodes_info();
 
@@ -216,6 +217,8 @@ impl GossibConnection {
                                 SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
                                     warn!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
                             },
+                            // SwarmEvent::ExternalAddrConfirmed{address}=>{info!("External Address Confirmed: {}",address);NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                            //         NodeInfo::request_other_nodes_info();},
                                 _ => {}//warn!("None of these options: {:?}",event)}
                             }
                         }
