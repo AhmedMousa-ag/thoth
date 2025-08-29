@@ -46,10 +46,10 @@ pub async fn is_internal_ops_finished(operation_id: String) -> bool {
     }
     false
 }
-pub fn get_num_running_operations(operation_id: String) -> u64 {
+pub async fn get_num_running_operations(operation_id: String) -> u64 {
     RUNNING_OPERATIONS
-        .try_read()
-        .unwrap()
+        .read()
+        .await
         .get(&operation_id)
         .cloned()
         .unwrap_or(0)

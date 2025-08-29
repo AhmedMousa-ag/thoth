@@ -8,7 +8,7 @@ use crate::{
     grpc::grpc_server::mathop::{Matrix, MatrixRow},
     info,
     operations::{
-        checker::{get_num_running_operations, is_internal_ops_finished},
+        checker::is_internal_ops_finished,
         gatherer::{
             channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
@@ -28,12 +28,6 @@ async fn get_result_internally(info: OperationInfo) {
     debug!("Waiting for the operation to finish: {}", info.operation_id);
     loop {
         //TODO make it event based rather than polling based.
-        debug!(
-            "Checking if operation is finished: {}, num of operations: {}",
-            info.operation_id,
-            get_num_running_operations(info.operation_id.clone())
-        );
-
         if is_internal_ops_finished(info.operation_id.clone()).await {
             debug!("Operation finished, Will Break: {}", info.operation_id);
             break;
@@ -103,6 +97,7 @@ impl Gatherer {
     ) -> Result<HashMap<String, bool>, ThothErrors> {
         let mut sent_messages = HashMap::new();
         debug!("Plan Nodes Duties: {:?}", plan);
+        debug!("Number of Nodes Duties: {:?}", plan.nodes_duties.keys());
         let current_node_id = get_current_node_cloned().id;
         //TODO Keep track of execution steps, then get the number of nodes, if only this one available, then wait until all of the steps are done.
         let num_nodes = get_nodes_info_cloned().len();

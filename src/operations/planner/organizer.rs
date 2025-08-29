@@ -47,6 +47,7 @@ impl Planner {
         }
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
+        debug!("Available Nodes: {:?}", nodes_keys);
         let nodes_num = nodes_keys.len();
         info!("Available Nodes number is: {:?}", nodes_num);
         let mut executer: Option<Executer> = if nodes_num <= 1 {
@@ -145,6 +146,7 @@ impl Planner {
         }
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
+        debug!("Available Nodes: {:?}", nodes_keys);
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
         debug!("Available nodes number: {}", nodes_num);
         let mut executer: Option<Executer> = if nodes_num <= 1 {
@@ -190,8 +192,13 @@ impl Planner {
                 extra_info: None,
             }));
             let second_step_id = Uuid::new_v4().to_string();
+            let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
+            debug!(
+                "Node Id 1: {}, Node Id 2: {}",
+                first_step_node_id, second_step_node_id
+            );
             let step_two = Arc::new(RwLock::new(Steps {
-                node_id: util::get_node_id(&mut node_idx, nodes_num, &nodes_keys),
+                node_id: second_step_node_id.to_string(),
                 operation_id: self.operation_id.clone(),
                 step_id: second_step_id.clone(),
                 x: None,
@@ -215,16 +222,8 @@ impl Planner {
             };
             if let Some(exec) = &mut executer {
                 increase_running_operation(self.operation_id.clone());
-                // DbOpsRegisterer::new_step(
-                //     step_one,
-                //     true,
-                // );
                 exec.execute_step(step_one).await;
                 increase_running_operation(self.operation_id.clone());
-                // DbOpsRegisterer::new_step(
-                //     step_two,
-                //     true,
-                // );
                 exec.execute_step(step_two).await;
             } else {
                 OperationStepExecuter::send_message(step_one.clone());
@@ -242,10 +241,10 @@ impl Planner {
                 operation_id: self.operation_id.clone(),
                 step_id: second_step_id.clone(),
             };
-            match nodes_duties.get_mut(&second_step_id) {
+            match nodes_duties.get_mut(&second_step_node_id) {
                 Some(msg_vec) => msg_vec.push(op_msg),
                 None => {
-                    nodes_duties.insert(second_step_id, vec![op_msg]);
+                    nodes_duties.insert(second_step_node_id, vec![op_msg]);
                 }
             }
 
