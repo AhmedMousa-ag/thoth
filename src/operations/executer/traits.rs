@@ -53,6 +53,7 @@ impl Executer {
         debug!("Will execute duties assigned to this node.");
         // Check for every step result.
         if let Some(node_duties) = duties.nodes_duties.get(&get_current_node_cloned().id) {
+            DbOpsRegisterer::new_duties(&duties, false);
             debug!("Started executing duties assigned to this node.");
             let op_id = node_duties[0].operation_id.clone();
             // let mut sql_ops_model = SqlOperations::new(op_id.clone());

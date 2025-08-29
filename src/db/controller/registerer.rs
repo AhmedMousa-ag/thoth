@@ -179,8 +179,8 @@ impl DbOpsRegisterer {
             thread,
         );
     }
-    pub fn new_duties(duties: NodesOpsMsg, thread: bool) {
-        for (node_id, ops_info) in duties.nodes_duties {
+    pub fn new_duties(duties: &NodesOpsMsg, thread: bool) {
+        for (node_id, ops_info) in duties.nodes_duties.clone() {
             for ops_infos in ops_info.clone() {
                 DbOpsRegisterer::new_duty(
                     node_id.clone(),

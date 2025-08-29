@@ -130,7 +130,6 @@ impl Planner {
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         info!("Finished planning: {}", nodes_ops_msg);
         if let Some(exec) = &mut executer {
-            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone(), true);
             exec.execute_duties(nodes_ops_msg.clone()).await;
         } else {
             info!("Will send an execution message");
@@ -254,7 +253,6 @@ impl Planner {
         info!("Finished planning: {:?}", nodes_duties);
         let nodes_ops_msg = Box::new(NodesOpsMsg { nodes_duties });
         if let Some(exec) = &mut executer {
-            DbOpsRegisterer::new_duties(*nodes_ops_msg.clone(), true);
             exec.execute_duties(nodes_ops_msg.clone()).await;
             // return;
         } else {
