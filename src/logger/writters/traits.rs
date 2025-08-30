@@ -46,11 +46,25 @@ fn generate_file_path(paths: Vec<String>) -> Result<PathBuf, ThothErrors> {
 fn create_symbolic_link(target: &Path, link: &Path) -> Result<(), ThothErrors> {
     #[cfg(unix)]
     {
-        std::os::unix::fs::symlink(target, link).map_err(|e| ThothErrors::from(e))
+        if let Err(e) = std::os::unix::fs::symlink(target, link) {
+            if e.kind() != io::ErrorKind::AlreadyExists {
+                return Ok(());
+            };
+            return Err(ThothErrors::from(e));
+        };
+        Ok(())
     }
     #[cfg(windows)]
     {
-        std::os::windows::fs::symlink_file(target, link).map_err(|e| ThothErrors::from(e))
+        if let Err(e) =
+            std::os::windows::fs::symlink_file(target, link).map_err(|e| ThothErrors::from(e))
+        {
+            if e.kind() != io::ErrorKind::AlreadyExists {
+                return Ok(());
+            };
+            return Err(ThothErrors::from(e));
+        };
+        Ok(())
     }
     #[cfg(not(any(unix, windows)))]
     {
@@ -278,15 +292,26 @@ impl OperationsFileManager {
                 let step_path = generate_file_path(Self::get_step_path(&op_id, &step_id)).unwrap();
                 let step_date_path =
                     generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
+                debug!("Writing step file at: {}", step_path.display());
                 self.get_open_file(&step_path, keep_file_open)
                     .unwrap()
                     .try_lock()
                     .unwrap()
                     // .await
                     .write_all(step_str_lines.as_bytes())?;
+                debug!("Wrote step file at: {}", step_path.display());
                 sort_files_and_persist(&pathbuf_str(&step_path), true);
+                debug!("Sorted step file at: {}", step_path.display());
                 create_symbolic_link(&step_path, &step_date_path)?;
+                debug!(
+                    "Made symbolic link for step file at: {}",
+                    step_date_path.display()
+                );
                 sort_files_and_persist(&pathbuf_str(&step_date_path), true);
+                debug!(
+                    "Made all symbolic links for step file at: {}",
+                    step_path.display()
+                );
                 Ok(())
             })
         })
