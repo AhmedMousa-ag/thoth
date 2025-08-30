@@ -9,6 +9,6 @@ static CONFIGS: OnceLock<Config> = OnceLock::new();
 pub fn get_config() -> &'static Config {
     CONFIGS.get_or_init(|| Config {
         port: 49221,
-        max_msg_size: 1_024_000,
-    }) // 1 Gb
+        max_msg_size: 10 * 1024 * 1024 * 1024, // 10 GB in bytes
+    })
 }
