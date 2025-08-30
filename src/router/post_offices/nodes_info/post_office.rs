@@ -149,7 +149,19 @@ impl GathererOffice {
 
 pub fn reply_gather_res(gathered_msg: GatheredMessage) {
     let res = match Gatherer::reply_gathered_msg(gathered_msg) {
-        Some(res) => res,
+        Some(res) => {
+            match res.respond {
+                Some(ref r) => {
+                    if r.result.is_none() {
+                        return;
+                    }
+                }
+                None => {
+                    return;
+                }
+            };
+            res
+        }
         None => return,
     };
     let nodes_msg = Box::new(Message {

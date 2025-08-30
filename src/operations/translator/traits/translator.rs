@@ -190,7 +190,7 @@ impl Translator for VecTranslator {
                 let x: Vec<f64> = read_guard.x.as_ref().unwrap().get_vector_value();
                 drop(read_guard);
                 let result = x.iter().sum::<f64>() / (x.len() as f64);
-
+                debug!("Average result calculated: {}", result);
                 self.step.write().await.result = Some(Numeric::Scaler(result));
             });
         });
