@@ -192,7 +192,11 @@ impl Planner {
                 extra_info: Some(ExtraInfo {
                     res_pos: None,
                     res_type: None,
-                    helper_number: Some(Numeric::Scaler(data_size as f64)), // Will be used in the gatherer to calculate the average.
+                    helper_number: Some(Numeric::Scaler(if !data_size <= 1 {
+                        data_size as f64
+                    } else {
+                        0.0
+                    })), // Will be used in the gatherer to calculate the average.
                 }),
             }));
             debug!("Planning--->Step one: {:?}", step_one);
