@@ -154,7 +154,7 @@ impl Gatherer {
         plan: Box<NodesOpsMsg>,
     ) -> Result<f64, ThothErrors> {
         let mut duties_maps = Self::ask_nodes_their_results(plan).await?;
-        let mut res = 0.0;
+        let mut res: f64 = 0.0;
         let mut num_divide = 0.0;
         while duties_maps.len() > 0 {
             debug!("Number of duties: {}", duties_maps.len());
@@ -175,7 +175,9 @@ impl Gatherer {
                                 debug!("Gathered Result: {}", num);
                                 // let prev_res= gath_res.prev_step_res.unwrap_or(Numeric::from(0.0)).get_scaler_value();
                                 res +=  num;
+
                                 num_divide += 1.0;
+                                debug!("Intermediate Gathered Average: {} To be divided by: {}", res,num_divide);
                             }
                             duties_maps.remove(&value.step_id);
                         },
