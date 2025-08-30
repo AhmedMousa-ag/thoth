@@ -47,7 +47,10 @@ impl Executer {
         let use_prev_res = read_guard.use_prev_res.clone();
         let extra_info = read_guard.extra_info.clone();
         drop(read_guard);
-        debug!("Step Executer, will send response back to gatherer.");
+        debug!(
+            "Step Executer, will send response back to gatherer: {:?}",
+            res
+        );
         reply_gather_res(GatheredMessage {
             operation_id: op_id,
             step_id,

@@ -192,6 +192,7 @@ impl Translator for VecTranslator {
                 let result = x.iter().sum::<f64>() / (x.len() as f64);
                 debug!("Average result calculated: {}", result);
                 self.step.write().await.result = Some(Numeric::Scaler(result));
+                debug!("Average result stored in step: {:?}", self.step);
             });
         });
     }
