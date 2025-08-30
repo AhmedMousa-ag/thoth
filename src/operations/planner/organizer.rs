@@ -96,6 +96,7 @@ impl Planner {
                     extra_info: Some(ExtraInfo {
                         res_pos: Some(vec![irow, icol]),
                         res_type: Some(Numeric::Matrix(vec![vec![]])),
+                        helper_number: None,
                     }),
                 }));
 
@@ -188,7 +189,11 @@ impl Planner {
                 use_prev_res: false,
                 prev_step: None,
                 next_step: None,
-                extra_info: None,
+                extra_info: Some(ExtraInfo {
+                    res_pos: None,
+                    res_type: None,
+                    helper_number: Some(Numeric::Scaler(data_size as f64)), // Will be used in the gatherer to calculate the average.
+                }),
             }));
             debug!("Planning--->Step one: {:?}", step_one);
 

@@ -177,6 +177,7 @@ impl Gatherer {
                                 res +=  num;
 
                                 num_divide += 1.0;
+                                num_divide+=gath_res.extra_info.unwrap().helper_number.unwrap().get_scaler_value();
                                 debug!("Intermediate Gathered Average: {} To be divided by: {}", res,num_divide);
                             }
                             duties_maps.remove(&value.step_id);
