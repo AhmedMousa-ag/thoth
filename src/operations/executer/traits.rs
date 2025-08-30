@@ -7,7 +7,7 @@ use crate::{
     operations::{
         checker::decrease_running_operation,
         executer::types::Executer,
-        gatherer::structs::GatheredMessage,
+        gatherer::structs::{GatheredMessage, GatheredResponse},
         planner::charts::structs::{NodesOpsMsg, Steps},
         translator::translate::DutiesTranslator,
     },
@@ -42,10 +42,15 @@ impl Executer {
         DbOpsRegisterer::new_step(Arc::clone(&step), true).await;
 
         decrease_running_operation(&op_id);
+        let res = step.read().await.result.clone();
         reply_gather_res(GatheredMessage {
             operation_id: op_id,
             step_id,
-            respond: None,
+            respond: Some(GatheredResponse {
+                use_prev_res: false,
+                extra_info: None,
+                result: res,
+            }),
         }); // Returning it now in case it finished before.
     }
 
