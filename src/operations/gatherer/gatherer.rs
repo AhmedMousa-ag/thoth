@@ -87,6 +87,7 @@ impl Gatherer {
                 return None;
             }
         };
+        debug!("Loaded Gathered Result from DB: {:?}");
         message.respond = Some(res);
         debug!("Replying Gathered Message: {:?}", message);
         Some(message)
