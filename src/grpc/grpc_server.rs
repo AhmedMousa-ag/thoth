@@ -143,7 +143,10 @@ pub async fn start_server() -> Result<(), ThothErrors> {
     info!("Start of gRPC server");
     let addr = "[::]:50051".parse().unwrap();
     let matrix_ops: MathOperations = MathOperations::default();
-    let mathops_server: MathOpsServer<MathOperations> = MathOpsServer::new(matrix_ops);
+    let limit = 10000 * 1024 * 1024; // 10 GB
+    let mathops_server: MathOpsServer<MathOperations> = MathOpsServer::new(matrix_ops)
+        .max_decoding_message_size(limit)
+        .max_encoding_message_size(limit);
     info!("Will start gRPC server now on address: {:?}", addr);
     Server::builder()
         .add_service(mathops_server)
