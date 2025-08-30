@@ -47,7 +47,7 @@ fn create_symbolic_link(target: &Path, link: &Path) -> Result<(), ThothErrors> {
     #[cfg(unix)]
     {
         if let Err(e) = std::os::unix::fs::symlink(target, link) {
-            if e.kind() != io::ErrorKind::AlreadyExists {
+            if e.kind() == io::ErrorKind::AlreadyExists {
                 return Ok(());
             };
             return Err(ThothErrors::from(e));
