@@ -34,6 +34,9 @@ pub trait Translator {
                     OperationTypes::DIVIDE => {
                         self.divide();
                     }
+                    OperationTypes::AVG => {
+                        self.avg();
+                    }
                     _ => {
                         warn!("Other operations not supported yet");
                     }
@@ -44,6 +47,7 @@ pub trait Translator {
     fn dot(&self);
     fn sum(&self);
     fn divide(&self);
+    fn avg(&self);
 }
 
 impl Translator for ScalerTranslator {
@@ -114,6 +118,7 @@ impl Translator for ScalerTranslator {
             });
         });
     }
+    fn avg(&self) {}
 }
 
 impl Translator for VecTranslator {
@@ -176,6 +181,20 @@ impl Translator for VecTranslator {
             });
         });
     }
+    fn avg(&self) {
+        debug!("Calculating average of vector");
+        tokio::task::block_in_place(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let read_guard = self.step.read().await;
+                let x: Vec<f64> = read_guard.x.as_ref().unwrap().get_vector_value();
+                drop(read_guard);
+                let result = x.iter().sum::<f64>() / (x.len() as f64);
+
+                self.step.write().await.result = Some(Numeric::Scaler(result));
+            });
+        });
+    }
 }
 
 //TODO MatricesTranslator
@@ -183,4 +202,5 @@ impl Translator for MatricesTranslator {
     fn dot(&self) {}
     fn sum(&self) {}
     fn divide(&self) {}
+    fn avg(&self) {}
 }

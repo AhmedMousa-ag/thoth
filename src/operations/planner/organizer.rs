@@ -164,9 +164,9 @@ impl Planner {
         let mut nodes_duties: HashMap<String, Vec<OperationInfo>> = HashMap::new();
 
         while idx < data_size {
-            let first_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
+            let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
             // let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
-            let first_step_id = Uuid::new_v4().to_string();
+            let step_id = Uuid::new_v4().to_string();
 
             // [1,2,3,4,5]
             // [1,2],[3,4],[5]
@@ -175,75 +175,37 @@ impl Planner {
             } else {
                 x[idx..].to_vec()
             };
-            let data_len = node_data.len() as f64;
 
             let step_one = Arc::new(RwLock::new(Steps {
                 operation_id: self.operation_id.clone(),
-                step_id: first_step_id.clone(),
-                node_id: first_step_node_id.to_string(),
+                step_id: step_id.clone(),
+                node_id: node_id.to_string(),
                 x: Some(Numeric::Vector(node_data)),
                 y: None,
-                op_type: OperationTypes::SUM,
+                op_type: OperationTypes::AVG,
                 result: None,
                 use_prev_res: false,
                 prev_step: None,
                 next_step: None,
                 extra_info: None,
             }));
-            let second_step_id = Uuid::new_v4().to_string();
-            let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
-            debug!(
-                "Node Id 1: {}, Node Id 2: {}",
-                first_step_node_id, second_step_node_id
-            );
-            let step_two = Arc::new(RwLock::new(Steps {
-                node_id: second_step_node_id.to_string(),
-                operation_id: self.operation_id.clone(),
-                step_id: second_step_id.clone(),
-                x: None,
-                y: Some(Numeric::Scaler(data_len)),
-                op_type: OperationTypes::DIVIDE,
-                result: None,
-                next_step: None,
-                prev_step: None,
-                use_prev_res: true,
-                extra_info: Some(ExtraInfo {
-                    res_pos: None,
-                    res_type: Some(Numeric::Scaler(0.0)),
-                }),
-            }));
-            step_one.write().await.next_step = Some(step_two.read().await.step_id.to_string());
-            step_two.write().await.prev_step = Some(step_one.read().await.step_id.to_string());
+            debug!("Planning--->Step one: {:?}", step_one);
 
             let op_msg = OperationInfo {
                 operation_id: self.operation_id.clone(),
-                step_id: first_step_id.clone(),
+                step_id: step_id.clone(),
             };
             if let Some(exec) = &mut executer {
                 increase_running_operation(self.operation_id.clone());
                 exec.execute_step(step_one).await;
-                increase_running_operation(self.operation_id.clone());
-                exec.execute_step(step_two).await;
             } else {
                 OperationStepExecuter::send_message(step_one.clone());
-                OperationStepExecuter::send_message(step_two.clone());
                 DbOpsRegisterer::new_step(step_one, true).await;
-                DbOpsRegisterer::new_step(step_two.clone(), true).await;
             }
-            match nodes_duties.get_mut(&first_step_node_id) {
+            match nodes_duties.get_mut(&node_id) {
                 Some(msg_vec) => msg_vec.push(op_msg),
                 None => {
-                    nodes_duties.insert(first_step_node_id, vec![op_msg]);
-                }
-            }
-            let op_msg = OperationInfo {
-                operation_id: self.operation_id.clone(),
-                step_id: second_step_id.clone(),
-            };
-            match nodes_duties.get_mut(&second_step_node_id) {
-                Some(msg_vec) => msg_vec.push(op_msg),
-                None => {
-                    nodes_duties.insert(second_step_node_id, vec![op_msg]);
+                    nodes_duties.insert(node_id, vec![op_msg]);
                 }
             }
 
