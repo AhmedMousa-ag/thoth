@@ -182,7 +182,8 @@ impl Planner {
                 node_id: node_id.to_string(),
                 x: Some(Numeric::Vector(node_data)),
                 y: None,
-                op_type: OperationTypes::AVG,
+                // Will not use AVG as it will be calculated in the gatherer. Also dividing several operations across several nodes losses important fractions between the operations.
+                op_type: OperationTypes::SUM,
                 result: None,
                 use_prev_res: false,
                 prev_step: None,
