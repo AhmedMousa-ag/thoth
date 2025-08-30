@@ -94,8 +94,6 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
     async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let duties = Box::new(NodesOpsMsg::decode_bytes(&message.unwrap()));
-
-            DbOpsRegisterer::new_duties(&duties, false);
             let node_key = get_current_node_cloned().id;
             let operation_info = duties.nodes_duties.get(&node_key);
             if let Some(op_info) = operation_info {
