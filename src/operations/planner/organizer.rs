@@ -176,7 +176,7 @@ impl Planner {
             } else {
                 x[idx..].to_vec()
             };
-
+            let node_data_len = node_data.len();
             let step_one = Arc::new(RwLock::new(Steps {
                 operation_id: self.operation_id.clone(),
                 step_id: step_id.clone(),
@@ -192,7 +192,7 @@ impl Planner {
                 extra_info: Some(ExtraInfo {
                     res_pos: None,
                     res_type: None,
-                    helper_number: Some(Numeric::Scaler(data_size as f64)), // Will be used in the gatherer to calculate the average.
+                    helper_number: Some(Numeric::Scaler(node_data_len as f64)), // Will be used in the gatherer to calculate the average.
                 }),
             }));
             debug!("Planning--->Step one: {:?}", step_one);
