@@ -157,6 +157,7 @@ pub fn reply_gather_res(gathered_msg: GatheredMessage) {
         request: RequestsTypes::ReplyGatherPlansRes,
         message: Some(res.encode_bytes()),
     });
+    debug!("Will send Gathered replies to other nodes: {:?}.", res);
     ExternalComm::send_message(nodes_msg);
     info!("Sent Gathered replies to other nodes.");
 }

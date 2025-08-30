@@ -42,13 +42,18 @@ impl Executer {
         DbOpsRegisterer::new_step(Arc::clone(&step), true).await;
 
         decrease_running_operation(&op_id);
-        let res = step.read().await.result.clone();
+        let read_guard = step.read().await;
+        let res = read_guard.result.clone();
+        let use_prev_res = read_guard.use_prev_res.clone();
+        let extra_info = read_guard.extra_info.clone();
+        drop(read_guard);
+        debug!("Step Executer, will send response back to gatherer.");
         reply_gather_res(GatheredMessage {
             operation_id: op_id,
             step_id,
             respond: Some(GatheredResponse {
-                use_prev_res: false,
-                extra_info: None,
+                use_prev_res: use_prev_res,
+                extra_info: extra_info,
                 result: res,
             }),
         }); // Returning it now in case it finished before.
