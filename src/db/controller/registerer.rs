@@ -9,7 +9,7 @@ use crate::{
         controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlSyncedOps},
         entities::nodes_duties::ActiveModel as NodesDutiesActiveModel,
     },
-    debug, err,
+    err,
     errors::thot_errors::ThothErrors,
     logger::writters::writter::OperationsFileManager,
     operations::planner::charts::structs::{NodesOpsMsg, OperationFile, Steps},
@@ -97,10 +97,6 @@ impl DbOpsRegisterer {
         start_date: Option<DateTime<Utc>>,
         end_date: Option<DateTime<Utc>>,
     ) -> Vec<OperationFile> {
-        debug!(
-            "Getting operations by date: {:?} - {:?}",
-            start_date, end_date
-        );
         OperationsFileManager::load_operations_by_date(start_date, end_date)
     }
     pub fn get_step_file(operation_id: &str, step_id: &str) -> Option<Steps> {

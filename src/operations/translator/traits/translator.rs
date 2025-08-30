@@ -4,7 +4,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     db::controller::registerer::DbOpsRegisterer,
-    debug, err,
+    err,
     operations::{
         executer::types::OperationTypes,
         planner::charts::structs::Steps,
@@ -106,7 +106,6 @@ impl Translator for ScalerTranslator {
                                 DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
                         }
                         let prev_step = prev_step.unwrap();
-                        debug!("Using previous step result: {}", prev_step);
                         x = prev_step.result.unwrap().get_scaler_value();
                         y = read_guard.y.as_ref().unwrap().get_scaler_value();
                     }
@@ -182,7 +181,6 @@ impl Translator for VecTranslator {
         });
     }
     fn avg(&self) {
-        debug!("Calculating average of vector");
         tokio::task::block_in_place(|| {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
@@ -190,9 +188,7 @@ impl Translator for VecTranslator {
                 let x: Vec<f64> = read_guard.x.as_ref().unwrap().get_vector_value();
                 drop(read_guard);
                 let result = x.iter().sum::<f64>() / (x.len() as f64);
-                debug!("Average result calculated: {}", result);
                 self.step.write().await.result = Some(Numeric::Scaler(result));
-                debug!("Average result stored in step: {:?}", self.step);
             });
         });
     }

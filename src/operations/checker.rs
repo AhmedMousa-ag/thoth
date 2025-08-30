@@ -3,7 +3,6 @@ his module checks if an operations or a step have been done before or not and re
 */
 use crate::{
     db::controller::{registerer::DbOpsRegisterer, traits::SqlNodesDuties},
-    debug,
     errors::thot_errors::ThothErrors,
     operations::planner::charts::structs::{NodesOpsMsg, OperationInfo},
 };
@@ -19,7 +18,6 @@ lazy_static!(
 pub fn increase_running_operation(operation_id: String) {
     tokio::task::block_in_place(|| {
         Handle::current().block_on(async {
-            debug!("Increase running operation: {}", operation_id);
             let mut running_operations = RUNNING_OPERATIONS.write().await;
             let num_operations = running_operations.get(&operation_id).unwrap_or(&0).clone();
             running_operations.insert(operation_id, num_operations + 1);

@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use crate::{
     connections::channels_node_info::{get_current_node_cloned, get_nodes_info_cloned},
     db::controller::registerer::DbOpsRegisterer,
-    debug, err,
+    err,
     errors::thot_errors::ThothErrors,
     grpc::grpc_server::mathop::{Matrix, MatrixRow},
     info,
@@ -28,11 +28,10 @@ use tokio::{
 };
 
 async fn get_result_internally(info: OperationInfo) {
-    debug!("Waiting for the operation to finish: {}", info.operation_id);
     loop {
         //TODO make it event based rather than polling based.
         if is_internal_ops_finished(info.operation_id.clone()).await {
-            debug!("Operation finished, Will Break: {}", info.operation_id);
+            info!("Operation finished, Will Break: {}", info.operation_id);
             break;
         }
         // Wait until the operation is finished, then continue.
@@ -90,7 +89,6 @@ impl Gatherer {
             }),
         };
         drop(read_guard);
-        debug!("Replying Gathered Message: {:?}", message);
         Some(message)
     }
     pub fn reply_gathered_msg(mut message: GatheredMessage) -> Option<GatheredMessage> {
@@ -111,9 +109,7 @@ impl Gatherer {
                 return None;
             }
         };
-        debug!("Loaded Gathered Result from DB: {:?}", res);
         message.respond = Some(res);
-        debug!("Replying Gathered Message: {:?}", message);
         Some(message)
     }
     // TODO you might move it outside of this struct, but I don't see it worth it.
@@ -121,8 +117,6 @@ impl Gatherer {
         plan: Box<NodesOpsMsg>,
     ) -> Result<HashMap<String, bool>, ThothErrors> {
         let mut sent_messages = HashMap::new();
-        debug!("Plan Nodes Duties: {:?}", plan);
-        debug!("Number of Nodes Duties: {:?}", plan.nodes_duties.keys());
         let current_node_id = get_current_node_cloned().id;
         //TODO Keep track of execution steps, then get the number of nodes, if only this one available, then wait until all of the steps are done.
         let num_nodes = get_nodes_info_cloned().len();
@@ -134,9 +128,8 @@ impl Gatherer {
                     // If succesfully sent the message then continue to the next element, otherwise get back to the main loop and ask the other nodes.
                     continue;
                 }
-                debug!("Node ID: {}, Current Node ID: {}", node_id, current_node_id);
                 if node_id == current_node_id {
-                    debug!(
+                    info!(
                         "Operation is for the current node, getting the result internally: {:?}",
                         info
                     );
@@ -175,7 +168,6 @@ impl Gatherer {
         let mut res: f64 = 0.0;
         let mut num_divide = 0.0;
         while duties_maps.len() > 0 {
-            debug!("Number of duties: {}", duties_maps.len());
             select! {
              result = self.reciever_ch.recv() => {
                  match result {
@@ -190,10 +182,8 @@ impl Gatherer {
 
                             if gath_res.result.is_some(){
                                 let num:f64= gath_res.result.unwrap().clone().into();
-                                debug!("Gathered Result: {}", num);
                                 res +=  num;
                                 num_divide+=gath_res.extra_info.unwrap().helper_number.unwrap().get_scaler_value();
-                                debug!("Intermediate Gathered Average: {} To be divided by: {}", res,num_divide);
                             }
                             duties_maps.remove(&value.step_id);
                         },
@@ -208,7 +198,7 @@ impl Gatherer {
              }
             }
         }
-        debug!("Gathered List Average: {}, num_divide: {}", res, num_divide);
+        info!("Gathered List Average: {}, num_divide: {}", res, num_divide);
         res /= if num_divide != 0.0 { num_divide } else { 1.0 }; // Each step had it's own average, now after we gather each step average, we need to define the last average for all gathered steps.
         Ok(res)
     }

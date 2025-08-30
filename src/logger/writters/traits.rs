@@ -1,5 +1,5 @@
 use crate::{
-    debug, err,
+    err,
     errors::thot_errors::ThothErrors,
     logger::{
         channels::{
@@ -248,10 +248,6 @@ impl OperationsFileManager {
         if self.files.contains_key(id) {
             return Some(self.files.get(id).unwrap().clone());
         }
-        debug!(
-            "Key file doesn't exists will create one for path: {}",
-            file_path.display()
-        );
         let open_file = match self.open_file(file_path) {
             Some(file) => file,
             None => return None,
@@ -292,26 +288,15 @@ impl OperationsFileManager {
                 let step_path = generate_file_path(Self::get_step_path(&op_id, &step_id)).unwrap();
                 let step_date_path =
                     generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
-                debug!("Writing step file at: {}", step_path.display());
                 self.get_open_file(&step_path, keep_file_open)
                     .unwrap()
                     .try_lock()
                     .unwrap()
                     // .await
                     .write_all(step_str_lines.as_bytes())?;
-                debug!("Wrote step file at: {}", step_path.display());
                 sort_files_and_persist(&pathbuf_str(&step_path), true);
-                debug!("Sorted step file at: {}", step_path.display());
                 create_symbolic_link(&step_path, &step_date_path)?;
-                debug!(
-                    "Made symbolic link for step file at: {}",
-                    step_date_path.display()
-                );
                 sort_files_and_persist(&pathbuf_str(&step_date_path), true);
-                debug!(
-                    "Made all symbolic links for step file at: {}",
-                    step_path.display()
-                );
                 Ok(())
             })
         })
@@ -329,7 +314,6 @@ impl OperationsFileManager {
                     generate_file_path(Self::get_operations_main_path(&self.op_id)).unwrap();
                 let op_date_path =
                     generate_file_path(Self::get_operations_main_path(&self.op_id)).unwrap();
-                debug!("Writing operation file at: {}", op_path.display());
                 self.get_open_file(&op_path, keep_file_open)
                     .unwrap()
                     .try_lock()
@@ -376,11 +360,6 @@ impl OperationsFileManager {
     }
     pub fn load_operation_file(operation_id: &str) -> Option<OperationFile> {
         let file_path = generate_file_path(Self::get_operations_main_path(operation_id)).ok()?;
-        debug!(
-            "Will load operation id: {}, at path: {}",
-            operation_id,
-            file_path.display()
-        );
         let mut file = match OpenOptions::new().read(true).open(file_path) {
             Ok(file) => file,
             Err(_) => return None,

@@ -7,7 +7,7 @@ use crate::{
         configs::topics::TopicsEnums,
     },
     db::controller::registerer::DbOpsRegisterer,
-    debug, err,
+    err,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
@@ -56,7 +56,6 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
 
 impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
     fn send_message(msg: Arc<RwLock<Steps>>) {
-        debug!("Sending step to other nodes to be executed.");
         spawn(async move {
             let nodes_msg = Box::new(Message {
                 topic_name: TopicsEnums::Operations.to_string(),
@@ -70,7 +69,7 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
 
     async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
-            debug!("Received step to be executed.");
+            info!("Received step to be executed.");
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
             DbOpsRegisterer::new_step(step.clone(), false).await;
             let mut executer = Executer {
@@ -170,7 +169,6 @@ pub fn reply_gather_res(gathered_msg: GatheredMessage) {
         request: RequestsTypes::ReplyGatherPlansRes,
         message: Some(res.encode_bytes()),
     });
-    debug!("Will send Gathered replies to other nodes: {:?}.", res);
     ExternalComm::send_message(nodes_msg);
     info!("Sent Gathered replies to other nodes.");
 }

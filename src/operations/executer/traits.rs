@@ -1,7 +1,7 @@
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     db::controller::registerer::DbOpsRegisterer,
-    debug, info,
+    info,
     operations::{
         checker::decrease_running_operation,
         executer::types::Executer,
@@ -20,10 +20,9 @@ impl Executer {
     pub async fn execute_step(&mut self, step: Arc<RwLock<Steps>>) {
         let step_id = step.read().await.step_id.clone();
         let op_id = step.read().await.operation_id.clone();
-        debug!("Executing step id: {}", step_id);
         let is_op_exists = DbOpsRegisterer::get_operation_file(&op_id).is_some();
         if !is_op_exists {
-            debug!("Operation id doesn't exists in SQL, will insert new one");
+            warn!("Operation id doesn't exists in SQL, will insert new one");
             DbOpsRegisterer::new_operation(op_id.clone(), true);
         }
 
@@ -49,10 +48,6 @@ impl Executer {
         let use_prev_res = read_guard.use_prev_res.clone();
         let extra_info = read_guard.extra_info.clone();
         drop(read_guard);
-        debug!(
-            "Step Executer, will send response back to gatherer: {:?}",
-            res
-        );
         // ev_hand.listener.wait_for_event();
         reply_gather_res(GatheredMessage {
             operation_id: op_id,
@@ -66,11 +61,9 @@ impl Executer {
     }
 
     pub async fn execute_duties(&mut self, duties: Box<NodesOpsMsg>) {
-        debug!("Will execute duties assigned to this node.");
         // Check for every step result.
         if let Some(node_duties) = duties.nodes_duties.get(&get_current_node_cloned().id) {
             DbOpsRegisterer::new_duties(&duties, false);
-            debug!("Started executing duties assigned to this node.");
             let op_id = node_duties[0].operation_id.clone();
             // let mut sql_ops_model = SqlOperations::new(op_id.clone());
             if DbOpsRegisterer::get_operation_file(&op_id).is_none() {

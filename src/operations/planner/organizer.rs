@@ -1,7 +1,6 @@
 use crate::{
     connections::channels_node_info::{NodeInfoTrait, get_nodes_info_cloned},
     db::controller::registerer::DbOpsRegisterer,
-    debug,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
@@ -47,7 +46,6 @@ impl Planner {
         }
         info!("Will start planning naive multiply");
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
-        debug!("Available Nodes: {:?}", nodes_keys);
         let nodes_num = nodes_keys.len();
         info!("Available Nodes number is: {:?}", nodes_num);
         let mut executer: Option<Executer> = if nodes_num <= 1 {
@@ -146,9 +144,8 @@ impl Planner {
         }
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
-        debug!("Available Nodes: {:?}", nodes_keys);
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
-        debug!("Available nodes number: {}", nodes_num);
+        info!("Available nodes number: {}", nodes_num);
         let mut executer: Option<Executer> = if nodes_num <= 1 {
             warn!(
                 "Only one node available which is considered usesless for Thoth to handle this operation"
@@ -195,7 +192,6 @@ impl Planner {
                     helper_number: Some(Numeric::Scaler(node_data_len as f64)), // Will be used in the gatherer to calculate the average.
                 }),
             }));
-            debug!("Planning--->Step one: {:?}", step_one);
 
             let op_msg = OperationInfo {
                 operation_id: self.operation_id.clone(),
