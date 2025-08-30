@@ -1,5 +1,3 @@
-use tokio::sync::RwLock;
-
 use crate::{
     connections::channels_node_info::get_current_node_cloned,
     db::controller::registerer::DbOpsRegisterer,
@@ -14,6 +12,7 @@ use crate::{
     router::post_offices::nodes_info::post_office::reply_gather_res,
     warn,
 };
+use tokio::sync::RwLock;
 
 use std::sync::Arc;
 
@@ -36,8 +35,8 @@ impl Executer {
             );
             return;
         }
-
-        DbOpsRegisterer::new_step(Arc::clone(&step), true).await; // Ignoring this error as it's not critical.
+        // let ev_hand = EventsHandler::new(&format!("write_{}",step_id)).add_event(true);
+        DbOpsRegisterer::new_step(Arc::clone(&step), false).await; // Ignoring this error as it's not critical.
         let step = DutiesTranslator::translate_step(Arc::clone(&step)).await; //I think we don't need to return it as it's mutable by reference.
         DbOpsRegisterer::new_step(Arc::clone(&step), false).await;
 
@@ -54,6 +53,7 @@ impl Executer {
             "Step Executer, will send response back to gatherer: {:?}",
             res
         );
+        // ev_hand.listener.wait_for_event();
         reply_gather_res(GatheredMessage {
             operation_id: op_id,
             step_id,
