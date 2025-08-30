@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     connections::channels_node_info::{get_current_node_cloned, get_nodes_info_cloned},
@@ -13,7 +13,7 @@ use crate::{
             channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
-        planner::charts::structs::{NodesOpsMsg, OperationInfo},
+        planner::charts::structs::{NodesOpsMsg, OperationInfo, Steps},
         // utils::util::load_sql_step_to_gatherer_res,
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
@@ -21,7 +21,10 @@ use crate::{
 };
 use tokio::{
     select, spawn,
-    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+    sync::{
+        RwLock,
+        mpsc::{self, UnboundedReceiver, UnboundedSender},
+    },
 };
 
 async fn get_result_internally(info: OperationInfo) {
@@ -74,6 +77,21 @@ impl Gatherer {
         Self {
             reciever_ch: channels.1,
         }
+    }
+    pub async fn reply_gathered_msg_step(step: Arc<RwLock<Steps>>) -> Option<GatheredMessage> {
+        let read_guard = step.read().await;
+        let message = GatheredMessage {
+            operation_id: read_guard.operation_id.clone(),
+            step_id: read_guard.step_id.clone(),
+            respond: Some(GatheredResponse {
+                result: read_guard.result.clone(),
+                use_prev_res: read_guard.use_prev_res,
+                extra_info: read_guard.extra_info.clone(),
+            }),
+        };
+        drop(read_guard);
+        debug!("Replying Gathered Message: {:?}", message);
+        Some(message)
     }
     pub fn reply_gathered_msg(mut message: GatheredMessage) -> Option<GatheredMessage> {
         let res = match DbOpsRegisterer::get_step_file(&message.operation_id, &message.step_id) {

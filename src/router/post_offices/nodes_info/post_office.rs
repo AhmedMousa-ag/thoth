@@ -153,6 +153,7 @@ pub fn reply_gather_res(gathered_msg: GatheredMessage) {
             match res.respond {
                 Some(ref r) => {
                     if r.result.is_none() {
+                        warn!("No result in the gathered response, will not reply.");
                         return;
                     }
                 }
