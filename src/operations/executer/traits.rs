@@ -43,7 +43,10 @@ impl Executer {
 
         decrease_running_operation(&op_id);
         let read_guard = step.read().await;
-        let res = read_guard.result.clone();
+        let res = match read_guard.result.as_ref() {
+            Some(rs) => Some(rs.clone()),
+            None => None,
+        };
         let use_prev_res = read_guard.use_prev_res.clone();
         let extra_info = read_guard.extra_info.clone();
         drop(read_guard);
