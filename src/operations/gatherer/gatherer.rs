@@ -173,10 +173,7 @@ impl Gatherer {
                             if gath_res.result.is_some(){
                                 let num:f64= gath_res.result.unwrap().clone().into();
                                 debug!("Gathered Result: {}", num);
-                                // let prev_res= gath_res.prev_step_res.unwrap_or(Numeric::from(0.0)).get_scaler_value();
                                 res +=  num;
-
-                                num_divide += 1.0;
                                 num_divide+=gath_res.extra_info.unwrap().helper_number.unwrap().get_scaler_value();
                                 debug!("Intermediate Gathered Average: {} To be divided by: {}", res,num_divide);
                             }
