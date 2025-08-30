@@ -7,14 +7,14 @@ use crate::{
         configs::topics::TopicsEnums,
     },
     db::controller::registerer::DbOpsRegisterer,
-    err,
+    debug, err,
     errors::thot_errors::ThothErrors,
     info,
     logger::writters::writter::OperationsFileManager,
     operations::{
         executer::types::Executer,
         gatherer::{
-            channels::get_opened_ch_sender,
+            channels::get_opened_ch_sender as get_gatherer_ch_sender,
             structs::{GatheredMessage, Gatherer},
         },
         planner::charts::structs::{NodesOpsMsg, Steps},
@@ -25,6 +25,7 @@ use crate::{
         traits::EncodingDecoding,
     },
     syncer::{channels::get_sender, structs::SyncMessage},
+    warn,
 };
 use tokio::spawn;
 pub struct NodesInfoOffice {}
@@ -55,6 +56,7 @@ impl PostOfficeTrait<Box<NodeInfo>> for NodesInfoOffice {
 
 impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
     fn send_message(msg: Arc<RwLock<Steps>>) {
+        debug!("Sending step to other nodes to be executed.");
         spawn(async move {
             let nodes_msg = Box::new(Message {
                 topic_name: TopicsEnums::Operations.to_string(),
@@ -68,6 +70,7 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
 
     async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
+            debug!("Received step to be executed.");
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
             DbOpsRegisterer::new_step(step.clone(), false).await;
             let mut executer = Executer {
@@ -91,8 +94,6 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
     async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let duties = Box::new(NodesOpsMsg::decode_bytes(&message.unwrap()));
-
-            DbOpsRegisterer::new_duties(*duties.clone(), true);
             let node_key = get_current_node_cloned().id;
             let operation_info = duties.nodes_duties.get(&node_key);
             if let Some(op_info) = operation_info {
@@ -122,9 +123,12 @@ impl PostOfficeTrait<GatheredMessage> for GathererOffice {
     async fn handle_incom_msg(message: Option<Vec<u8>>) {
         spawn(async {
             let gathered_reply: GatheredMessage = GatheredMessage::decode_bytes(&message.unwrap());
-            let msg_sender = match get_opened_ch_sender(&gathered_reply.operation_id).await {
+            let msg_sender = match get_gatherer_ch_sender(&gathered_reply.operation_id).await {
                 Some(sender) => sender,
-                None => return,
+                None => {
+                    warn!("Tried to get gatherer sende channel but not found.");
+                    return;
+                }
             };
             match msg_sender.send(gathered_reply) {
                 Ok(_) => {}
@@ -138,19 +142,37 @@ impl GathererOffice {
     pub fn handle_reply_gather_res(message: Option<Vec<u8>>) {
         spawn(async {
             let gathered_msg: GatheredMessage = GatheredMessage::decode_bytes(&message.unwrap());
-            let res = match Gatherer::reply_gathered_msg(gathered_msg) {
-                Some(res) => res,
-                None => return,
-            };
-            let nodes_msg = Box::new(Message {
-                topic_name: TopicsEnums::Operations.to_string(),
-                request: RequestsTypes::ReplyGatherPlansRes,
-                message: Some(res.encode_bytes()),
-            });
-            ExternalComm::send_message(nodes_msg);
-            info!("Sent Gathered replies to other nodes.");
+            reply_gather_res(gathered_msg);
         });
     }
+}
+
+pub fn reply_gather_res(gathered_msg: GatheredMessage) {
+    let res = match Gatherer::reply_gathered_msg(gathered_msg) {
+        Some(res) => {
+            match res.respond {
+                Some(ref r) => {
+                    if r.result.is_none() {
+                        warn!("No result in the gathered response, will not reply.");
+                        return;
+                    }
+                }
+                None => {
+                    return;
+                }
+            };
+            res
+        }
+        None => return,
+    };
+    let nodes_msg = Box::new(Message {
+        topic_name: TopicsEnums::Operations.to_string(),
+        request: RequestsTypes::ReplyGatherPlansRes,
+        message: Some(res.encode_bytes()),
+    });
+    debug!("Will send Gathered replies to other nodes: {:?}.", res);
+    ExternalComm::send_message(nodes_msg);
+    info!("Sent Gathered replies to other nodes.");
 }
 
 impl PostOfficeTrait<SyncMessage> for SyncerOffice {

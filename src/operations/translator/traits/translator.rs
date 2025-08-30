@@ -34,6 +34,9 @@ pub trait Translator {
                     OperationTypes::DIVIDE => {
                         self.divide();
                     }
+                    OperationTypes::AVG => {
+                        self.avg();
+                    }
                     _ => {
                         warn!("Other operations not supported yet");
                     }
@@ -44,6 +47,7 @@ pub trait Translator {
     fn dot(&self);
     fn sum(&self);
     fn divide(&self);
+    fn avg(&self);
 }
 
 impl Translator for ScalerTranslator {
@@ -52,27 +56,11 @@ impl Translator for ScalerTranslator {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let read_guard = self.step.read().await;
-                let x = match read_guard.x.as_ref().unwrap() {
-                    Numeric::Scaler(val) => val,
-                    _ => {
-                        let msg = "Expected Vector variant in Vector Translator";
-                        err!("{}",msg;panic=true);
-                        unreachable!("{}", msg);
-                    }
-                };
-                let y = match read_guard.y.as_ref().unwrap() {
-                    Numeric::Scaler(val) => val,
-                    _ => {
-                        let msg = "Expected Vector variant in Vector Translator";
-                        err!("{}",msg;panic=true);
-                        unreachable!("{}", msg);
-                    }
-                };
-
+                let x = read_guard.x.as_ref().unwrap();
+                let y = read_guard.y.as_ref().unwrap();
                 let result = y * x;
                 drop(read_guard);
-
-                self.step.write().await.result = Some(Numeric::Scaler(result));
+                self.step.write().await.result = Some(result);
             });
         });
     }
@@ -82,14 +70,14 @@ impl Translator for ScalerTranslator {
             rt.block_on(async {
                 let read_guard = self.step.read().await;
 
-                let x = read_guard.x.as_ref().unwrap().get_scaler_value();
+                let x = read_guard.x.as_ref().unwrap();
 
-                let y = read_guard.y.as_ref().unwrap().get_scaler_value();
+                let y = read_guard.y.as_ref().unwrap();
 
                 let result = x + y;
                 drop(read_guard);
 
-                self.step.write().await.result = Some(Numeric::Scaler(result));
+                self.step.write().await.result = Some(result);
             });
         });
     }
@@ -111,9 +99,9 @@ impl Translator for ScalerTranslator {
                         let step_id = read_guard.prev_step.as_ref().unwrap().clone(); //Get last step.
                         let mut prev_step =
                             DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
-                        while prev_step.is_none() {
+                        while prev_step.is_none() || prev_step.as_ref().unwrap().result.is_none() {
                             // Wait for the previous step to be available
-                            std::thread::sleep(std::time::Duration::from_millis(100));
+                            std::thread::sleep(std::time::Duration::from_millis(1));
                             prev_step =
                                 DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
                         }
@@ -130,6 +118,7 @@ impl Translator for ScalerTranslator {
             });
         });
     }
+    fn avg(&self) {}
 }
 
 impl Translator for VecTranslator {
@@ -192,6 +181,21 @@ impl Translator for VecTranslator {
             });
         });
     }
+    fn avg(&self) {
+        debug!("Calculating average of vector");
+        tokio::task::block_in_place(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let read_guard = self.step.read().await;
+                let x: Vec<f64> = read_guard.x.as_ref().unwrap().get_vector_value();
+                drop(read_guard);
+                let result = x.iter().sum::<f64>() / (x.len() as f64);
+                debug!("Average result calculated: {}", result);
+                self.step.write().await.result = Some(Numeric::Scaler(result));
+                debug!("Average result stored in step: {:?}", self.step);
+            });
+        });
+    }
 }
 
 //TODO MatricesTranslator
@@ -199,4 +203,5 @@ impl Translator for MatricesTranslator {
     fn dot(&self) {}
     fn sum(&self) {}
     fn divide(&self) {}
+    fn avg(&self) {}
 }

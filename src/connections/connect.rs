@@ -136,7 +136,6 @@ impl GossibConnection {
                                     match get_topic(message.topic_name.as_str()){
                                         Some(topic) =>{
                                             info!("Will send a message to topic: {}",topic);
-                                            info!("The message is: {:?} ",message);
                                         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
                                             err!("Error publishing message: {:?}",e);
                                         };}
@@ -157,6 +156,13 @@ impl GossibConnection {
                                         info!("mDNS discover peer has expired: {}",peer_id);
                                         swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
                                     }
+                                },
+                                SwarmEvent::Behaviour(GossipBehaviourEvent::Gossipsub(gossipsub::Event::Subscribed { peer_id, topic })) => {
+                                    info!("Peer {} subscribed to topic {}", peer_id, topic);
+                                    // After subscribing, send our node info to other nodes. NOTE: putting in established connection event is useless because the subscription must be done first which doesn't happen yet there.
+                                    NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                                    NodeInfo::request_other_nodes_info();
+
                                 },
                                 SwarmEvent::Behaviour(GossipBehaviourEvent::Gossipsub(gossipsub::Event::Message {
                                     propagation_source: peer_id,
@@ -201,9 +207,8 @@ impl GossibConnection {
                                 },
                                 SwarmEvent::ConnectionEstablished{peer_id, connection_id,num_established,..}=>{
                                     info!("Established Connection id: {}, peer id: {}, number of established: {}",connection_id,peer_id ,num_established);
-
-                                    NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
-                                    // NodeInfo::request_other_nodes_info();
+                                    // Wait one second to allow the connection to be fully established before sending the message.
+                                    // tokio::time::sleep(Duration::from_secs(1)).await;
 
                                 },
                                 SwarmEvent::ConnectionClosed{peer_id, connection_id,num_established,cause,..}=>{
@@ -217,6 +222,9 @@ impl GossibConnection {
                                 SwarmEvent::IncomingConnectionError{connection_id,error,..}=>{
                                     warn!("Incoming Connection Error on id: {} and the error: {}",connection_id,error)
                             },
+                            // SwarmEvent::Behaviour(GossipBehaviourEvent {peer_id, topic}){},
+                            // SwarmEvent::ExternalAddrConfirmed{address}=>{info!("External Address Confirmed: {}",address);NodesInfoOffice::send_message(Box::new(get_current_node_cloned()));
+                            //         NodeInfo::request_other_nodes_info();},
                                 _ => {}//warn!("None of these options: {:?}",event)}
                             }
                         }

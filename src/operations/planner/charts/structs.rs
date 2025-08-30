@@ -8,6 +8,7 @@ use std::{collections::HashMap, fmt::Debug};
 pub struct ExtraInfo {
     pub res_pos: Option<Vec<usize>>, //If it's a matrix or a list, two points should be maximum
     pub res_type: Option<Numeric>, // To define the final output shape, shall it be matrix or vector or a scaler ?
+    pub helper_number: Option<Numeric>, // To help in operations like AVG where the number of elements is needed.
 }
 
 //TODO probably you would like to create functions instead of all of this mess.

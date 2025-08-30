@@ -27,28 +27,29 @@ pub fn increase_running_operation(operation_id: String) {
     });
 }
 
-pub fn decrease_running_operation(operation_id: String) {
+pub fn decrease_running_operation(operation_id: &str) {
     tokio::task::block_in_place(|| {
         Handle::current().block_on(async {
             let mut running_operations = RUNNING_OPERATIONS.write().await;
-            let num_operations = running_operations.get(&operation_id).unwrap_or(&0).clone();
+            let num_operations = running_operations.get(operation_id).unwrap_or(&0).clone();
             if num_operations > 0 {
-                running_operations.insert(operation_id, num_operations - 1);
+                running_operations.insert(operation_id.to_string(), num_operations - 1);
             }
         })
     });
 }
 pub async fn is_internal_ops_finished(operation_id: String) -> bool {
+    let run_ops = RUNNING_OPERATIONS.read().await.clone();
+    let run_ops_num = run_ops.get(&operation_id);
+    if run_ops_num.is_none() || *run_ops_num.unwrap() == 0 {
+        return true;
+    }
+    false
+}
+pub async fn get_num_running_operations(operation_id: String) -> u64 {
     RUNNING_OPERATIONS
         .read()
         .await
-        .get(&operation_id)
-        .is_some_and(|&num| num == 0)
-}
-pub fn get_num_running_operations(operation_id: String) -> u64 {
-    RUNNING_OPERATIONS
-        .try_read()
-        .unwrap()
         .get(&operation_id)
         .cloned()
         .unwrap_or(0)

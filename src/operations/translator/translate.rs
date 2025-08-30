@@ -34,11 +34,13 @@ impl DutiesTranslator {
         }
     }
     pub async fn translate_step(step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
-        let num = if step.read().await.x.is_some() {
-            step.read().await.x.as_ref().unwrap().clone()
-        } else {
-            step.read().await.y.as_ref().unwrap().clone()
+        let read_guard = step.read().await;
+        let num = match read_guard.x.as_ref() {
+            Some(x) => x.clone(),
+            None => read_guard.y.as_ref().unwrap().clone(),
         };
+        drop(read_guard);
+
         let translator = DutiesTranslator::create_translator(&num, Arc::clone(&step));
         translator.step(Arc::clone(&step));
         Arc::clone(&step)
