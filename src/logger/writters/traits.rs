@@ -393,6 +393,13 @@ impl OperationsFileManager {
 
         Ok(serde_json::from_str(&file_content)?)
     }
+    pub fn load_step_bytes(op_id: &str, step_id: &str) -> Result<Steps, ThothErrors> {
+        let file_path = generate_file_path(Self::get_step_path(op_id, step_id))?;
+        let mut file = OpenOptions::new().read(true).open(file_path)?;
+        let mut contents = vec![];
+        file.read_to_end(&mut contents)?;
+        Ok(serde_json::from_slice(&contents)?)
+    }
     pub fn create_operation_file(
         &mut self,
         operation: OperationFile,
@@ -414,6 +421,14 @@ impl OperationsFileManager {
         };
         let file_content = String::from_utf8(contents).unwrap_or_default();
         Some(serde_json::from_str(&file_content).ok()?)
+    }
+
+    pub fn load_operation_bytes(operation_id: &str) -> Option<OperationFile> {
+        let file_path = generate_file_path(Self::get_operations_main_path(operation_id)).ok()?;
+        let mut file = OpenOptions::new().read(true).open(file_path).ok()?;
+        let mut contents = vec![];
+        file.read_to_end(&mut contents).ok()?;
+        Some(serde_json::from_slice(&contents).ok()?)
     }
     fn list_directory_files(dir: &str) -> Vec<String> {
         let mut files = vec![];

@@ -95,7 +95,7 @@ impl DbOpsRegisterer {
         FileRegisterer::new_operation(operation_id, thread);
     }
     pub fn get_operation_file(operation_id: &str) -> Option<OperationFile> {
-        OperationsFileManager::load_operation_file(operation_id)
+        OperationsFileManager::load_operation_bytes(operation_id)
     }
     pub fn get_operation_by_date(
         start_date: Option<DateTime<Utc>>,
@@ -104,7 +104,7 @@ impl DbOpsRegisterer {
         OperationsFileManager::load_operations_by_date(start_date, end_date)
     }
     pub fn get_step_file(operation_id: &str, step_id: &str) -> Option<Steps> {
-        match OperationsFileManager::load_step_file(operation_id, step_id) {
+        match OperationsFileManager::load_step_bytes(operation_id, step_id) {
             Ok(step) => Some(step),
             Err(e) => {
                 err!(
