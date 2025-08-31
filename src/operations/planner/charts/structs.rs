@@ -34,6 +34,38 @@ pub struct OperationFile {
     pub execution_date: DateTime<Utc>,
 }
 
+// Manual implementation of Encode/Decode for OperationFile
+impl bincode::Encode for OperationFile {
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        self.operation_id.encode(encoder)?;
+        self.result.encode(encoder)?;
+        // Encode DateTime<Utc> as i64 timestamp
+        self.execution_date.timestamp().encode(encoder)?;
+        Ok(())
+    }
+}
+
+impl<C> bincode::Decode<C> for OperationFile {
+    fn decode<D: bincode::de::Decoder>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        let operation_id = String::decode(decoder)?;
+        let result = Option::<Numeric>::decode(decoder)?;
+        let timestamp = i64::decode(decoder)?;
+        let dt = DateTime::from_timestamp(timestamp, 0)
+            .ok_or(bincode::error::DecodeError::Other("Invalid timestamp"))?;
+        let execution_date: DateTime<Utc> =
+            DateTime::from_naive_utc_and_offset(dt.naive_utc(), Utc);
+        Ok(OperationFile {
+            operation_id,
+            result,
+            execution_date,
+        })
+    }
+}
 #[derive(Debug, Encode, Decode, Clone, Serialize, Deserialize)]
 pub struct OperationInfo {
     pub operation_id: String,

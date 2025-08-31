@@ -21,14 +21,17 @@ impl FileRegisterer {
         let fnc = move || {
             let mut op_file = OperationsFileManager::new(&operation_id);
             let execution_date: DateTime<Utc> = Utc::now();
-            match op_file.create_operation_file(
-                OperationFile {
-                    operation_id,
+            let op_bytes = bincode::encode_to_vec(
+                &OperationFile {
+                    operation_id: operation_id.clone(),
                     result: None,
                     execution_date,
                 },
-                false,
-            ) {
+                bincode::config::standard(),
+            )
+            .unwrap();
+
+            match op_file.write_operation_bytes(&op_bytes, &operation_id) {
                 Ok(_) => {}
                 Err(e) => {
                     warn!("Failed to create operation file: {}", ThothErrors::from(e));
@@ -49,13 +52,14 @@ impl FileRegisterer {
         let read_guard = step.read().await;
         let op_id = read_guard.operation_id.clone();
         let step_id = read_guard.step_id.clone();
-        let step_str_lines = serde_json::to_string(&*read_guard).unwrap();
+        // let step_str_lines = serde_json::to_string(&*read_guard).unwrap();
+        let step_str_lines =
+            bincode::encode_to_vec(&*read_guard, bincode::config::standard()).unwrap();
         drop(read_guard);
-        let fnc = move || match OperationsFileManager::new(&op_id).write_step(
-            step_str_lines,
-            op_id,
-            step_id,
-            false,
+        let fnc = move || match OperationsFileManager::new(&op_id).write_step_bytes(
+            &step_str_lines,
+            &op_id,
+            &step_id,
         ) {
             Ok(_) => {}
             Err(e) => {
