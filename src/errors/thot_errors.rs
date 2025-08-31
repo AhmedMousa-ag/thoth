@@ -14,6 +14,7 @@ pub enum ThothErrors {
     DbError(String),
     SendChError(String),
     SerdeError(String),
+    BincodeError(String),
 }
 
 impl fmt::Display for ThothErrors {
@@ -27,6 +28,9 @@ impl fmt::Display for ThothErrors {
             ThothErrors::SendChError(msg) => write!(f, "Sending Channel error: {}", msg),
             ThothErrors::SerdeError(msg) => {
                 write!(f, "Converting Serde to/from types error: {}", msg)
+            }
+            ThothErrors::BincodeError(msg) => {
+                write!(f, "Converting Bincode to/from types error: {}", msg)
             }
         }
     }
@@ -99,5 +103,11 @@ impl From<serde_json::Error> for ThothErrors {
 impl From<SubscriptionError> for ThothErrors {
     fn from(err: SubscriptionError) -> Self {
         ThothErrors::P2PError(err.to_string())
+    }
+}
+
+impl From<bincode::error::DecodeError> for ThothErrors {
+    fn from(err: bincode::error::DecodeError) -> Self {
+        ThothErrors::BincodeError(err.to_string())
     }
 }

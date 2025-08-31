@@ -398,7 +398,8 @@ impl OperationsFileManager {
         let mut file = OpenOptions::new().read(true).open(file_path)?;
         let mut contents = vec![];
         file.read_to_end(&mut contents)?;
-        Ok(serde_json::from_slice(&contents)?)
+        let step = bincode::decode_from_slice(&contents, bincode::config::standard())?.0;
+        Ok(step)
     }
     pub fn create_operation_file(
         &mut self,
@@ -428,7 +429,10 @@ impl OperationsFileManager {
         let mut file = OpenOptions::new().read(true).open(file_path).ok()?;
         let mut contents = vec![];
         file.read_to_end(&mut contents).ok()?;
-        Some(serde_json::from_slice(&contents).ok()?)
+        let ops = bincode::decode_from_slice(&contents, bincode::config::standard())
+            .ok()?
+            .0;
+        Some(ops)
     }
     fn list_directory_files(dir: &str) -> Vec<String> {
         let mut files = vec![];
