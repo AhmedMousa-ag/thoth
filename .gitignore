@@ -32,3 +32,9 @@ venv
 # setup build objects
 py_thoth.egg-info
 __pycache__/
+
+
+thoth_binary
+
+flamegraph*
+perf.data*
