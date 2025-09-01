@@ -181,9 +181,9 @@ impl Gatherer {
                         Some(gath_res)=>{
 
                             if gath_res.result.is_some(){
-                                let num:f64= gath_res.result.unwrap().clone().into();
+                                let num:f64= gath_res.result.unwrap().clone().0.read().await.get_scaler_value();
                                 res +=  num;
-                                num_divide+=gath_res.extra_info.unwrap().helper_number.unwrap().get_scaler_value();
+                                num_divide+=gath_res.extra_info.unwrap().helper_number.unwrap().0.read().await.get_scaler_value();
                             }
                             duties_maps.remove(&value.step_id);
                         },
@@ -231,7 +231,7 @@ impl Gatherer {
                         }
                         match value.respond{
                         Some(gath_res)=>{
-                            let num = gath_res.result.unwrap().get_scaler_value();
+                            let num = gath_res.result.unwrap().0.read().await.get_scaler_value();
                             if let Some(extra_infos)=gath_res.extra_info{
                                 let poses= extra_infos.res_pos.unwrap_or(vec![0,0]); // It shall never be None in case of metrics.
                                 let (x_pos,y_pos) = (poses[0],poses[1]);

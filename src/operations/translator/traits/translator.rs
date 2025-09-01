@@ -1,16 +1,14 @@
-use std::{iter::zip, sync::Arc};
-
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
     db::controller::registerer::DbOpsRegisterer,
-    err,
     operations::{
         executer::types::OperationTypes,
         planner::charts::structs::Steps,
         translator::translate::{MatricesTranslator, ScalerTranslator, VecTranslator},
     },
-    structs::numerics::structs::Numeric,
+    structs::numerics::structs::{Numeric, SharedNumeric},
     warn,
 };
 
@@ -56,11 +54,11 @@ impl Translator for ScalerTranslator {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let read_guard = self.step.read().await;
-                let x = read_guard.x.as_ref().unwrap();
-                let y = read_guard.y.as_ref().unwrap();
-                let result = y * x;
+                let x = read_guard.x.as_ref().unwrap().0.clone();
+                let y = read_guard.y.as_ref().unwrap().0.clone();
                 drop(read_guard);
-                self.step.write().await.result = Some(result);
+                let result = y.read().await.get_scaler_value() * x.read().await.get_scaler_value();
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
             });
         });
     }
@@ -69,15 +67,11 @@ impl Translator for ScalerTranslator {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let read_guard = self.step.read().await;
-
-                let x = read_guard.x.as_ref().unwrap();
-
-                let y = read_guard.y.as_ref().unwrap();
-
-                let result = x + y;
+                let x = read_guard.x.as_ref().unwrap().0.clone();
+                let y = read_guard.y.as_ref().unwrap().0.clone();
                 drop(read_guard);
-
-                self.step.write().await.result = Some(result);
+                let result = x.read().await.get_scaler_value() + y.read().await.get_scaler_value();
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
             });
         });
     }
@@ -91,8 +85,15 @@ impl Translator for ScalerTranslator {
                 let y;
                 match read_guard.x.as_ref() {
                     Some(x_step) => {
-                        x = x_step.get_scaler_value();
-                        y = read_guard.y.as_ref().unwrap().get_scaler_value();
+                        x = x_step.0.read().await.get_scaler_value();
+                        y = read_guard
+                            .y
+                            .as_ref()
+                            .unwrap()
+                            .0
+                            .read()
+                            .await
+                            .get_scaler_value();
                     }
                     None => {
                         //if !step_ref.use_prev_res{
@@ -106,14 +107,21 @@ impl Translator for ScalerTranslator {
                                 DbOpsRegisterer::get_step_file(&read_guard.operation_id, &step_id);
                         }
                         let prev_step = prev_step.unwrap();
-                        x = prev_step.result.unwrap().get_scaler_value();
-                        y = read_guard.y.as_ref().unwrap().get_scaler_value();
+                        x = prev_step.result.unwrap().0.read().await.get_scaler_value();
+                        y = read_guard
+                            .y
+                            .as_ref()
+                            .unwrap()
+                            .0
+                            .read()
+                            .await
+                            .get_scaler_value();
                     }
                 }
-                let result = x / y;
                 drop(read_guard);
+                let result = x / y;
 
-                self.step.write().await.result = Some(Numeric::Scaler(result));
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
             });
         });
     }
@@ -125,19 +133,37 @@ impl Translator for VecTranslator {
         tokio::task::block_in_place(|| {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
-                let mut result = 0.0;
                 let read_guard = self.step.read().await;
-                let x = read_guard.x.as_ref().unwrap().get_vector_value();
-                let y = read_guard.y.as_ref().unwrap().get_vector_value();
-
-                //TODO, you might want to spawn the result in multiple threads.
-                for (x_num, y_num) in zip(x, y) {
-                    result += y_num * x_num;
-                }
-                let res = Some(Numeric::Scaler(result));
+                let x = read_guard.x.as_ref().unwrap().clone();
+                let y = read_guard.y.as_ref().unwrap().clone();
                 drop(read_guard);
+                let y = y.0.read().await;
+                let x = x.0.read().await;
 
-                self.step.write().await.result = res;
+                let x = x.get_vector_value();
+                let y = y.get_vector_value();
+
+                // Divide and conquer dot product for large vectors
+                fn dot_product_divide_and_conquer(x: &[f64], y: &[f64]) -> f64 {
+                    const THRESHOLD: usize = 1024;
+                    if x.len() <= THRESHOLD {
+                        x.iter()
+                            .zip(y.iter())
+                            .map(|(x_num, y_num)| x_num * y_num)
+                            .sum()
+                    } else {
+                        let mid = x.len() / 2;
+                        let (x_left, x_right) = x.split_at(mid);
+                        let (y_left, y_right) = y.split_at(mid);
+                        let left = dot_product_divide_and_conquer(x_left, y_left);
+                        let right = dot_product_divide_and_conquer(x_right, y_right);
+                        left + right
+                    }
+                }
+
+                let result = dot_product_divide_and_conquer(&x, &y);
+
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
             });
         });
     }
@@ -146,22 +172,16 @@ impl Translator for VecTranslator {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let read_guard = self.step.read().await;
-                let x = match read_guard.x.as_ref().unwrap() {
-                    Numeric::Vector(val) => val.clone(),
-                    _ => {
-                        let msg = "Expected Vector variant in Vector Translator";
-                        err!("{}",msg;panic=true);
-                        unreachable!("{}", msg);
-                    }
-                };
+                let x = read_guard.x.as_ref().unwrap().clone();
+                drop(read_guard);
+                let x = x.0.read().await;
+                let x = x.get_vector_value();
 
                 let mut result = 0.0;
                 for val in x.iter() {
                     result += val;
                 }
-                drop(read_guard);
-
-                self.step.write().await.result = Some(Numeric::Scaler(result));
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
             });
         });
     }
@@ -170,13 +190,22 @@ impl Translator for VecTranslator {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let read_guard = self.step.read().await;
-                let x = read_guard.x.as_ref().unwrap();
-                let y = read_guard.y.as_ref().unwrap();
-                let result = y / x;
-
+                let x = read_guard.x.as_ref().unwrap().clone();
+                let y = read_guard.y.as_ref().unwrap().clone();
                 drop(read_guard);
+                let x = x.0.read().await;
+                let y = y.0.read().await;
 
-                self.step.write().await.result = Some(result);
+                let x = x.get_vector_value();
+                let y = y.get_vector_value();
+                // Element-wise division of two vectors
+                let result: Vec<f64> = x
+                    .iter()
+                    .zip(y.iter())
+                    .map(|(x_val, y_val)| x_val / y_val)
+                    .collect();
+
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Vector(result)));
             });
         });
     }
@@ -185,10 +214,13 @@ impl Translator for VecTranslator {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let read_guard = self.step.read().await;
-                let x: Vec<f64> = read_guard.x.as_ref().unwrap().get_vector_value();
+                let x = read_guard.x.as_ref().unwrap().clone();
                 drop(read_guard);
+                let x = x.0.read().await;
+                let x = x.get_vector_value();
+
                 let result = x.iter().sum::<f64>() / (x.len() as f64);
-                self.step.write().await.result = Some(Numeric::Scaler(result));
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
             });
         });
     }

@@ -35,9 +35,9 @@ impl Executer {
             return;
         }
         // let ev_hand = EventsHandler::new(&format!("write_{}",step_id)).add_event(true);
-        DbOpsRegisterer::new_step(Arc::clone(&step), false).await; // Ignoring this error as it's not critical.
+        // DbOpsRegisterer::new_step(Arc::clone(&step), false).await; // Ignoring this error as it's not critical.
         let step = DutiesTranslator::translate_step(Arc::clone(&step)).await; //I think we don't need to return it as it's mutable by reference.
-        DbOpsRegisterer::new_step(Arc::clone(&step), false).await;
+        DbOpsRegisterer::new_step(Arc::clone(&step), true).await;
 
         decrease_running_operation(&op_id);
         let read_guard = step.read().await;

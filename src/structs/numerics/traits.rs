@@ -1,4 +1,4 @@
-use crate::{structs::numerics::structs::Numeric, warn};
+use crate::{err, structs::numerics::structs::Numeric, warn};
 
 impl Numeric {
     pub fn to_string(&self) -> String {
@@ -32,25 +32,25 @@ impl Numeric {
     }
 
     ///Don't use if your type isn't vector.
-    pub fn get_vector_value(&self) -> Vec<f64> {
+    pub fn get_vector_value(&self) -> &Vec<f64> {
         match self {
-            Numeric::Vector(val) => val.clone(),
+            Numeric::Vector(val) => val,
             _ => {
                 let msg = "Expected Vector variant, will return a zero";
-                warn!("{}", msg);
-                vec![0.0]
+                err!("{}", msg);
+                unreachable!()
             }
         }
     }
 
     ///Don't use if your type isn't a Matrix.
-    pub fn get_matrices_value(&self) -> Vec<Vec<f64>> {
+    pub fn get_matrices_value(&self) -> &Vec<Vec<f64>> {
         match self {
-            Numeric::Matrix(val) => val.clone(),
+            Numeric::Matrix(val) => val,
             _ => {
                 let msg = "Expected Matrix variant, will return a zero";
-                warn!("{}", msg);
-                vec![vec![0.0]]
+                err!("{}", msg);
+                unreachable!()
             }
         }
     }
@@ -84,12 +84,12 @@ impl Into<f64> for Numeric {
 
 impl Into<Vec<f64>> for Numeric {
     fn into(self) -> Vec<f64> {
-        self.get_vector_value()
+        self.get_vector_value().clone()
     }
 }
 
 impl Into<Vec<Vec<f64>>> for Numeric {
     fn into(self) -> Vec<Vec<f64>> {
-        self.get_matrices_value()
+        self.get_matrices_value().clone()
     }
 }
