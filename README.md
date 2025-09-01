@@ -18,18 +18,16 @@ Please don't use this in production as it is still in the very early stages of d
 ### Build
 
 ```bash
-cargo build --release
-```
-
-### Run
-
-```bash
-cargo run
+cargo build --release --target-dir thoth_binary
 ```
 
 ## Usage
 
-To use Thoth, you need to run the binary file generated after building the project. Or run it directly using Cargo on multiple machines in your cluster. (You can run it on a single machine for testing purposes.)
+To use Thoth, you need to run the binary file generated after building the project. (You can run it on a single machine for testing purposes.)
+You can use command `cargo build --release --target-dir thoth_binary` to build the project and then run the binary file located at `thoth_binary/release/thoth`.
+
+Please avoid using `cargo run` for running the project as it is not optimized for performance.
+
 
 **Example Usage**
 
