@@ -3,7 +3,6 @@ use crate::{
     db::controller::registerer::DbOpsRegisterer,
     errors::thot_errors::ThothErrors,
     info,
-    logger::writters::writter::OperationsFileManager,
     operations::{
         checker::{PlanChecker, increase_running_operation},
         executer::types::{Executer, OperationTypes},
@@ -14,7 +13,10 @@ use crate::{
         post_offices::nodes_info::post_office::{OperationStepExecuter, OperationsExecuterOffice},
         traits::PostOfficeTrait,
     },
-    structs::{numerics::structs::Numeric, structs::NodeInfo},
+    structs::{
+        numerics::structs::{Numeric, SharedNumeric},
+        structs::NodeInfo,
+    },
     warn,
 };
 use std::{collections::HashMap, sync::Arc, vec};
@@ -53,7 +55,7 @@ impl Planner {
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(&self.operation_id),
+                // op_file_manager: OperationsFileManager::new(&self.operation_id),
             })
         } else {
             None
@@ -84,8 +86,8 @@ impl Planner {
                     node_id: node_id.to_string(),
                     operation_id: self.operation_id.clone(),
                     step_id: step_id.clone(),
-                    x: Some(Numeric::Vector(row.to_vec())),
-                    y: Some(Numeric::Vector(col)),
+                    x: Some(SharedNumeric::new(Numeric::Vector(row.to_vec()))),
+                    y: Some(SharedNumeric::new(Numeric::Vector(col))),
                     op_type: OperationTypes::DOT,
                     result: None,
                     next_step: None,
@@ -93,7 +95,7 @@ impl Planner {
                     use_prev_res: false,
                     extra_info: Some(ExtraInfo {
                         res_pos: Some(vec![irow, icol]),
-                        res_type: Some(Numeric::Matrix(vec![vec![]])),
+                        res_type: Some(SharedNumeric::new(Numeric::Matrix(vec![vec![]]))),
                         helper_number: None,
                     }),
                 }));
@@ -151,7 +153,7 @@ impl Planner {
                 "Only one node available which is considered usesless for Thoth to handle this operation"
             );
             Some(Executer {
-                op_file_manager: OperationsFileManager::new(&self.operation_id),
+                // op_file_manager: OperationsFileManager::new(&self.operation_id),
             })
         } else {
             None
@@ -178,7 +180,7 @@ impl Planner {
                 operation_id: self.operation_id.clone(),
                 step_id: step_id.clone(),
                 node_id: node_id.to_string(),
-                x: Some(Numeric::Vector(node_data)),
+                x: Some(SharedNumeric::new(Numeric::Vector(node_data))),
                 y: None,
                 // Will not use AVG as it will be calculated in the gatherer. Also dividing several operations across several nodes losses important fractions between the operations.
                 op_type: OperationTypes::SUM,
@@ -189,7 +191,7 @@ impl Planner {
                 extra_info: Some(ExtraInfo {
                     res_pos: None,
                     res_type: None,
-                    helper_number: Some(Numeric::Scaler(node_data_len as f64)), // Will be used in the gatherer to calculate the average.
+                    helper_number: Some(SharedNumeric::new(Numeric::Scaler(node_data_len as f64))), // Will be used in the gatherer to calculate the average.
                 }),
             }));
 

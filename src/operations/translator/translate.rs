@@ -26,8 +26,11 @@ impl DutiesTranslator {
             None => None,
         }
     }
-    fn create_translator(num: &Numeric, step: Arc<RwLock<Steps>>) -> Box<dyn Translator> {
-        match num {
+    async fn create_translator(
+        num: Arc<RwLock<Numeric>>,
+        step: Arc<RwLock<Steps>>,
+    ) -> Box<dyn Translator> {
+        match *num.read().await {
             Numeric::Scaler(_) => Box::new(ScalerTranslator::new(step)),
             Numeric::Vector(_) => Box::new(VecTranslator::new(step)),
             Numeric::Matrix(_) => Box::new(MatricesTranslator::new(step)),
@@ -35,13 +38,13 @@ impl DutiesTranslator {
     }
     pub async fn translate_step(step: Arc<RwLock<Steps>>) -> Arc<RwLock<Steps>> {
         let read_guard = step.read().await;
-        let num = match read_guard.x.as_ref() {
-            Some(x) => x.clone(),
-            None => read_guard.y.as_ref().unwrap().clone(),
+        let num: Arc<RwLock<Numeric>> = match read_guard.x.as_ref() {
+            Some(x) => x.0.clone(),
+            None => read_guard.y.as_ref().unwrap().0.clone(),
         };
         drop(read_guard);
 
-        let translator = DutiesTranslator::create_translator(&num, Arc::clone(&step));
+        let translator = DutiesTranslator::create_translator(num, Arc::clone(&step)).await;
         translator.step(Arc::clone(&step));
         Arc::clone(&step)
     }

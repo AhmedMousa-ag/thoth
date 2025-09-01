@@ -50,10 +50,10 @@ impl fmt::Display for Steps {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut msg = String::new();
         if let Some(x) = &self.x {
-            msg.push_str(&format!("X: {}, ", x));
+            msg.push_str(&format!("X: {:?}, ", x));
         }
         if let Some(y) = &self.y {
-            msg.push_str(&format!("Y: {}, ", y));
+            msg.push_str(&format!("Y: {:?}, ", y));
         }
         if let Some(next_step) = &self.next_step {
             msg.push_str(&format!("Next Step: {}", next_step));

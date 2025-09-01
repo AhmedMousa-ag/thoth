@@ -276,6 +276,30 @@ impl OperationsFileManager {
             })
         })
     }
+    pub fn write_step_bytes(
+        &mut self,
+        bytes: &[u8],
+        op_id: &str,
+        step_id: &str,
+    ) -> Result<(), ThothErrors> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let step_path = generate_file_path(Self::get_step_path(&op_id, &step_id)).unwrap();
+                let step_date_path =
+                    generate_file_path(Self::get_step_date_path(&op_id, &step_id)).unwrap();
+                self.get_open_file(&step_path, false)
+                    .unwrap()
+                    .try_lock()
+                    .unwrap()
+                    // .await
+                    .write_all(bytes)?;
+                sort_files_and_persist(&pathbuf_str(&step_path), true);
+                create_symbolic_link(&step_path, &step_date_path)?;
+                sort_files_and_persist(&pathbuf_str(&step_date_path), true);
+                Ok(())
+            })
+        })
+    }
     pub fn write_step(
         &mut self,
         step_str_lines: String,
@@ -297,6 +321,25 @@ impl OperationsFileManager {
                 sort_files_and_persist(&pathbuf_str(&step_path), true);
                 create_symbolic_link(&step_path, &step_date_path)?;
                 sort_files_and_persist(&pathbuf_str(&step_date_path), true);
+                Ok(())
+            })
+        })
+    }
+    pub fn write_operation_bytes(&mut self, bytes: &[u8], op_id: &str) -> Result<(), ThothErrors> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let op_path = generate_file_path(Self::get_operations_main_path(&op_id)).unwrap();
+                let op_date_path =
+                    generate_file_path(Self::get_operations_main_path(&op_id)).unwrap();
+                self.get_open_file(&op_path, false)
+                    .unwrap()
+                    .try_lock()
+                    .unwrap()
+                    // .await
+                    .write_all(bytes)?;
+                sort_files_and_persist(&pathbuf_str(&op_path), true);
+                create_symbolic_link(&op_path, &op_date_path)?;
+                sort_files_and_persist(&pathbuf_str(&op_date_path), true);
                 Ok(())
             })
         })
@@ -350,6 +393,14 @@ impl OperationsFileManager {
 
         Ok(serde_json::from_str(&file_content)?)
     }
+    pub fn load_step_bytes(op_id: &str, step_id: &str) -> Result<Steps, ThothErrors> {
+        let file_path = generate_file_path(Self::get_step_path(op_id, step_id))?;
+        let mut file = OpenOptions::new().read(true).open(file_path)?;
+        let mut contents = vec![];
+        file.read_to_end(&mut contents)?;
+        let step = bincode::decode_from_slice(&contents, bincode::config::standard())?.0;
+        Ok(step)
+    }
     pub fn create_operation_file(
         &mut self,
         operation: OperationFile,
@@ -371,6 +422,17 @@ impl OperationsFileManager {
         };
         let file_content = String::from_utf8(contents).unwrap_or_default();
         Some(serde_json::from_str(&file_content).ok()?)
+    }
+
+    pub fn load_operation_bytes(operation_id: &str) -> Option<OperationFile> {
+        let file_path = generate_file_path(Self::get_operations_main_path(operation_id)).ok()?;
+        let mut file = OpenOptions::new().read(true).open(file_path).ok()?;
+        let mut contents = vec![];
+        file.read_to_end(&mut contents).ok()?;
+        let ops = bincode::decode_from_slice(&contents, bincode::config::standard())
+            .ok()?
+            .0;
+        Some(ops)
     }
     fn list_directory_files(dir: &str) -> Vec<String> {
         let mut files = vec![];

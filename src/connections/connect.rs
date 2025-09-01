@@ -15,7 +15,6 @@ use crate::{
             external_com_ch::ExternalComm,
             nodes_info::post_office::{
                 GathererOffice, NodesInfoOffice, OperationStepExecuter, OperationsExecuterOffice,
-                SyncerOffice,
             },
         },
         traits::PostOfficeTrait,
@@ -127,7 +126,7 @@ impl GossibConnection {
     async fn listen_messages(swarm: &mut swarm::Swarm<GossipBehaviour>) -> ! {
         let ops_topic = TopicsEnums::Operations.as_str();
         let node_topic = TopicsEnums::NodesInfo.as_str();
-        let sync_topic = TopicsEnums::Sync.as_str();
+        // let sync_topic = TopicsEnums::Sync.as_str();
         loop {
             select! {
                             rec_message=ExternalComm::recieve_messages()=>{
@@ -193,9 +192,9 @@ impl GossibConnection {
                                             }else{
                                                 warn!("Node Info request type couldn't be identified.")
                                             }
-                                    }else if topic_name==sync_topic{
-                                        info!("Got a sync message {}",topic_name);
-                                        SyncerOffice::handle_incom_msg(decoded_msg.message).await;
+                                    // }else if topic_name==sync_topic{
+                                        // info!("Got a sync message {}",topic_name);
+                                        // SyncerOffice::handle_incom_msg(decoded_msg.message).await;
                                     }else{
                                         warn!("Couldn't find the topic type");
                                     }

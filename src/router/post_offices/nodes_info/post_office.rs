@@ -6,11 +6,7 @@ use crate::{
         channels_node_info::{NodeInfoTrait, get_current_node_cloned},
         configs::topics::TopicsEnums,
     },
-    db::controller::registerer::DbOpsRegisterer,
-    err,
-    errors::thot_errors::ThothErrors,
-    info,
-    logger::writters::writter::OperationsFileManager,
+    err, info,
     operations::{
         executer::types::Executer,
         gatherer::{
@@ -24,7 +20,6 @@ use crate::{
         structs::{Message, NodeInfo, RequestsTypes},
         traits::EncodingDecoding,
     },
-    syncer::{channels::get_sender, structs::SyncMessage},
     warn,
 };
 use tokio::spawn;
@@ -71,9 +66,9 @@ impl PostOfficeTrait<Arc<RwLock<Steps>>> for OperationStepExecuter {
         spawn(async {
             info!("Received step to be executed.");
             let step = Arc::new(RwLock::new(Steps::decode_bytes(&message.unwrap())));
-            DbOpsRegisterer::new_step(step.clone(), false).await;
+            // DbOpsRegisterer::new_step(step.clone(), false).await;
             let mut executer = Executer {
-                op_file_manager: OperationsFileManager::new(&step.read().await.operation_id),
+                // op_file_manager: OperationsFileManager::new(&step.read().await.operation_id),
             };
             executer.execute_step(step).await;
         });
@@ -95,10 +90,10 @@ impl PostOfficeTrait<Box<NodesOpsMsg>> for OperationsExecuterOffice {
             let duties = Box::new(NodesOpsMsg::decode_bytes(&message.unwrap()));
             let node_key = get_current_node_cloned().id;
             let operation_info = duties.nodes_duties.get(&node_key);
-            if let Some(op_info) = operation_info {
-                let op_id = op_info[0].operation_id.clone();
+            if let Some(_) = operation_info {
+                // let op_id = op_info[0].operation_id.clone();
                 Executer {
-                    op_file_manager: OperationsFileManager::new(&op_id),
+                    // op_file_manager: OperationsFileManager::new(&op_id),
                 }
                 .execute_duties(duties)
                 .await;
@@ -173,23 +168,23 @@ pub fn reply_gather_res(gathered_msg: GatheredMessage) {
     info!("Sent Gathered replies to other nodes.");
 }
 
-impl PostOfficeTrait<SyncMessage> for SyncerOffice {
-    fn send_message(message: SyncMessage) {
-        let rep_message = Box::new(Message {
-            topic_name: TopicsEnums::Sync.to_string(),
-            request: message.message_type.clone(),
-            message: Some(message.encode_bytes()),
-        });
+// impl PostOfficeTrait<SyncMessage> for SyncerOffice {
+//     fn send_message(message: SyncMessage) {
+//         let rep_message = Box::new(Message {
+//             topic_name: TopicsEnums::Sync.to_string(),
+//             request: message.message_type.clone(),
+//             message: Some(message.encode_bytes()),
+//         });
 
-        ExternalComm::send_message(Box::clone(&rep_message));
-        info!("Sent message in Nodes Office.");
-    }
-    async fn handle_incom_msg(message: Option<Vec<u8>>) {
-        spawn(async move {
-            let message = SyncMessage::decode_bytes(&message.unwrap());
-            if let Err(e) = get_sender().send(message) {
-                err!("Sending SyncMessage Channel: {}", ThothErrors::from(e));
-            };
-        });
-    }
-}
+//         ExternalComm::send_message(Box::clone(&rep_message));
+//         info!("Sent message in Nodes Office.");
+//     }
+//     async fn handle_incom_msg(message: Option<Vec<u8>>) {
+//         spawn(async move {
+//             let message = SyncMessage::decode_bytes(&message.unwrap());
+//             if let Err(e) = get_sender().send(message) {
+//                 err!("Sending SyncMessage Channel: {}", ThothErrors::from(e));
+//             };
+//         });
+//     }
+// }
