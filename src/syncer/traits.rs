@@ -31,6 +31,7 @@ impl Syncer {
         &Self { is_syncing: false }
     }
     pub fn run(&'static self) {
+        info!("Starting Syncer Process in the Background....");
         self.perform_sync_ops();
         self.trigger_sync();
     }
@@ -38,6 +39,7 @@ impl Syncer {
         spawn(async {
             let config = get_config();
             loop {
+                //TODO consider syncing at certain times of the day only which should be low traffic times such as middle of the night.
                 thread::sleep(Duration::from_secs(config.sleep_time_min * 60)); //Convert to seconds.
                 info!("Triggering Syncer Process");
                 let num_nodes = get_nodes_info_cloned().len();

@@ -1,7 +1,6 @@
+use crate::err;
 use chrono::{DateTime, Utc};
 use sea_orm::prelude::*;
-
-use crate::{err, operations::planner::charts::structs::OperationInfo};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "synced_ops")]
