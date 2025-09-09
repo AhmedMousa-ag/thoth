@@ -21,20 +21,21 @@ use crate::{
     operations::planner::charts::structs::{NodesDuties, Steps},
     structs::structs::RequestsTypes,
 };
-use bincode::Encode;
+use bincode::{Decode, Encode};
 use chrono::{DateTime, Utc};
 #[derive(Debug)]
 pub struct Syncer {
     pub is_syncing: bool,
 }
 
-#[derive(Encode)]
+#[derive(Encode, Decode)]
 pub struct SyncMessage {
     pub message_type: RequestsTypes,
     pub message: SyncOperations,
+    pub target_nodes: Option<Vec<String>>, //If None, broadcast to all nodes.
 }
 
-#[derive(Encode, Debug)] //TODO impl display
+#[derive(Encode, Debug, Decode)] //TODO impl display
 pub enum OperationType {
     Step(Steps),
     NodesDuties(NodesDuties),
@@ -72,7 +73,7 @@ impl OperationType {
     }
 }
 
-#[derive(Encode)]
+#[derive(Encode, Decode)]
 pub struct SyncOperations {
     pub operation: Option<Vec<OperationType>>,
     pub start_date: Option<String>,

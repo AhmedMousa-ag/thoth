@@ -1,12 +1,12 @@
 use chrono::{DateTime, Utc};
 use sea_orm::prelude::*;
 
-use crate::err;
+use crate::{err, operations::planner::charts::structs::OperationInfo};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "synced_ops")]
 pub struct Model {
-    #[sea_orm(index, unique, auto_increment = true)]
+    #[sea_orm(index, unique, auto_increment = false)]
     pub synced_id: String,
     #[sea_orm(default = false)]
     pub is_finished: bool,
@@ -14,6 +14,7 @@ pub struct Model {
     pub from_date: DateTime<Utc>,
     #[sea_orm(primary_key)]
     pub to_date: DateTime<Utc>,
+    #[sea_orm(nullable, default = None)]
     pub ops_id: String,
 }
 
