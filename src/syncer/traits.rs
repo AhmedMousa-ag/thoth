@@ -40,7 +40,7 @@ impl Syncer {
             let config = get_config();
             loop {
                 //TODO consider syncing at certain times of the day only which should be low traffic times such as middle of the night.
-                thread::sleep(Duration::from_secs(config.sleep_time_min * 60)); //Convert to seconds.
+                thread::sleep(Duration::from_secs(10)); //Convert to seconds.
                 info!("Triggering Syncer Process");
                 let num_nodes = get_nodes_info_cloned().len();
                 let quorum = config.quorum;
@@ -73,11 +73,13 @@ impl Syncer {
                     message: sync_ops,
                     target_nodes: Some(target_nodes.clone()),
                 };
-                DbOpsRegisterer::new_syncer(
+                let (date_from, date_to) = (
                     convert_string_datetime(start_date.clone()),
                     convert_string_datetime(Some(end_date.clone())),
-                    true,
                 );
+                if DbOpsRegisterer::get_syncer_ops(date_from, date_to).is_none() {
+                    DbOpsRegisterer::new_syncer(date_from, date_to, false);
+                };
                 SyncerOffice::send_message(sync_msg);
 
                 //Sync this node operations to all other nodes as well. Triggering this sender, reciever channel internally.
@@ -93,7 +95,9 @@ impl Syncer {
                 convert_string_datetime(Some(message.end_date)),
             );
 
-            DbOpsRegisterer::new_syncer(start_date, end_date, true);
+            if DbOpsRegisterer::get_syncer_ops(start_date, end_date).is_none() {
+                DbOpsRegisterer::new_syncer(start_date, end_date, false);
+            }
             let mut reply_operations: Vec<OperationType> = Vec::new();
 
             let db_ops = DbOpsRegisterer::get_operation_by_date(Some(start_date), Some(end_date));

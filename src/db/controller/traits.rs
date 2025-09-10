@@ -11,6 +11,7 @@ use crate::db::{
     },
     sqlite::get_db_connection,
 };
+use crate::debug;
 use crate::{err, errors::thot_errors::ThothErrors};
 
 use chrono::{self, DateTime, Utc};
@@ -212,18 +213,20 @@ impl SQLiteDBTraits<SyncedOps, SyncedOpsModel> for SqlSyncedOps {
 }
 impl SqlSyncedOps {
     pub fn new(date_from: DateTime<Utc>, date_to: DateTime<Utc>) -> synced_ops::ActiveModel {
+        let synced_id = ActiveValue::Set(format!(
+            "{}_{}",
+            date_from.format("%Y%m%d%H%M%S"),
+            date_to.format("%Y%m%d%H%M%S")
+        ));
+        debug!("New Synced Operation ID: {:?}", synced_id);
         SyncedOpsModel {
-            synced_id: ActiveValue::Set(format!(
-                "{}_{}",
-                date_from.format("%Y%m%d%H%M%S"),
-                date_to.format("%Y%m%d%H%M%S")
-            )),
+            synced_id,
             from_date: ActiveValue::Set(date_from),
             to_date: ActiveValue::Set(date_to),
             is_finished: ActiveValue::Set(false),
             ops_id: ActiveValue::Set(String::new()), // Set ops_id to an empty string or a valid value
-            // ops_id:ActiveValue::NotSet,
-            ..Default::default()
+                                                     // ops_id:ActiveValue::NotSet,
+                                                     // ..Default::default()
         }
     }
     pub fn find_by_dates(

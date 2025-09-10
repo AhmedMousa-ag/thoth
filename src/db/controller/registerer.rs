@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use crate::{
     db::{
         controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlSyncedOps},
-        entities::nodes_duties::ActiveModel as NodesDutiesActiveModel,
+        entities::{nodes_duties::ActiveModel as NodesDutiesActiveModel, synced_ops},
     },
     err,
     errors::thot_errors::ThothErrors,
@@ -90,6 +90,13 @@ impl DbOpsRegisterer {
         } else {
             fnc();
         }
+    }
+    pub fn get_syncer_ops(
+        date_from: DateTime<Utc>,
+        date_to: DateTime<Utc>,
+    ) -> Option<synced_ops::Model> {
+        //TODO create a struct for this operation, there's a discreancy between the defined structs and the database table.
+        SqlSyncedOps::find_by_dates(date_from, date_to, None)
     }
     pub fn new_operation(operation_id: String, thread: bool) {
         FileRegisterer::new_operation(operation_id, thread);
