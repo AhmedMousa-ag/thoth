@@ -17,7 +17,7 @@ use crate::{
         traits::EncodingDecoding,
     },
     syncer::{
-        channels::get_reciever,
+        channels::{get_reciever, get_sender},
         configs::get_config,
         structs::{OperationType, SyncMessage, SyncOperations, Syncer},
     },
@@ -71,14 +71,17 @@ impl Syncer {
                 let sync_msg = SyncMessage {
                     message_type: RequestsTypes::RequestSyncing,
                     message: sync_ops,
-                    target_nodes: Some(target_nodes),
+                    target_nodes: Some(target_nodes.clone()),
                 };
                 DbOpsRegisterer::new_syncer(
-                    convert_string_datetime(start_date),
-                    convert_string_datetime(Some(end_date)),
+                    convert_string_datetime(start_date.clone()),
+                    convert_string_datetime(Some(end_date.clone())),
                     true,
                 );
                 SyncerOffice::send_message(sync_msg);
+
+                //Sync this node operations to all other nodes as well. Triggering this sender, reciever channel internally.
+                request_sync_internally(target_nodes, start_date, end_date);
             }
         });
     }
@@ -224,4 +227,24 @@ impl Syncer {
             }
         });
     }
+}
+
+fn request_sync_internally(
+    target_nodes: Vec<String>,
+    start_date: Option<String>,
+    end_date: String,
+) {
+    let sync_ops = SyncOperations {
+        start_date: start_date,
+        end_date: end_date,
+        operation: None,
+    };
+    let sync_msg = SyncMessage {
+        message_type: RequestsTypes::RequestSyncing,
+        message: sync_ops,
+        target_nodes: Some(target_nodes),
+    };
+    if let Err(e) = get_sender().send(sync_msg) {
+        warn!("Error sending sync message to channel: {:?}", e);
+    };
 }
