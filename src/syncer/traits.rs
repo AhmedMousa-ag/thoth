@@ -143,6 +143,10 @@ impl Syncer {
                             .is_some()
                         {
                             //Already have it.
+                            info!(
+                                "Already have step file for operation_id: {} step_id: {}",
+                                &step.operation_id, &step.step_id
+                            );
                             continue;
                         }
                         DbOpsRegisterer::new_step(Arc::new(RwLock::new(step)), true).await;
@@ -153,6 +157,10 @@ impl Syncer {
                                 if DbOpsRegisterer::get_duty_by_step_id(&duty.operation_id)
                                     .is_some()
                                 {
+                                    info!(
+                                        "Already have duty for operation_id: {} step_id: {}",
+                                        &duty.operation_id, &duty.step_id
+                                    );
                                     //Already have it.
                                     continue;
                                 }
