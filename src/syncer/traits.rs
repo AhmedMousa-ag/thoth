@@ -107,6 +107,7 @@ impl Syncer {
 
     fn reply_request(&'static self, message: SyncOperations, target_nodes: Option<Vec<String>>) {
         spawn(async move {
+            info!("Replying to Sync Request");
             flip_syncing_state().await;
             let (start_date, end_date) = (
                 convert_string_datetime(message.start_date),
@@ -154,6 +155,7 @@ impl Syncer {
         });
     }
     fn perform_register(&'static self, message: SyncOperations) {
+        info!("Performing Registering Sync Operations");
         spawn(async {
             let operations = message.operation;
             if operations.is_none() {
@@ -257,6 +259,7 @@ fn request_sync_internally(
     start_date: Option<String>,
     end_date: String,
 ) {
+    info!("Requesting Sync Internally");
     let sync_ops = SyncOperations {
         start_date: start_date,
         end_date: end_date,
