@@ -30,6 +30,7 @@ lazy_static! {
         let all_topics = [
             TopicsEnums::Operations.as_str(),
             TopicsEnums::NodesInfo.as_str(),
+            TopicsEnums::Sync.as_str(),
         ];
 
         let mut m = HashMap::new();

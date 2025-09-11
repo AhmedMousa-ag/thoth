@@ -1,8 +1,7 @@
-from proto import mathop_pb2
 import uuid
 from typing import List
 from utils.util import run_client
-
+from py_thoth.proto import mathop_pb2
 
 @run_client
 def list_average(a: List[float], **kwargs):

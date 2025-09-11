@@ -15,6 +15,7 @@ use crate::{
             external_com_ch::ExternalComm,
             nodes_info::post_office::{
                 GathererOffice, NodesInfoOffice, OperationStepExecuter, OperationsExecuterOffice,
+                SyncerOffice,
             },
         },
         traits::PostOfficeTrait,
@@ -126,7 +127,7 @@ impl GossibConnection {
     async fn listen_messages(swarm: &mut swarm::Swarm<GossipBehaviour>) -> ! {
         let ops_topic = TopicsEnums::Operations.as_str();
         let node_topic = TopicsEnums::NodesInfo.as_str();
-        // let sync_topic = TopicsEnums::Sync.as_str();
+        let sync_topic = TopicsEnums::Sync.as_str();
         loop {
             select! {
                             rec_message=ExternalComm::recieve_messages()=>{
@@ -136,7 +137,7 @@ impl GossibConnection {
                                         Some(topic) =>{
                                             info!("Will send a message to topic: {}",topic);
                                         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), message.encode_bytes()){
-                                            err!("Error publishing message: {:?}",e);
+                                            err!("Error publishing message: {:?} to topic: {}",e,topic);
                                         };}
                                         None=>{warn!("Didn't find topic: {}",message.topic_name.as_str())}
                                     }
@@ -192,9 +193,9 @@ impl GossibConnection {
                                             }else{
                                                 warn!("Node Info request type couldn't be identified.")
                                             }
-                                    // }else if topic_name==sync_topic{
-                                        // info!("Got a sync message {}",topic_name);
-                                        // SyncerOffice::handle_incom_msg(decoded_msg.message).await;
+                                    }else if topic_name==sync_topic{
+                                        info!("Got a sync message {}",topic_name);
+                                        SyncerOffice::handle_incom_msg(decoded_msg.message).await;
                                     }else{
                                         warn!("Couldn't find the topic type");
                                     }

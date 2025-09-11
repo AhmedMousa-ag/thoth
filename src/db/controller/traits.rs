@@ -11,6 +11,7 @@ use crate::db::{
     },
     sqlite::get_db_connection,
 };
+use crate::debug;
 use crate::{err, errors::thot_errors::ThothErrors};
 
 use chrono::{self, DateTime, Utc};
@@ -80,6 +81,7 @@ impl SqlNodesDuties {
             node_id: ActiveValue::Set(node_id),
             is_finished: ActiveValue::Set(false),
             step_id: ActiveValue::Set(step_id),
+            created_at: ActiveValue::Set(chrono::Utc::now()),
         }
     }
     pub fn find_all_duties(op_id: String) -> Vec<nodes_duties::Model> {
@@ -98,6 +100,85 @@ impl SqlNodesDuties {
                             ThothErrors::from(e)
                         );
                         Vec::new()
+                    }
+                }
+            })
+        })
+    }
+    pub fn find_duties_by_node(node_id: &str) -> Vec<nodes_duties::Model> {
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                match NodesDuties::find()
+                    .filter(nodes_duties::Column::NodeId.eq(node_id))
+                    .all(db)
+                    .await
+                {
+                    Ok(duties) => duties,
+                    Err(e) => {
+                        err!(
+                            "Failed to find node duties by node_id due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        Vec::new()
+                    }
+                }
+            })
+        })
+    }
+    pub fn find_duties_by_date(
+        date_from: Option<DateTime<Utc>>,
+        date_to: Option<DateTime<Utc>>,
+    ) -> Result<Vec<nodes_duties::Model>, DbErr> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                let mut query = NodesDuties::find();
+                if date_from.is_some() {
+                    query = query.filter(nodes_duties::Column::CreatedAt.gte(date_from.unwrap()))
+                };
+                if date_to.is_some() {
+                    query = query.filter(nodes_duties::Column::CreatedAt.lte(date_to.unwrap()))
+                }
+                query
+                    .order_by_desc(nodes_duties::Column::CreatedAt)
+                    .all(db)
+                    .await
+            })
+        })
+    }
+    pub fn find_duties_by_node_op_id(
+        node_id: &str,
+        operation_id: &str,
+    ) -> Result<Vec<nodes_duties::Model>, DbErr> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                NodesDuties::find()
+                    .filter(nodes_duties::Column::NodeId.eq(node_id))
+                    .filter(nodes_duties::Column::OpId.eq(operation_id))
+                    .all(db)
+                    .await
+            })
+        })
+    }
+    pub fn find_duty_by_step_id(step_id: &str) -> Option<nodes_duties::Model> {
+        block_in_place(|| {
+            Handle::current().block_on(async {
+                let db = get_db_connection().await;
+                match NodesDuties::find()
+                    .filter(nodes_duties::Column::StepId.eq(step_id))
+                    .one(db)
+                    .await
+                {
+                    Ok(Some(duty)) => Some(duty),
+                    Ok(None) => None,
+                    Err(e) => {
+                        err!(
+                            "Failed to find node duty by step_id due to: {}",
+                            ThothErrors::from(e)
+                        );
+                        None
                     }
                 }
             })
@@ -132,12 +213,20 @@ impl SQLiteDBTraits<SyncedOps, SyncedOpsModel> for SqlSyncedOps {
 }
 impl SqlSyncedOps {
     pub fn new(date_from: DateTime<Utc>, date_to: DateTime<Utc>) -> synced_ops::ActiveModel {
+        let synced_id = ActiveValue::Set(format!(
+            "{}_{}",
+            date_from.format("%Y%m%d%H%M%S"),
+            date_to.format("%Y%m%d%H%M%S")
+        ));
+        debug!("New Synced Operation ID: {:?}", synced_id);
         SyncedOpsModel {
-            synced_id: ActiveValue::NotSet,
+            synced_id,
             from_date: ActiveValue::Set(date_from),
             to_date: ActiveValue::Set(date_to),
-            ops_id: ActiveValue::NotSet,
             is_finished: ActiveValue::Set(false),
+            ops_id: ActiveValue::Set(String::new()), // Set ops_id to an empty string or a valid value
+                                                     // ops_id:ActiveValue::NotSet,
+                                                     // ..Default::default()
         }
     }
     pub fn find_by_dates(

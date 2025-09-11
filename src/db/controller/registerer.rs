@@ -7,12 +7,12 @@ use tokio::sync::RwLock;
 use crate::{
     db::{
         controller::traits::{SQLiteDBTraits, SqlNodesDuties, SqlSyncedOps},
-        entities::nodes_duties::ActiveModel as NodesDutiesActiveModel,
+        entities::{nodes_duties::ActiveModel as NodesDutiesActiveModel, synced_ops},
     },
     err,
     errors::thot_errors::ThothErrors,
     logger::writters::writter::OperationsFileManager,
-    operations::planner::charts::structs::{NodesOpsMsg, OperationFile, Steps},
+    operations::planner::charts::structs::{NodesOpsMsg, OperationFile, OperationInfo, Steps},
     warn,
 };
 pub struct FileRegisterer {}
@@ -80,7 +80,7 @@ impl DbOpsRegisterer {
     pub fn new_syncer(date_from: DateTime<Utc>, date_to: DateTime<Utc>, thread: bool) {
         let fnc = move || {
             if let Err(e) = SqlSyncedOps::insert_row(SqlSyncedOps::new(date_from, date_to)) {
-                err!("new synced operation {}", ThothErrors::from(e))
+                err!("New synced operation {}", ThothErrors::from(e))
             };
         };
         if thread {
@@ -90,6 +90,13 @@ impl DbOpsRegisterer {
         } else {
             fnc();
         }
+    }
+    pub fn get_syncer_ops(
+        date_from: DateTime<Utc>,
+        date_to: DateTime<Utc>,
+    ) -> Option<synced_ops::Model> {
+        //TODO create a struct for this operation, there's a discreancy between the defined structs and the database table.
+        SqlSyncedOps::find_by_dates(date_from, date_to, None)
     }
     pub fn new_operation(operation_id: String, thread: bool) {
         FileRegisterer::new_operation(operation_id, thread);
@@ -122,7 +129,6 @@ impl DbOpsRegisterer {
     pub async fn new_step(step: Arc<RwLock<Steps>>, thread: bool) {
         FileRegisterer::new_step(step, thread).await;
     }
-
     pub fn finished_step() {}
     pub fn new_duty(node_id: String, operation_id: String, step_id: String, thread: bool) {
         let fnc = move || {
@@ -131,6 +137,7 @@ impl DbOpsRegisterer {
                 op_id: Set(operation_id.clone()),
                 step_id: Set(step_id.clone()),
                 is_finished: Set(false),
+                created_at: Set(Utc::now()),
             };
 
             if let Err(e) = SqlNodesDuties::insert_row(sql_duty) {
@@ -189,6 +196,33 @@ impl DbOpsRegisterer {
                     thread,
                 );
             }
+        }
+    }
+    pub fn get_duties_by_date(
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+    ) -> Vec<OperationInfo> {
+        SqlNodesDuties::find_duties_by_date(start_date, end_date)
+            .iter()
+            .flat_map(|d| d.iter().map(|m| m.into()))
+            .collect()
+    }
+    pub fn get_duties_by_node_op_id(node_id: &str, operation_id: &str) -> Vec<OperationInfo> {
+        SqlNodesDuties::find_duties_by_node_op_id(node_id, operation_id)
+            .iter()
+            .flat_map(|d| d.iter().map(|m| m.into()))
+            .collect()
+    }
+    pub fn get_duties_by_node(node_id: &str) -> Vec<OperationInfo> {
+        SqlNodesDuties::find_duties_by_node(node_id)
+            .iter()
+            .map(|d| d.into())
+            .collect()
+    }
+    pub fn get_duty_by_step_id(step_id: &str) -> Option<OperationInfo> {
+        match SqlNodesDuties::find_duty_by_step_id(step_id) {
+            Some(d) => Some(d.into()),
+            None => None,
         }
     }
 }
