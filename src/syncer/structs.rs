@@ -24,9 +24,7 @@ use crate::{
 use bincode::{Decode, Encode};
 use chrono::{DateTime, Utc};
 #[derive(Debug)]
-pub struct Syncer {
-    pub is_syncing: bool,
-}
+pub struct Syncer {}
 
 #[derive(Encode, Decode)]
 pub struct SyncMessage {

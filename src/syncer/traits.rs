@@ -1,5 +1,5 @@
 use chrono::Utc;
-use tokio::{spawn, sync::RwLock};
+use tokio::{spawn, sync::RwLock, task::block_in_place};
 
 use crate::{
     connections::{
@@ -26,9 +26,23 @@ use crate::{
 };
 use std::time::Duration;
 use std::{sync::Arc, thread};
+
+lazy_static::lazy_static!(
+    static ref IS_SYNCING: RwLock<bool> = RwLock::new(false);
+);
+
+async fn flip_syncing_state() {
+    let is_syncing = IS_SYNCING.read().await.clone();
+    *IS_SYNCING.write().await = !is_syncing;
+}
+
+fn _get_sync_state() -> bool {
+    block_in_place(|| futures::executor::block_on(async { IS_SYNCING.read().await.clone() }))
+}
+
 impl Syncer {
     pub fn new() -> &'static Self {
-        &Self { is_syncing: false }
+        &Self {}
     }
     pub fn run(&'static self) {
         info!("Starting Syncer Process in the Background....");
@@ -40,17 +54,20 @@ impl Syncer {
             let config = get_config();
             loop {
                 //TODO consider syncing at certain times of the day only which should be low traffic times such as middle of the night.
-                thread::sleep(Duration::from_secs(10)); //Convert to seconds.
+                thread::sleep(Duration::from_secs(config.sleep_time_min * 60)); //Convert to seconds.
                 info!("Triggering Syncer Process");
                 let num_nodes = get_nodes_info_cloned().len();
                 let quorum = config.quorum;
-                if self.is_syncing || num_nodes < quorum {
+                // let is_syncing = get_sync_state();
+                // TODO if is_syncing continue;
+                if num_nodes < quorum {
                     warn!(
-                        "Skipping Syncer Process due to: is_syncing: {} or nodes count: {} < quorum: {}",
-                        self.is_syncing, num_nodes, quorum
+                        "Skipping Syncer Process due to nodes count: {} < quorum: {}",
+                        num_nodes, quorum
                     );
                     continue;
                 };
+                flip_syncing_state().await;
                 let target_nodes: Vec<String> = get_nodes_info_cloned()
                     .iter()
                     .map(|node| node.1.id.clone())
@@ -90,6 +107,7 @@ impl Syncer {
 
     fn reply_request(&'static self, message: SyncOperations, target_nodes: Option<Vec<String>>) {
         spawn(async move {
+            flip_syncing_state().await;
             let (start_date, end_date) = (
                 convert_string_datetime(message.start_date),
                 convert_string_datetime(Some(message.end_date)),
@@ -182,6 +200,7 @@ impl Syncer {
                     }
                 }
             }
+            flip_syncing_state().await;
         });
     }
 
