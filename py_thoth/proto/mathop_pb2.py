@@ -9,36 +9,44 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
-
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC, 6, 31, 1, "", "mathop.proto"
+    _runtime_version.Domain.PUBLIC,
+    6,
+    31,
+    1,
+    '',
+    'mathop.proto'
 )
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x0cmathop.proto\x12\x06mathop"\x1b\n\tMatrixRow\x12\x0e\n\x06values\x18\x01 \x03(\x01")\n\x06Matrix\x12\x1f\n\x04rows\x18\x01 \x03(\x0b\x32\x11.mathop.MatrixRow"r\n\x16MatrixOperationRequest\x12 \n\x08matrix_a\x18\x01 \x01(\x0b\x32\x0e.mathop.Matrix\x12 \n\x08matrix_b\x18\x02 \x01(\x0b\x32\x0e.mathop.Matrix\x12\x14\n\x0coperation_id\x18\x03 \x01(\t"U\n\x14MatrixOperationReply\x12%\n\rresult_matrix\x18\x01 \x01(\x0b\x32\x0e.mathop.Matrix\x12\x16\n\x0estatus_message\x18\x02 \x01(\t">\n\x1bListAverageOperationRequest\x12\t\n\x01x\x18\x01 \x03(\x01\x12\x14\n\x0coperation_id\x18\x02 \x01(\t"c\n\x19ListAverageOperationReply\x12\x1b\n\x0eresult_average\x18\x01 \x01(\x01H\x00\x88\x01\x01\x12\x16\n\x0estatus_message\x18\x02 \x01(\tB\x11\n\x0f_result_average2\xb0\x01\n\x07MathOps\x12N\n\x0eMatrixMultiply\x12\x1e.mathop.MatrixOperationRequest\x1a\x1c.mathop.MatrixOperationReply\x12U\n\x0bListAverage\x12#.mathop.ListAverageOperationRequest\x1a!.mathop.ListAverageOperationReplyb\x06proto3'
-)
+
+
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cmathop.proto\x12\x06mathop\"\x1b\n\tMatrixRow\x12\x0e\n\x06values\x18\x01 \x03(\x01\")\n\x06Matrix\x12\x1f\n\x04rows\x18\x01 \x03(\x0b\x32\x11.mathop.MatrixRow\"r\n\x16MatrixOperationRequest\x12 \n\x08matrix_a\x18\x01 \x01(\x0b\x32\x0e.mathop.Matrix\x12 \n\x08matrix_b\x18\x02 \x01(\x0b\x32\x0e.mathop.Matrix\x12\x14\n\x0coperation_id\x18\x03 \x01(\t\"U\n\x14MatrixOperationReply\x12%\n\rresult_matrix\x18\x01 \x01(\x0b\x32\x0e.mathop.Matrix\x12\x16\n\x0estatus_message\x18\x02 \x01(\t\">\n\x1bListAverageOperationRequest\x12\t\n\x01x\x18\x01 \x03(\x01\x12\x14\n\x0coperation_id\x18\x02 \x01(\t\"c\n\x19ListAverageOperationReply\x12\x1b\n\x0eresult_average\x18\x01 \x01(\x01H\x00\x88\x01\x01\x12\x16\n\x0estatus_message\x18\x02 \x01(\tB\x11\n\x0f_result_average\"F\n\x10OrderListRequest\x12\t\n\x01x\x18\x01 \x03(\x01\x12\x11\n\tascending\x18\x02 \x01(\x08\x12\x14\n\x0coperation_id\x18\x03 \x01(\t\"8\n\x0eOrderListReply\x12\x0e\n\x06result\x18\x01 \x03(\x01\x12\x16\n\x0estatus_message\x18\x02 \x01(\t2\xef\x01\n\x07MathOps\x12N\n\x0eMatrixMultiply\x12\x1e.mathop.MatrixOperationRequest\x1a\x1c.mathop.MatrixOperationReply\x12U\n\x0bListAverage\x12#.mathop.ListAverageOperationRequest\x1a!.mathop.ListAverageOperationReply\x12=\n\tOrderList\x12\x18.mathop.OrderListRequest\x1a\x16.mathop.OrderListReplyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "mathop_pb2", _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'mathop_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-    DESCRIPTOR._loaded_options = None
-    _globals["_MATRIXROW"]._serialized_start = 24
-    _globals["_MATRIXROW"]._serialized_end = 51
-    _globals["_MATRIX"]._serialized_start = 53
-    _globals["_MATRIX"]._serialized_end = 94
-    _globals["_MATRIXOPERATIONREQUEST"]._serialized_start = 96
-    _globals["_MATRIXOPERATIONREQUEST"]._serialized_end = 210
-    _globals["_MATRIXOPERATIONREPLY"]._serialized_start = 212
-    _globals["_MATRIXOPERATIONREPLY"]._serialized_end = 297
-    _globals["_LISTAVERAGEOPERATIONREQUEST"]._serialized_start = 299
-    _globals["_LISTAVERAGEOPERATIONREQUEST"]._serialized_end = 361
-    _globals["_LISTAVERAGEOPERATIONREPLY"]._serialized_start = 363
-    _globals["_LISTAVERAGEOPERATIONREPLY"]._serialized_end = 462
-    _globals["_MATHOPS"]._serialized_start = 465
-    _globals["_MATHOPS"]._serialized_end = 641
+  DESCRIPTOR._loaded_options = None
+  _globals['_MATRIXROW']._serialized_start=24
+  _globals['_MATRIXROW']._serialized_end=51
+  _globals['_MATRIX']._serialized_start=53
+  _globals['_MATRIX']._serialized_end=94
+  _globals['_MATRIXOPERATIONREQUEST']._serialized_start=96
+  _globals['_MATRIXOPERATIONREQUEST']._serialized_end=210
+  _globals['_MATRIXOPERATIONREPLY']._serialized_start=212
+  _globals['_MATRIXOPERATIONREPLY']._serialized_end=297
+  _globals['_LISTAVERAGEOPERATIONREQUEST']._serialized_start=299
+  _globals['_LISTAVERAGEOPERATIONREQUEST']._serialized_end=361
+  _globals['_LISTAVERAGEOPERATIONREPLY']._serialized_start=363
+  _globals['_LISTAVERAGEOPERATIONREPLY']._serialized_end=462
+  _globals['_ORDERLISTREQUEST']._serialized_start=464
+  _globals['_ORDERLISTREQUEST']._serialized_end=534
+  _globals['_ORDERLISTREPLY']._serialized_start=536
+  _globals['_ORDERLISTREPLY']._serialized_end=592
+  _globals['_MATHOPS']._serialized_start=595
+  _globals['_MATHOPS']._serialized_end=834
 # @@protoc_insertion_point(module_scope)

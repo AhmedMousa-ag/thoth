@@ -4,6 +4,10 @@ package mathop;
 service MathOps {
     rpc MatrixMultiply (MatrixOperationRequest) returns (MatrixOperationReply);
     rpc ListAverage (ListAverageOperationRequest) returns (ListAverageOperationReply);
+    rpc OrderList (OrderListRequest) returns (OrderListReply);
+    // rpc ListMax (ListMaxRequest) returns (ListMaxReply);
+    // rpc ListMin (ListMinRequest) returns (ListMinReply);
+    // rpc ListMode (ListModeRequest) returns (ListModeReply);
 }
 
 message MatrixRow {
@@ -36,3 +40,56 @@ message ListAverageOperationReply{
   string status_message = 2; // e.g., "Success".
 
 }
+
+
+message OrderListRequest{
+  repeated double x = 1;
+  bool ascending = 2; // true for ascending, false for descending
+  string operation_id=3;
+
+}
+
+message OrderListReply{
+  repeated double result = 1;
+  string status_message = 2; // e.g., "Success".
+
+}
+
+
+// message ListMaxRequest{
+//   repeated double x = 1;
+//     string operation_id=2;
+
+// }
+
+// message ListMaxReply{
+//   optional double result = 1;
+//   string status_message = 2; // e.g., "Success".
+
+// }
+
+
+// message ListMinRequest{
+//   repeated double x = 1;
+//     string operation_id=2;
+
+// }
+
+// message ListMinReply{
+//   optional double result = 1;
+//   string status_message = 2; // e.g., "Success".
+
+// }
+
+
+// message ListModeRequest{
+//   repeated double x = 1;
+//     string operation_id=2;
+
+// }
+
+// message ListModeReply{
+//   optional double result = 1;
+//   string status_message = 2; // e.g., "Success".
+
+// }
