@@ -9,12 +9,12 @@ use crate::{
     info,
     operations::{
         checker::is_internal_ops_finished,
+        executer::types::OperationsHelper,
         gatherer::{
             channels::{add_ch_sender, get_opened_ch_sender},
             structs::{GatheredMessage, GatheredResponse, Gatherer},
         },
-        planner::charts::structs::{NodesOpsMsg, OperationInfo, Steps},
-        // utils::util::load_sql_step_to_gatherer_res,
+        planner::charts::structs::{NodesOpsMsg, OperationInfo, Steps}, // utils::util::load_sql_step_to_gatherer_res,
     },
     router::{post_offices::nodes_info::post_office::GathererOffice, traits::PostOfficeTrait},
     warn,
@@ -251,6 +251,98 @@ impl Gatherer {
                  }
              }
             }
+        }
+        Ok(res)
+    }
+
+    pub async fn gather_order_list(
+        &mut self,
+        plan: Box<NodesOpsMsg>,
+    ) -> Result<Vec<f64>, ThothErrors> {
+        let mut duties_maps = Self::ask_nodes_their_results(plan).await?;
+        let mut res_list: Vec<Vec<f64>> = vec![];
+        let mut order_type: Option<OperationsHelper> = None;
+        while duties_maps.len() > 0 {
+            select! {
+             result = self.reciever_ch.recv() => {
+                 match result {
+                     Some(value) => {
+                        info!("Received: {:?}", value);
+                        if duties_maps.get(&value.step_id).is_none(){
+                            warn!("Received a step_id that is not in duties map: {}", value.step_id);
+                            continue;
+                        }
+                        match value.respond{
+                        Some(gath_res)=>{
+                            if order_type.is_none(){
+                                order_type = Some(gath_res.extra_info.unwrap().helper_string.unwrap().into());
+                            }
+                            if gath_res.result.is_some(){
+                                let num = gath_res.result.unwrap().clone().0.read().await.get_vector_value().clone();
+                                //TODO push or extend based on the ordering type.
+                                if res_list.is_empty(){
+                                    res_list.push(num);
+                                } else {
+                                    let is_num_bigger= res_list[0][0]<num[0];
+                                    match order_type.as_ref().unwrap() {
+                                        OperationsHelper::ASCENDING => {
+                                            if is_num_bigger{
+                                                res_list.push(num);
+                                            } else {
+                                                res_list.insert(0,num);
+                                            };
+                                        },
+                                        OperationsHelper::DESCENDING => {
+                                            if is_num_bigger{
+                                                res_list.insert(0,num);
+                                            } else {
+                                                res_list.push(num);
+                                            };
+                                        }
+                                    };
+
+
+                            };
+
+                            duties_maps.remove(&value.step_id);
+                            }
+                        },
+                        None=>continue,
+                        }
+                     }
+                     None => {
+                         // Channel closed
+                         break;
+                     }
+                 }
+             }
+            }
+        }
+
+        let mut res = vec![];
+        // Sort res_list using insertion sort based on order_type
+        let mut sorted: Vec<Vec<f64>> = Vec::with_capacity(res_list.len());
+        for num in res_list.into_iter() {
+            let mut inserted = false;
+            for i in 0..sorted.len() {
+                // 'cmp' is short for 'compare'.
+                let cmp = match order_type.as_ref().unwrap() {
+                    OperationsHelper::ASCENDING => num[0] < sorted[i][0],
+                    OperationsHelper::DESCENDING => num[0] > sorted[i][0],
+                };
+                if cmp {
+                    sorted.insert(i, num.clone());
+                    inserted = true;
+                    break;
+                }
+            }
+            if !inserted {
+                sorted.push(num);
+            }
+        }
+        // Flatten sorted into res
+        for item in sorted {
+            res.extend(item);
         }
         Ok(res)
     }

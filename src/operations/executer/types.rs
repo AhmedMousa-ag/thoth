@@ -1,6 +1,8 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
+use crate::err;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub enum OperationTypes {
     ADD,
@@ -9,6 +11,7 @@ pub enum OperationTypes {
     DOT,
     DIVIDE,
     AVG,
+    ORDERLIST,
     // POW,
     // SQRT, //Square Root
     // ABS,
@@ -43,6 +46,40 @@ impl OperationTypes {
             OperationTypes::SUM => "Sum",
             // OperationTypes::TAN => "Tan",
             // OperationTypes::TANH => "Tanh",
+            OperationTypes::ORDERLIST => "Order List",
+        }
+    }
+}
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+pub enum OperationsHelper {
+    ASCENDING,
+    DESCENDING,
+}
+impl OperationsHelper {
+    pub fn as_str(&self) -> &str {
+        match self {
+            OperationsHelper::ASCENDING => "Ascending",
+            OperationsHelper::DESCENDING => "Descending",
+        }
+    }
+}
+impl Into<String> for OperationsHelper {
+    fn into(self) -> String {
+        match self {
+            OperationsHelper::ASCENDING => "Ascending".to_string(),
+            OperationsHelper::DESCENDING => "Descending".to_string(),
+        }
+    }
+}
+impl Into<OperationsHelper> for String {
+    fn into(self) -> OperationsHelper {
+        match self.as_str() {
+            "Ascending" => OperationsHelper::ASCENDING,
+            "Descending" => OperationsHelper::DESCENDING,
+            _ => {
+                err!("Invalid string for OperationsHelper");
+                unreachable!()
+            }
         }
     }
 }
