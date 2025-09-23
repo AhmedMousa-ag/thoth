@@ -261,6 +261,7 @@ impl Gatherer {
     ) -> Result<Vec<f64>, ThothErrors> {
         let mut duties_maps = Self::ask_nodes_their_results(plan).await?;
         let mut res_list: Vec<Vec<f64>> = vec![];
+        let mut total_list_len = 0;
         let mut order_type: Option<OperationsHelper> = None;
         while duties_maps.len() > 0 {
             select! {
@@ -280,6 +281,7 @@ impl Gatherer {
                             if gath_res.result.is_some(){
                                 let num = gath_res.result.unwrap().clone().0.read().await.get_vector_value().clone();
                                 //TODO push or extend based on the ordering type.
+                                total_list_len+= num.len();
                                 if res_list.is_empty(){
                                     res_list.push(num);
                                 } else {
@@ -319,31 +321,27 @@ impl Gatherer {
             }
         }
 
-        let mut res = vec![];
         // Sort res_list using insertion sort based on order_type
-        let mut sorted: Vec<Vec<f64>> = Vec::with_capacity(res_list.len());
+        let mut sorted: Vec<f64> = Vec::with_capacity(total_list_len);
         for num in res_list.into_iter() {
             let mut inserted = false;
             for i in 0..sorted.len() {
                 // 'cmp' is short for 'compare'.
                 let cmp = match order_type.as_ref().unwrap() {
-                    OperationsHelper::ASCENDING => num[0] < sorted[i][0],
-                    OperationsHelper::DESCENDING => num[0] > sorted[i][0],
+                    OperationsHelper::ASCENDING => &num[0] < &sorted[i],
+                    OperationsHelper::DESCENDING => &num[0] > &sorted[i],
                 };
                 if cmp {
-                    sorted.insert(i, num.clone());
+                    sorted.splice(i..i, num.clone());
                     inserted = true;
                     break;
                 }
             }
             if !inserted {
-                sorted.push(num);
+                sorted.extend(num);
             }
         }
-        // Flatten sorted into res
-        for item in sorted {
-            res.extend(item);
-        }
-        Ok(res)
+
+        Ok(sorted)
     }
 }
