@@ -344,4 +344,42 @@ impl Gatherer {
 
         Ok(sorted)
     }
+    pub async fn gather_list_max(&mut self, plan: Box<NodesOpsMsg>) -> Result<f64, ThothErrors> {
+        let mut duties_maps = Self::ask_nodes_their_results(plan).await?;
+        let mut res: f64 = std::f64::MIN;
+        while duties_maps.len() > 0 {
+            select! {
+             result = self.reciever_ch.recv() => {
+                 match result {
+                     Some(value) => {
+                        info!("Received: {:?}", value);
+                        if duties_maps.get(&value.step_id).is_none(){
+                            warn!("Received a step_id that is not in duties map: {}", value.step_id);
+                            continue;
+                        }
+                        match value.respond{
+                        Some(gath_res)=>{
+
+                            if gath_res.result.is_some(){
+                                let num:f64= gath_res.result.unwrap().clone().0.read().await.get_scaler_value();
+                                if num > res {
+                                    res = num;
+                                }
+                            }
+                            duties_maps.remove(&value.step_id);
+                        },
+                        None=>continue,
+                        }
+                     }
+                     None => {
+                         // Channel closed
+                         break;
+                     }
+                 }
+             }
+            }
+        }
+        info!("Gathered List Max: {}", res);
+        Ok(res)
+    }
 }

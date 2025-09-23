@@ -313,4 +313,81 @@ impl Planner {
             nodes_duties: nodes_duties,
         }))
     }
+
+    pub async fn plan_max_list(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+        if PlanChecker::is_planned_before(self.operation_id.clone()) {
+            info!("Already planned, will return.");
+            return PlanChecker::get_planned_duties_db(self.operation_id.clone());
+        }
+        let data_size = x.len();
+        let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
+        let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
+        info!("Available nodes number: {}", nodes_num);
+        let mut executer: Option<Executer> = if nodes_num <= 1 {
+            warn!(
+                "Only one node available which is considered usesless for Thoth to handle this operation"
+            );
+            Some(Executer {
+                // op_file_manager: OperationsFileManager::new(&self.operation_id),
+            })
+        } else {
+            None
+        };
+
+        let ops_slice_size = data_size / nodes_num;
+        let mut idx = 0;
+        let mut node_idx = 0;
+        let mut nodes_duties: HashMap<String, Vec<OperationInfo>> = HashMap::new();
+        while idx < data_size {
+            let node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
+            // let second_step_node_id = util::get_node_id(&mut node_idx, nodes_num, &nodes_keys);
+            let step_id = Uuid::new_v4().to_string();
+
+            let node_data = if idx + ops_slice_size < data_size {
+                x[idx..idx + ops_slice_size].to_vec()
+            } else {
+                x[idx..].to_vec()
+            };
+            let step = Arc::new(RwLock::new(Steps {
+                operation_id: self.operation_id.clone(),
+                step_id: step_id.clone(),
+                node_id: node_id.to_string(),
+                x: Some(SharedNumeric::new(Numeric::Vector(node_data))),
+                y: None,
+                op_type: OperationTypes::MAX,
+                result: None,
+                use_prev_res: false,
+                prev_step: None,
+                next_step: None,
+                extra_info: Some(ExtraInfo {
+                    res_pos: None,
+                    res_type: None,
+                    helper_number: None,
+                    helper_string: None,
+                }),
+            }));
+            let ops_message = OperationInfo {
+                operation_id: self.operation_id.clone(),
+                step_id: step_id,
+            };
+            if let Some(exec) = &mut executer {
+                increase_running_operation(self.operation_id.clone());
+                exec.execute_step(step).await;
+            } else {
+                OperationStepExecuter::send_message(step.clone());
+                DbOpsRegisterer::new_step(step, true).await;
+            }
+            match nodes_duties.get_mut(&node_id) {
+                Some(msg_vec) => msg_vec.push(ops_message),
+                None => {
+                    nodes_duties.insert(node_id, vec![ops_message]);
+                }
+            }
+            idx += ops_slice_size;
+        }
+
+        Ok(Box::new(NodesOpsMsg {
+            nodes_duties: nodes_duties,
+        }))
+    }
 }
