@@ -41,6 +41,9 @@ pub trait Translator {
                     OperationTypes::MAX => {
                         self.max();
                     }
+                    OperationTypes::MIN => {
+                        self.min();
+                    }
                     _ => {
                         warn!("Other operations not supported yet");
                     }
@@ -54,6 +57,7 @@ pub trait Translator {
     fn avg(&self);
     fn order_list(&self);
     fn max(&self) {}
+    fn min(&self) {}
 }
 
 impl Translator for ScalerTranslator {
@@ -136,6 +140,7 @@ impl Translator for ScalerTranslator {
     fn avg(&self) {}
     fn order_list(&self) {}
     fn max(&self) {}
+    fn min(&self) {}
 }
 
 impl Translator for VecTranslator {
@@ -282,6 +287,24 @@ impl Translator for VecTranslator {
             });
         });
     }
+    fn min(&self) {
+        tokio::task::block_in_place(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let read_guard = self.step.read().await;
+                let x = read_guard.x.as_ref().unwrap().clone();
+                drop(read_guard);
+                let x = x.0.read().await;
+                let x = x.get_vector_value();
+                let result = x
+                    .iter()
+                    .min_by(|a, b| a.partial_cmp(b).unwrap())
+                    .unwrap_or(&0.0)
+                    .clone();
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
+            });
+        });
+    }
 }
 
 //TODO MatricesTranslator
@@ -292,4 +315,5 @@ impl Translator for MatricesTranslator {
     fn avg(&self) {}
     fn order_list(&self) {}
     fn max(&self) {}
+    fn min(&self) {}
 }

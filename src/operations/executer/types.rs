@@ -13,6 +13,7 @@ pub enum OperationTypes {
     AVG,
     ORDERLIST,
     MAX,
+    MIN,
     // POW,
     // SQRT, //Square Root
     // ABS,
@@ -49,6 +50,7 @@ impl OperationTypes {
             // OperationTypes::TANH => "Tanh",
             OperationTypes::ORDERLIST => "Order List",
             OperationTypes::MAX => "Max",
+            OperationTypes::MIN => "Min",
         }
     }
 }

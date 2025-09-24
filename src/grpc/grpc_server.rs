@@ -3,8 +3,10 @@ use mathop::{
     ListAverageOperationRequest,
     ListMaxReply,
     ListMaxRequest,
+    ListMinReply,
+    ListMinRequest,
     MatrixOperationReply,
-    // ListMinReply,ListMinRequest,ListModeReply,ListModeRequest,
+    // ListModeReply,ListModeRequest,
     MatrixOperationRequest,
     OrderListReply,
     OrderListRequest,
@@ -231,48 +233,48 @@ impl MathOps for MathOperations {
         Ok(Response::new(reply))
     }
 
-    // async fn list_min(
-    //     &self,
-    //     request: Request<ListMinRequest>,
-    // ) -> Result<Response<ListMinReply>, Status> {
-    //     info!(
-    //         "gRPC: got list min request from: {:?}",
-    //         request.remote_addr()
-    //     );
-    //     let req_data = request.into_inner();
-    //     let operation_id = req_data.operation_id;
-    //     let pln = Planner::new(operation_id.clone());
+    async fn list_min(
+        &self,
+        request: Request<ListMinRequest>,
+    ) -> Result<Response<ListMinReply>, Status> {
+        info!(
+            "gRPC: got list min request from: {:?}",
+            request.remote_addr()
+        );
+        let req_data = request.into_inner();
+        let operation_id = req_data.operation_id;
+        let pln = Planner::new(operation_id.clone());
 
-    //     let nodes_duties = match pln.plan_min(req_data.x).await {
-    //         Ok(duties) => duties,
-    //         Err(e) => {
-    //             let err_msg = format!("Failed to create plans due to: {}", e);
-    //             err!(err_msg);
-    //             return Ok(Response::new(ListMinReply {
-    //                 result: None,
-    //                 status_message: err_msg,
-    //             }));
-    //         }
-    //     };
-    //     let mut gatherer = Gatherer::new(operation_id).await;
-    //     let num_res = match gatherer.gather_list_min(nodes_duties).await {
-    //         Ok(rs) => rs,
-    //         Err(e) => {
-    //             let err_msg = format!("Failed to gather results due to: {}", e);
-    //             err!(err_msg);
-    //             return Ok(Response::new(ListMinReply {
-    //                 result: None,
-    //                 status_message: err_msg,
-    //             }));
-    //         }
-    //     };
+        let nodes_duties = match pln.plan_min_list(req_data.x).await {
+            Ok(duties) => duties,
+            Err(e) => {
+                let err_msg = format!("Failed to create plans due to: {}", e);
+                err!(err_msg);
+                return Ok(Response::new(ListMinReply {
+                    result: None,
+                    status_message: err_msg,
+                }));
+            }
+        };
+        let mut gatherer = Gatherer::new(operation_id).await;
+        let num_res = match gatherer.gather_list_min(nodes_duties).await {
+            Ok(rs) => rs,
+            Err(e) => {
+                let err_msg = format!("Failed to gather results due to: {}", e);
+                err!(err_msg);
+                return Ok(Response::new(ListMinReply {
+                    result: None,
+                    status_message: err_msg,
+                }));
+            }
+        };
 
-    //     let reply = ListMinReply {
-    //         result: Some(num_res),
-    //         status_message: format!("Successfully got your result."),
-    //     };
-    //     Ok(Response::new(reply))
-    // }
+        let reply = ListMinReply {
+            result: Some(num_res),
+            status_message: format!("Successfully got your result."),
+        };
+        Ok(Response::new(reply))
+    }
 
     // async fn list_mode(
     //     &self,

@@ -5,9 +5,10 @@ service MathOps {
     rpc MatrixMultiply (MatrixOperationRequest) returns (MatrixOperationReply);
     rpc ListAverage (ListAverageOperationRequest) returns (ListAverageOperationReply);
     rpc OrderList (OrderListRequest) returns (OrderListReply);
-    // rpc ListMax (ListMaxRequest) returns (ListMaxReply);
-    // rpc ListMin (ListMinRequest) returns (ListMinReply);
+    rpc ListMax (ListMaxRequest) returns (ListMaxReply);
+    rpc ListMin (ListMinRequest) returns (ListMinReply);
     // rpc ListMode (ListModeRequest) returns (ListModeReply);
+    // rpc ListMedian (ListMedianRequest) returns (ListMedianReply);
 }
 
 message MatrixRow {
@@ -56,30 +57,30 @@ message OrderListReply{
 }
 
 
-// message ListMaxRequest{
-//   repeated double x = 1;
-//     string operation_id=2;
+message ListMaxRequest{
+  repeated double x = 1;
+    string operation_id=2;
 
-// }
+}
 
-// message ListMaxReply{
-//   optional double result = 1;
-//   string status_message = 2; // e.g., "Success".
+message ListMaxReply{
+  optional double result = 1;
+  string status_message = 2; // e.g., "Success".
 
-// }
+}
 
 
-// message ListMinRequest{
-//   repeated double x = 1;
-//     string operation_id=2;
+message ListMinRequest{
+  repeated double x = 1;
+    string operation_id=2;
 
-// }
+}
 
-// message ListMinReply{
-//   optional double result = 1;
-//   string status_message = 2; // e.g., "Success".
+message ListMinReply{
+  optional double result = 1;
+  string status_message = 2; // e.g., "Success".
 
-// }
+}
 
 
 // message ListModeRequest{
@@ -89,6 +90,18 @@ message OrderListReply{
 // }
 
 // message ListModeReply{
+//   optional double result = 1;
+//   string status_message = 2; // e.g., "Success".
+
+// }
+
+// message ListMedianRequest{
+//   repeated double x = 1;
+//     string operation_id=2;
+
+// }
+
+// message ListMedianReply{
 //   optional double result = 1;
 //   string status_message = 2; // e.g., "Success".
 
