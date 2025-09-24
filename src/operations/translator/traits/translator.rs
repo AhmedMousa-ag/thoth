@@ -4,7 +4,7 @@ use tokio::sync::RwLock;
 use crate::{
     db::controller::registerer::DbOpsRegisterer,
     operations::{
-        executer::types::OperationTypes,
+        executer::types::{OperationTypes, OperationsHelper},
         planner::charts::structs::Steps,
         translator::translate::{MatricesTranslator, ScalerTranslator, VecTranslator},
     },
@@ -35,6 +35,15 @@ pub trait Translator {
                     OperationTypes::AVG => {
                         self.avg();
                     }
+                    OperationTypes::ORDERLIST => {
+                        self.order_list();
+                    }
+                    OperationTypes::MAX => {
+                        self.max();
+                    }
+                    OperationTypes::MIN => {
+                        self.min();
+                    }
                     _ => {
                         warn!("Other operations not supported yet");
                     }
@@ -46,6 +55,9 @@ pub trait Translator {
     fn sum(&self);
     fn divide(&self);
     fn avg(&self);
+    fn order_list(&self);
+    fn max(&self) {}
+    fn min(&self) {}
 }
 
 impl Translator for ScalerTranslator {
@@ -126,6 +138,9 @@ impl Translator for ScalerTranslator {
         });
     }
     fn avg(&self) {}
+    fn order_list(&self) {}
+    fn max(&self) {}
+    fn min(&self) {}
 }
 
 impl Translator for VecTranslator {
@@ -224,6 +239,72 @@ impl Translator for VecTranslator {
             });
         });
     }
+    fn order_list(&self) {
+        tokio::task::block_in_place(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let read_guard = self.step.read().await;
+                let x = read_guard.x.as_ref().unwrap().clone();
+                let order_type: OperationsHelper = read_guard
+                    .extra_info
+                    .as_ref()
+                    .unwrap()
+                    .clone()
+                    .helper_string
+                    .unwrap()
+                    .into();
+                drop(read_guard);
+                let x = x.0.read().await;
+                let x = x.get_vector_value();
+                let mut result = x.clone();
+
+                match order_type {
+                    OperationsHelper::DESCENDING => {
+                        result.sort_by(|a, b| b.partial_cmp(a).unwrap())
+                    } // Descending
+                    // Ascending
+                    OperationsHelper::ASCENDING => result.sort_by(|a, b| a.partial_cmp(b).unwrap()),
+                };
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Vector(result)));
+            });
+        });
+    }
+    fn max(&self) {
+        tokio::task::block_in_place(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let read_guard = self.step.read().await;
+                let x = read_guard.x.as_ref().unwrap().clone();
+                drop(read_guard);
+                let x = x.0.read().await;
+                let x = x.get_vector_value();
+                let result = x
+                    .iter()
+                    .max_by(|a, b| a.partial_cmp(b).unwrap())
+                    .unwrap_or(&0.0)
+                    .clone();
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
+            });
+        });
+    }
+    fn min(&self) {
+        tokio::task::block_in_place(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let read_guard = self.step.read().await;
+                let x = read_guard.x.as_ref().unwrap().clone();
+                drop(read_guard);
+                let x = x.0.read().await;
+                let x = x.get_vector_value();
+                let result = x
+                    .iter()
+                    .min_by(|a, b| a.partial_cmp(b).unwrap())
+                    .unwrap_or(&0.0)
+                    .clone();
+                self.step.write().await.result = Some(SharedNumeric::new(Numeric::Scaler(result)));
+            });
+        });
+    }
 }
 
 //TODO MatricesTranslator
@@ -232,4 +313,7 @@ impl Translator for MatricesTranslator {
     fn sum(&self) {}
     fn divide(&self) {}
     fn avg(&self) {}
+    fn order_list(&self) {}
+    fn max(&self) {}
+    fn min(&self) {}
 }
