@@ -49,6 +49,16 @@ class MathOpsStub(object):
                 request_serializer=mathop__pb2.OrderListRequest.SerializeToString,
                 response_deserializer=mathop__pb2.OrderListReply.FromString,
                 _registered_method=True)
+        self.ListMax = channel.unary_unary(
+                '/mathop.MathOps/ListMax',
+                request_serializer=mathop__pb2.ListMaxRequest.SerializeToString,
+                response_deserializer=mathop__pb2.ListMaxReply.FromString,
+                _registered_method=True)
+        self.ListMin = channel.unary_unary(
+                '/mathop.MathOps/ListMin',
+                request_serializer=mathop__pb2.ListMinRequest.SerializeToString,
+                response_deserializer=mathop__pb2.ListMinReply.FromString,
+                _registered_method=True)
 
 
 class MathOpsServicer(object):
@@ -67,9 +77,20 @@ class MathOpsServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def OrderList(self, request, context):
-        """rpc ListMax (ListMaxRequest) returns (ListMaxReply);
-        rpc ListMin (ListMinRequest) returns (ListMinReply);
-        rpc ListMode (ListModeRequest) returns (ListModeReply);
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListMax(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListMin(self, request, context):
+        """rpc ListMode (ListModeRequest) returns (ListModeReply);
+        rpc ListMedian (ListMedianRequest) returns (ListMedianReply);
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -92,6 +113,16 @@ def add_MathOpsServicer_to_server(servicer, server):
                     servicer.OrderList,
                     request_deserializer=mathop__pb2.OrderListRequest.FromString,
                     response_serializer=mathop__pb2.OrderListReply.SerializeToString,
+            ),
+            'ListMax': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListMax,
+                    request_deserializer=mathop__pb2.ListMaxRequest.FromString,
+                    response_serializer=mathop__pb2.ListMaxReply.SerializeToString,
+            ),
+            'ListMin': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListMin,
+                    request_deserializer=mathop__pb2.ListMinRequest.FromString,
+                    response_serializer=mathop__pb2.ListMinReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -175,6 +206,60 @@ class MathOps(object):
             '/mathop.MathOps/OrderList',
             mathop__pb2.OrderListRequest.SerializeToString,
             mathop__pb2.OrderListReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListMax(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mathop.MathOps/ListMax',
+            mathop__pb2.ListMaxRequest.SerializeToString,
+            mathop__pb2.ListMaxReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListMin(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mathop.MathOps/ListMin',
+            mathop__pb2.ListMinRequest.SerializeToString,
+            mathop__pb2.ListMinReply.FromString,
             options,
             channel_credentials,
             insecure,
