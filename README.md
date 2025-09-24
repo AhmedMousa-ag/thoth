@@ -1,8 +1,8 @@
 # Thoth
 
-<img src="thoth.png" alt="Thoth Logo" width="80"/>
+<img src="Assets/thoth.png" alt="Thoth Logo" width="80"/>
 
-Thoth is a Rust-based distributed decentralized data computing framework designed for high performance and scalability.
+Thoth is a Rust-based distributed data computing framework designed for high performance and scalability.
 It provides a robust platform for processing large datasets across multiple nodes in a cluster.
 
 ## Getting Started
@@ -76,6 +76,15 @@ assert result == expected_result, "Matrix multiplication result does not match"
 print("All tests passed successfully!")
 ```
 
+For API documentation, please refer to the [API Documentation](docs/api.md) document.
 
+## Benchmarks
+
+
+The following benchmarks were conducted on a machine with the following specifications:
+![Benchmark](Assets/benchmark_list_avg.png)
+
+
+For detailed benchmark results and comparisons, please refer to the [Benchmark Results](docs/benchmarks.md) document.
 
 
