@@ -205,7 +205,7 @@ Both systems benefit from horizontal scaling with additional worker nodes. Thoth
 
 ### Medium Dataset (5,000 Records) Performance Patterns
 
-![Performance Comparison - Medium Dataset](assets/benchmarks/combined/performance_comparison_medium.png)
+![Performance Comparison - Medium Dataset](assets/benchmarks/combined/combined_comparison_medium.png)
 
 **Key Observations:**
 
@@ -217,7 +217,7 @@ Both systems benefit from horizontal scaling with additional worker nodes. Thoth
 
 ### Large Dataset (500,000 Records) Performance Patterns
 
-![Performance Comparison - Large Dataset](assets/benchmarks/combined/performance_comparison_large.png)
+![Performance Comparison - Large Dataset](assets/benchmarks/combined/combined_comparison_large.png)
 
 **Key Observations:**
 
@@ -233,7 +233,7 @@ Both systems benefit from horizontal scaling with additional worker nodes. Thoth
 
 ### Extra Large Dataset (5,000,000 Records) Performance Patterns
 
-![Performance Comparison - Extra Large Dataset](assets/benchmarks/combined/performance_comparison_extra_large.png)
+![Performance Comparison - Extra Large Dataset](./assets/benchmarks/combined/combined_comparison_extra.png)
 
 **Key Observations:**
 
