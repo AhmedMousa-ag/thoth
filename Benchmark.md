@@ -150,10 +150,23 @@ The performance crossover occurs around the **1-5 million record range**, where 
 The benchmark included hardware usage monitoring across different states:
 
 ### Two-Machine Cluster
-![Hardware Usage Progression - Two Machines](assets/benchmarks/hardware_usage/two_machines/)
+
+**Spark Hardware Usage During Operations**
+
+![Hardware Usage Progression - Two Machines](assets/benchmarks/hardware_usage/two_machines/3.spark_during_operations.png)
+
+**Thoth Hardware Usage During Operations**
+![Hardware Usage Progression - Two Machines](assets/benchmarks/hardware_usage/two_machines/6.during_thoth_operations.png)
 
 ### Three-Machine Cluster
-![Hardware Usage Progression - Three Machines](assets/benchmarks/hardware_usage/three_machines/)
+
+**Spark Hardware Usage During Operations**
+
+![Hardware Usage Progression - Three Machines](assets/benchmarks/hardware_usage/three_machines/2.during_spark_operations.png)
+
+**Thoth Hardware Usage During Operations**
+
+![Hardware Usage Progression - Three Machines](assets/benchmarks/hardware_usage/three_machines/4.during_thoth_operations.png)
 
 Monitoring states:
 1. **System at Rest**: Baseline resource usage
