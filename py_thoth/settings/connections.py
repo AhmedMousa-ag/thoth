@@ -42,17 +42,16 @@ class BaseThothObject:
                 else random.choice(Config().get_remote_address())
             )
         )
-        self.data = data
         self.operation_id = operation_id if operation_id else str(uuid.uuid4())
-        self.__insert_data()
+        self.__insert_data(data)
 
-    def __insert_data(self):
+    def __insert_data(self, data):
         @run_client(self.remote_address)
         def __insert_data_to_thoth(**kwargs):
             stub = kwargs["stub"]
 
             req = mathop_pb2.AddDataObjectRequest(
-                data=self.data,
+                data=data,
                 operation_id=self.operation_id,
             )
             res = stub.AddDataObject(req)
