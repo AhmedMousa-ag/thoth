@@ -1,7 +1,13 @@
 syntax = "proto3";
 package mathop;
 
+
+
 service MathOps {
+    rpc CreateObject (CreateObjectRequest) returns (EmptyReply);
+    rpc AddDataObject (AddDataObjectRequest) returns (EmptyReply);
+    rpc ClearObject (ClearObjectRequest) returns (EmptyReply);
+    // rpc ClearAllObjects (ClearAllObjectsRequest) returns (EmptyReply);
     rpc MatrixMultiply (MatrixOperationRequest) returns (MatrixOperationReply);
     rpc ListAverage (ListAverageOperationRequest) returns (ListAverageOperationReply);
     rpc OrderList (OrderListRequest) returns (OrderListReply);
@@ -11,6 +17,19 @@ service MathOps {
     // rpc ListMedian (ListMedianRequest) returns (ListMedianReply);
 }
 
+message CreateObjectRequest {
+    string operation_id = 1;
+}
+
+message AddDataObjectRequest {
+    string operation_id = 1;
+    repeated double data = 2;
+}
+message ClearObjectRequest {
+    string operation_id = 1;
+}
+
+message EmptyReply{}
 message MatrixRow {
   repeated double values = 1;
 }
@@ -31,7 +50,7 @@ message MatrixOperationReply {
 }
 
 message ListAverageOperationRequest{
-  repeated double x = 1;
+  // repeated double x = 1;
     string operation_id=2;
 
 }
@@ -44,7 +63,7 @@ message ListAverageOperationReply{
 
 
 message OrderListRequest{
-  repeated double x = 1;
+  // repeated double x = 1;
   bool ascending = 2; // true for ascending, false for descending
   string operation_id=3;
 
@@ -58,7 +77,7 @@ message OrderListReply{
 
 
 message ListMaxRequest{
-  repeated double x = 1;
+  // repeated double x = 1;
     string operation_id=2;
 
 }
@@ -71,7 +90,7 @@ message ListMaxReply{
 
 
 message ListMinRequest{
-  repeated double x = 1;
+  // repeated double x = 1;
     string operation_id=2;
 
 }

@@ -5,23 +5,26 @@ import warnings
 
 from . import mathop_pb2 as mathop__pb2
 
-GRPC_GENERATED_VERSION = '1.74.0'
+GRPC_GENERATED_VERSION = "1.74.0"
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
 try:
     from grpc._utilities import first_version_is_lower
-    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+
+    _version_not_supported = first_version_is_lower(
+        GRPC_VERSION, GRPC_GENERATED_VERSION
+    )
 except ImportError:
     _version_not_supported = True
 
 if _version_not_supported:
     raise RuntimeError(
-        f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in mathop_pb2_grpc.py depends on'
-        + f' grpcio>={GRPC_GENERATED_VERSION}.'
-        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
-        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+        f"The grpc package installed is at version {GRPC_VERSION},"
+        + f" but the generated code in mathop_pb2_grpc.py depends on"
+        + f" grpcio>={GRPC_GENERATED_VERSION}."
+        + f" Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}"
+        + f" or downgrade your generated code using grpcio-tools<={GRPC_VERSION}."
     )
 
 
@@ -34,122 +37,271 @@ class MathOpsStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.CreateObject = channel.unary_unary(
+            "/mathop.MathOps/CreateObject",
+            request_serializer=mathop__pb2.CreateObjectRequest.SerializeToString,
+            response_deserializer=mathop__pb2.EmptyReply.FromString,
+            _registered_method=True,
+        )
+        self.AddDataObject = channel.unary_unary(
+            "/mathop.MathOps/AddDataObject",
+            request_serializer=mathop__pb2.AddDataObjectRequest.SerializeToString,
+            response_deserializer=mathop__pb2.EmptyReply.FromString,
+            _registered_method=True,
+        )
+        self.ClearObject = channel.unary_unary(
+            "/mathop.MathOps/ClearObject",
+            request_serializer=mathop__pb2.ClearObjectRequest.SerializeToString,
+            response_deserializer=mathop__pb2.EmptyReply.FromString,
+            _registered_method=True,
+        )
         self.MatrixMultiply = channel.unary_unary(
-                '/mathop.MathOps/MatrixMultiply',
-                request_serializer=mathop__pb2.MatrixOperationRequest.SerializeToString,
-                response_deserializer=mathop__pb2.MatrixOperationReply.FromString,
-                _registered_method=True)
+            "/mathop.MathOps/MatrixMultiply",
+            request_serializer=mathop__pb2.MatrixOperationRequest.SerializeToString,
+            response_deserializer=mathop__pb2.MatrixOperationReply.FromString,
+            _registered_method=True,
+        )
         self.ListAverage = channel.unary_unary(
-                '/mathop.MathOps/ListAverage',
-                request_serializer=mathop__pb2.ListAverageOperationRequest.SerializeToString,
-                response_deserializer=mathop__pb2.ListAverageOperationReply.FromString,
-                _registered_method=True)
+            "/mathop.MathOps/ListAverage",
+            request_serializer=mathop__pb2.ListAverageOperationRequest.SerializeToString,
+            response_deserializer=mathop__pb2.ListAverageOperationReply.FromString,
+            _registered_method=True,
+        )
         self.OrderList = channel.unary_unary(
-                '/mathop.MathOps/OrderList',
-                request_serializer=mathop__pb2.OrderListRequest.SerializeToString,
-                response_deserializer=mathop__pb2.OrderListReply.FromString,
-                _registered_method=True)
+            "/mathop.MathOps/OrderList",
+            request_serializer=mathop__pb2.OrderListRequest.SerializeToString,
+            response_deserializer=mathop__pb2.OrderListReply.FromString,
+            _registered_method=True,
+        )
         self.ListMax = channel.unary_unary(
-                '/mathop.MathOps/ListMax',
-                request_serializer=mathop__pb2.ListMaxRequest.SerializeToString,
-                response_deserializer=mathop__pb2.ListMaxReply.FromString,
-                _registered_method=True)
+            "/mathop.MathOps/ListMax",
+            request_serializer=mathop__pb2.ListMaxRequest.SerializeToString,
+            response_deserializer=mathop__pb2.ListMaxReply.FromString,
+            _registered_method=True,
+        )
         self.ListMin = channel.unary_unary(
-                '/mathop.MathOps/ListMin',
-                request_serializer=mathop__pb2.ListMinRequest.SerializeToString,
-                response_deserializer=mathop__pb2.ListMinReply.FromString,
-                _registered_method=True)
+            "/mathop.MathOps/ListMin",
+            request_serializer=mathop__pb2.ListMinRequest.SerializeToString,
+            response_deserializer=mathop__pb2.ListMinReply.FromString,
+            _registered_method=True,
+        )
 
 
 class MathOpsServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def MatrixMultiply(self, request, context):
+    def CreateObject(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def AddDataObject(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def ClearObject(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def MatrixMultiply(self, request, context):
+        """rpc ClearAllObjects (ClearAllObjectsRequest) returns (EmptyReply);"""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ListAverage(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def OrderList(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ListMax(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ListMin(self, request, context):
         """rpc ListMode (ListModeRequest) returns (ListModeReply);
         rpc ListMedian (ListMedianRequest) returns (ListMedianReply);
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_MathOpsServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'MatrixMultiply': grpc.unary_unary_rpc_method_handler(
-                    servicer.MatrixMultiply,
-                    request_deserializer=mathop__pb2.MatrixOperationRequest.FromString,
-                    response_serializer=mathop__pb2.MatrixOperationReply.SerializeToString,
-            ),
-            'ListAverage': grpc.unary_unary_rpc_method_handler(
-                    servicer.ListAverage,
-                    request_deserializer=mathop__pb2.ListAverageOperationRequest.FromString,
-                    response_serializer=mathop__pb2.ListAverageOperationReply.SerializeToString,
-            ),
-            'OrderList': grpc.unary_unary_rpc_method_handler(
-                    servicer.OrderList,
-                    request_deserializer=mathop__pb2.OrderListRequest.FromString,
-                    response_serializer=mathop__pb2.OrderListReply.SerializeToString,
-            ),
-            'ListMax': grpc.unary_unary_rpc_method_handler(
-                    servicer.ListMax,
-                    request_deserializer=mathop__pb2.ListMaxRequest.FromString,
-                    response_serializer=mathop__pb2.ListMaxReply.SerializeToString,
-            ),
-            'ListMin': grpc.unary_unary_rpc_method_handler(
-                    servicer.ListMin,
-                    request_deserializer=mathop__pb2.ListMinRequest.FromString,
-                    response_serializer=mathop__pb2.ListMinReply.SerializeToString,
-            ),
+        "CreateObject": grpc.unary_unary_rpc_method_handler(
+            servicer.CreateObject,
+            request_deserializer=mathop__pb2.CreateObjectRequest.FromString,
+            response_serializer=mathop__pb2.EmptyReply.SerializeToString,
+        ),
+        "AddDataObject": grpc.unary_unary_rpc_method_handler(
+            servicer.AddDataObject,
+            request_deserializer=mathop__pb2.AddDataObjectRequest.FromString,
+            response_serializer=mathop__pb2.EmptyReply.SerializeToString,
+        ),
+        "ClearObject": grpc.unary_unary_rpc_method_handler(
+            servicer.ClearObject,
+            request_deserializer=mathop__pb2.ClearObjectRequest.FromString,
+            response_serializer=mathop__pb2.EmptyReply.SerializeToString,
+        ),
+        "MatrixMultiply": grpc.unary_unary_rpc_method_handler(
+            servicer.MatrixMultiply,
+            request_deserializer=mathop__pb2.MatrixOperationRequest.FromString,
+            response_serializer=mathop__pb2.MatrixOperationReply.SerializeToString,
+        ),
+        "ListAverage": grpc.unary_unary_rpc_method_handler(
+            servicer.ListAverage,
+            request_deserializer=mathop__pb2.ListAverageOperationRequest.FromString,
+            response_serializer=mathop__pb2.ListAverageOperationReply.SerializeToString,
+        ),
+        "OrderList": grpc.unary_unary_rpc_method_handler(
+            servicer.OrderList,
+            request_deserializer=mathop__pb2.OrderListRequest.FromString,
+            response_serializer=mathop__pb2.OrderListReply.SerializeToString,
+        ),
+        "ListMax": grpc.unary_unary_rpc_method_handler(
+            servicer.ListMax,
+            request_deserializer=mathop__pb2.ListMaxRequest.FromString,
+            response_serializer=mathop__pb2.ListMaxReply.SerializeToString,
+        ),
+        "ListMin": grpc.unary_unary_rpc_method_handler(
+            servicer.ListMin,
+            request_deserializer=mathop__pb2.ListMinRequest.FromString,
+            response_serializer=mathop__pb2.ListMinReply.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'mathop.MathOps', rpc_method_handlers)
+        "mathop.MathOps", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('mathop.MathOps', rpc_method_handlers)
+    server.add_registered_method_handlers("mathop.MathOps", rpc_method_handlers)
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class MathOps(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def MatrixMultiply(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def CreateObject(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/mathop.MathOps/MatrixMultiply',
+            "/mathop.MathOps/CreateObject",
+            mathop__pb2.CreateObjectRequest.SerializeToString,
+            mathop__pb2.EmptyReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def AddDataObject(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/mathop.MathOps/AddDataObject",
+            mathop__pb2.AddDataObjectRequest.SerializeToString,
+            mathop__pb2.EmptyReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def ClearObject(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/mathop.MathOps/ClearObject",
+            mathop__pb2.ClearObjectRequest.SerializeToString,
+            mathop__pb2.EmptyReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True,
+        )
+
+    @staticmethod
+    def MatrixMultiply(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/mathop.MathOps/MatrixMultiply",
             mathop__pb2.MatrixOperationRequest.SerializeToString,
             mathop__pb2.MatrixOperationReply.FromString,
             options,
@@ -160,23 +312,26 @@ class MathOps(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def ListAverage(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def ListAverage(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/mathop.MathOps/ListAverage',
+            "/mathop.MathOps/ListAverage",
             mathop__pb2.ListAverageOperationRequest.SerializeToString,
             mathop__pb2.ListAverageOperationReply.FromString,
             options,
@@ -187,23 +342,26 @@ class MathOps(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def OrderList(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def OrderList(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/mathop.MathOps/OrderList',
+            "/mathop.MathOps/OrderList",
             mathop__pb2.OrderListRequest.SerializeToString,
             mathop__pb2.OrderListReply.FromString,
             options,
@@ -214,23 +372,26 @@ class MathOps(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def ListMax(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def ListMax(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/mathop.MathOps/ListMax',
+            "/mathop.MathOps/ListMax",
             mathop__pb2.ListMaxRequest.SerializeToString,
             mathop__pb2.ListMaxReply.FromString,
             options,
@@ -241,23 +402,26 @@ class MathOps(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
 
     @staticmethod
-    def ListMin(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+    def ListMin(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/mathop.MathOps/ListMin',
+            "/mathop.MathOps/ListMin",
             mathop__pb2.ListMinRequest.SerializeToString,
             mathop__pb2.ListMinReply.FromString,
             options,
@@ -268,4 +432,5 @@ class MathOps(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True)
+            _registered_method=True,
+        )
