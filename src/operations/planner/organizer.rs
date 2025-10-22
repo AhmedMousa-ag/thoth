@@ -140,11 +140,17 @@ impl Planner {
         Ok(nodes_ops_msg)
     }
 
-    pub async fn plan_average(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+    pub async fn plan_average(
+        &self,
+        shared_numeric: SharedNumeric,
+    ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         if PlanChecker::is_planned_before(self.operation_id.clone()) {
             info!("Already planned, will return.");
             return PlanChecker::get_planned_duties_db(self.operation_id.clone());
         }
+        let read_guard = shared_numeric.0.read().await;
+        let x = read_guard.get_vector_value();
+
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -230,13 +236,15 @@ impl Planner {
     }
     pub async fn plan_order_list(
         &self,
-        x: Vec<f64>,
+        shared_numeric: SharedNumeric,
         ascending: bool,
     ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         if PlanChecker::is_planned_before(self.operation_id.clone()) {
             info!("Already planned, will return.");
             return PlanChecker::get_planned_duties_db(self.operation_id.clone());
         }
+        let read_guard = shared_numeric.0.read().await;
+        let x = read_guard.get_vector_value();
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -314,11 +322,16 @@ impl Planner {
         }))
     }
 
-    pub async fn plan_max_list(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+    pub async fn plan_max_list(
+        &self,
+        shared_numeric: SharedNumeric,
+    ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         if PlanChecker::is_planned_before(self.operation_id.clone()) {
             info!("Already planned, will return.");
             return PlanChecker::get_planned_duties_db(self.operation_id.clone());
         }
+        let read_guard = shared_numeric.0.read().await;
+        let x = read_guard.get_vector_value();
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
@@ -391,11 +404,16 @@ impl Planner {
         }))
     }
 
-    pub async fn plan_min_list(&self, x: Vec<f64>) -> Result<Box<NodesOpsMsg>, ThothErrors> {
+    pub async fn plan_min_list(
+        &self,
+        shared_numeric: SharedNumeric,
+    ) -> Result<Box<NodesOpsMsg>, ThothErrors> {
         if PlanChecker::is_planned_before(self.operation_id.clone()) {
             info!("Already planned, will return.");
             return PlanChecker::get_planned_duties_db(self.operation_id.clone());
         }
+        let read_guard = shared_numeric.0.read().await;
+        let x = read_guard.get_vector_value();
         let data_size = x.len();
         let nodes_keys: Vec<String> = self.nodes_info.keys().map(|s| s.clone()).collect();
         let nodes_num = nodes_keys.len(); //It shall never be zero as the current node is one.
