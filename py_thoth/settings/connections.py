@@ -59,19 +59,18 @@ class BaseThothObject:
 
         __insert_data_to_thoth()
 
-        # TODO
-        # def __del__(self):
-        #     """
-        #     Destructor to clean up resources when the object is garbage collected.
-        #     """
+    def __del__(self):
+        """
+        Destructor to clean up resources when the object is garbage collected.
+        """
 
-        #     @run_client(self.remote_address)
-        #     def __delete_data_from_thoth(**kwargs):
-        #         stub = kwargs["stub"]
+        @run_client(self.remote_address)
+        def __delete_data_from_thoth(**kwargs):
+            stub = kwargs["stub"]
 
-        #         req = mathop_pb2.DeleteDataObjectRequest(
-        #             operation_id=self.operation_id,
-        #         )
-        #         stub.DeleteDataObject(req)
+            req = mathop_pb2.ClearObjectRequest(
+                operation_id=self.operation_id,
+            )
+            stub.ClearObject(req)
 
-        # __delete_data_from_thoth()
+        __delete_data_from_thoth()
