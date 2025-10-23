@@ -4,7 +4,7 @@ from utils.util import run_client
 from py_thoth.proto import mathop_pb2
 
 
-@run_client
+@run_client()
 def matrix_multiply(a: List[List[float]], b: List[List[float]], **kwargs):
     stub = kwargs["stub"]
     operation_id = kwargs.get("operation_id", str(uuid.uuid4()))

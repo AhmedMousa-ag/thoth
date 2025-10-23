@@ -1,52 +1,62 @@
-import uuid
-from typing import List
 from utils.util import run_client
 from py_thoth.proto import mathop_pb2
+from py_thoth.settings.connections import BaseThothObject
 
-@run_client
-def list_average(a: List[float], **kwargs):
-    stub = kwargs["stub"]
-    operation_id = kwargs.get("operation_id", str(uuid.uuid4()))
-    req = mathop_pb2.ListAverageOperationRequest(
-        x=a,
-        operation_id=operation_id,
-    )
 
-    res = stub.ListAverage(req)
-    return res.result_average
+class ThothVector(BaseThothObject):
+    def list_average(self, **kwargs):
+        @run_client(self.remote_address)
+        def __list_average(**kwargs):
+            stub = kwargs["stub"]
+            req = mathop_pb2.ListAverageOperationRequest(
+                # x=a,
+                operation_id=self.operation_id,
+            )
 
-@run_client
-def sort_list(a: List[float], ascending : bool = False, **kwargs):
-    stub = kwargs["stub"]
-    operation_id = kwargs.get("operation_id", str(uuid.uuid4()))
-    req = mathop_pb2.OrderListRequest(
-        x=a,
-        ascending=ascending,
-        operation_id=operation_id,
-        )
-    res = stub.OrderList(req)
-    return res.result
+            res = stub.ListAverage(req)
+            return res.result_average
 
-@run_client
-def max_list(a: List[float], **kwargs):
-    stub = kwargs["stub"]
-    operation_id = kwargs.get("operation_id", str(uuid.uuid4()))
-    req = mathop_pb2.ListMaxRequest(
-        x=a,
-        operation_id=operation_id,
-    )
+        return __list_average(**kwargs)
 
-    res = stub.ListMax(req)
-    return res.result
+    def sort_list(self, ascending: bool = False, **kwargs):
+        @run_client(self.remote_address)
+        def __sort_list(ascending: bool = False, **kwargs):
+            stub = kwargs["stub"]
 
-@run_client
-def min_list(a: List[float], **kwargs):
-    stub = kwargs["stub"]
-    operation_id = kwargs.get("operation_id", str(uuid.uuid4()))
-    req = mathop_pb2.ListMinRequest(
-        x=a,
-        operation_id=operation_id,
-    )
+            req = mathop_pb2.OrderListRequest(
+                # x=a,
+                ascending=ascending,
+                operation_id=self.operation_id,
+            )
+            res = stub.OrderList(req)
+            return res.result
 
-    res = stub.ListMin(req)
-    return res.result
+        return __sort_list(ascending=ascending, **kwargs)
+
+    def max_list(self, **kwargs):
+        @run_client(self.remote_address)
+        def __max_list(**kwargs):
+            stub = kwargs["stub"]
+            req = mathop_pb2.ListMaxRequest(
+                # x=a,
+                operation_id=self.operation_id,
+            )
+
+            res = stub.ListMax(req)
+            return res.result
+
+        return __max_list(**kwargs)
+
+    def min_list(self, **kwargs):
+        @run_client(self.remote_address)
+        def __min_list(**kwargs):
+            stub = kwargs["stub"]
+            req = mathop_pb2.ListMinRequest(
+                # x=a,
+                operation_id=self.operation_id,
+            )
+
+            res = stub.ListMin(req)
+            return res.result
+
+        return __min_list(**kwargs)

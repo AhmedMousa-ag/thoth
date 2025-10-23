@@ -17,12 +17,17 @@ use tonic::{Request, Response, Status, transport::Server};
 use crate::{
     err,
     errors::thot_errors::ThothErrors,
-    grpc::{grpc_server::mathop::Matrix, utils::extract_matrix},
+    grpc::{
+        grpc_server::mathop::{EmptyReply, Matrix},
+        utils::extract_matrix,
+    },
     info,
     operations::{
+        cache::objects::{CachedObj, get_cached_object, insert_cache_object, remove_cached_object},
         gatherer::structs::Gatherer,
         planner::{charts::structs::NodesOpsMsg, organizer::Planner},
     },
+    structs::numerics::structs::SharedNumeric,
 };
 pub mod mathop {
     tonic::include_proto!("mathop");
@@ -115,8 +120,8 @@ impl MathOps for MathOperations {
         let req_data: ListAverageOperationRequest = request.into_inner();
         let operation_id = req_data.operation_id;
         let pln = Planner::new(operation_id.clone());
-
-        let nodes_duties = match pln.plan_average(req_data.x).await {
+        let shared_numeric = get_cached_object(&operation_id).await.unwrap().data;
+        let nodes_duties = match pln.plan_average(shared_numeric).await {
             Ok(duties) => duties,
             Err(e) => {
                 let err_msg = format!("Failed to create plans due to: {}", e);
@@ -158,8 +163,11 @@ impl MathOps for MathOperations {
         let req_data = request.into_inner();
         let operation_id = req_data.operation_id;
         let pln = Planner::new(operation_id.clone());
-
-        let nodes_duties = match pln.plan_order_list(req_data.x, req_data.ascending).await {
+        let shared_numeric = get_cached_object(&operation_id).await.unwrap().data;
+        let nodes_duties = match pln
+            .plan_order_list(shared_numeric, req_data.ascending)
+            .await
+        {
             Ok(duties) => duties,
             Err(e) => {
                 let err_msg = format!("Failed to create plans due to: {}", e);
@@ -201,8 +209,8 @@ impl MathOps for MathOperations {
         let req_data = request.into_inner();
         let operation_id = req_data.operation_id;
         let pln = Planner::new(operation_id.clone());
-
-        let nodes_duties = match pln.plan_max_list(req_data.x).await {
+        let shared_numeric = get_cached_object(&operation_id).await.unwrap().data;
+        let nodes_duties = match pln.plan_max_list(shared_numeric).await {
             Ok(duties) => duties,
             Err(e) => {
                 let err_msg = format!("Failed to create plans due to: {}", e);
@@ -244,8 +252,8 @@ impl MathOps for MathOperations {
         let req_data = request.into_inner();
         let operation_id = req_data.operation_id;
         let pln = Planner::new(operation_id.clone());
-
-        let nodes_duties = match pln.plan_min_list(req_data.x).await {
+        let shared_numeric = get_cached_object(&operation_id).await.unwrap().data;
+        let nodes_duties = match pln.plan_min_list(shared_numeric).await {
             Ok(duties) => duties,
             Err(e) => {
                 let err_msg = format!("Failed to create plans due to: {}", e);
@@ -276,48 +284,60 @@ impl MathOps for MathOperations {
         Ok(Response::new(reply))
     }
 
-    // async fn list_mode(
-    //     &self,
-    //     request: Request<ListModeRequest>,
-    // ) -> Result<Response<ListModeReply>, Status> {
-    //     info!(
-    //         "gRPC: got list mode request from: {:?}",
-    //         request.remote_addr()
-    //     );
-    //     let req_data = request.into_inner();
-    //     let operation_id = req_data.operation_id;
-    //     let pln = Planner::new(operation_id.clone());
+    async fn create_object(
+        &self,
+        request: Request<mathop::CreateObjectRequest>,
+    ) -> Result<Response<EmptyReply>, Status> {
+        info!(
+            "gRPC: got create object request from: {:?}",
+            request.remote_addr()
+        );
+        let req_data = request.into_inner();
+        let id = req_data.operation_id;
 
-    //     let nodes_duties = match pln.plan_mode(req_data.x).await {
-    //         Ok(duties) => duties,
-    //         Err(e) => {
-    //             let err_msg = format!("Failed to create plans due to: {}", e);
-    //             err!(err_msg);
-    //             return Ok(Response::new(ListModeReply {
-    //                 result: None,
-    //                 status_message: err_msg,
-    //             }));
-    //         }
-    //     };
-    //     let mut gatherer = Gatherer::new(operation_id).await;
-    //     let num_res = match gatherer.gather_list_mode(nodes_duties).await {
-    //         Ok(rs) => rs,
-    //         Err(e) => {
-    //             let err_msg = format!("Failed to gather results due to: {}", e);
-    //             err!(err_msg);
-    //             return Ok(Response::new(ListModeReply {
-    //                 result: None,
-    //                 status_message: err_msg,
-    //             }));
-    //         }
-    //     };
+        insert_cache_object(CachedObj {
+            id: id,
+            data: SharedNumeric::new(crate::structs::numerics::structs::Numeric::Scaler(0.0)),
+        })
+        .await;
 
-    //     let reply = ListModeReply {
-    //         result: Some(num_res),
-    //         status_message: format!("Successfully got your result."),
-    //     };
-    //     Ok(Response::new(reply))
-    // }
+        Ok(Response::new(EmptyReply {}))
+    }
+
+    async fn add_data_object(
+        &self,
+        request: Request<mathop::AddDataObjectRequest>,
+    ) -> Result<Response<EmptyReply>, Status> {
+        info!(
+            "gRPC: got add data object request from: {:?}",
+            request.remote_addr()
+        );
+        let req_data = request.into_inner();
+        let id = req_data.operation_id;
+        let value = req_data.data;
+
+        insert_cache_object(CachedObj {
+            id: id,
+            data: SharedNumeric::new(crate::structs::numerics::structs::Numeric::Vector(value)),
+        })
+        .await;
+
+        Ok(Response::new(EmptyReply {}))
+    }
+    async fn clear_object(
+        &self,
+        request: Request<mathop::ClearObjectRequest>,
+    ) -> Result<Response<EmptyReply>, Status> {
+        info!(
+            "gRPC: got clear object request from: {:?}",
+            request.remote_addr()
+        );
+        let req_data = request.into_inner();
+        let id = req_data.operation_id;
+
+        remove_cached_object(&id).await;
+        Ok(Response::new(EmptyReply {}))
+    }
 }
 
 pub async fn start_server() -> Result<(), ThothErrors> {
