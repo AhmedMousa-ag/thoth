@@ -16,9 +16,12 @@ def run_client(remote_address: str | None = None):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-
+            conn_options = [
+                ("grpc.max_send_message_length", 1 * 1000 * 1024 * 1024),  # 5GB
+                ("grpc.max_receive_message_length", 1 * 1000 * 1024 * 1024),  # 5GB
+            ]
             address = remote_address or random.choice(Config().remote_address)
-            with grpc.insecure_channel(address) as channel:
+            with grpc.insecure_channel(address, options=conn_options) as channel:
                 stub = mathop_pb2_grpc.MathOpsStub(channel)
                 # Inject the stub into kwargs
                 kwargs["stub"] = stub

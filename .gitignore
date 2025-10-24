@@ -38,3 +38,7 @@ thoth_binary
 
 flamegraph*
 perf.data*
+.vscode
+TODO
+
+draft_performance.py
