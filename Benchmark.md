@@ -95,13 +95,27 @@ For the three machines cluster configuration, Thoth shows a potential for better
 In the combined analysis, the performance of adding extra nodes to Thoth and Spark does increase performance, but Thoth metrices scores aren't stable due to it's thread and concurrency operations.
 
 
+##### Comparison of small dataset
+
 ![Combined Small Dataset](./assets/benchmarks/combined/combined_comparison_small.png)
 
+
+##### Comparison of medium dataset
 ![Combined Medium Dataset](./assets/benchmarks/combined/combined_comparison_medium.png)
 
+
+##### Comparison of large dataset
 ![Combined Large Dataset](./assets/benchmarks/combined/combined_comparison_large.png)
 
+##### Comparison of extra large dataset
 ![Combined Extra Large Dataset](./assets/benchmarks/combined/combined_comparison_extra.png)
 
+
+##### Comparison of double extra large dataset
 ![Combined Double XL Dataset](./assets/benchmarks/combined/combined_comparison_double.png)
 
+## Future Work
+
+Due to limited time and resources, Thoth I didn't have time to fully optimize Thoth for these benchmarks. Nevertheless, Thoth demonstrates potential in distributed data processing. Further optimization of individual algorithms is necessary to make it competitive with established frameworks like Spark.
+
+Planned future enhancements include support for SQL queries, integration of machine learning libraries, and real-time data processing capabilities. These features aim to improve Thoth's usability and performance across diverse data processing scenarios.
