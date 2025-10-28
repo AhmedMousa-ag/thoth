@@ -1,6 +1,6 @@
 # Thoth
 
-<img src="Assets/thoth.png" alt="Thoth Logo" width="80"/>
+<img src="assets/thoth.png" alt="Thoth Logo" width="80"/>
 
 Thoth is a Rust-based distributed data computing framework designed for high performance and scalability.
 It provides a robust platform for processing large datasets across multiple nodes in a cluster.
