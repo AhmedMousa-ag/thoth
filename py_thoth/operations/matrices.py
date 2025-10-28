@@ -1,6 +1,6 @@
 import uuid
 from typing import List
-from utils.util import run_client
+from py_thoth.utils.util import run_client
 from py_thoth.proto import mathop_pb2
 
 

@@ -1,4 +1,4 @@
-from utils.util import run_client
+from py_thoth.utils.util import run_client
 from py_thoth.proto import mathop_pb2
 from py_thoth.settings.connections import BaseThothObject
 

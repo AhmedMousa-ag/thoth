@@ -1,6 +1,6 @@
 import grpc
 import functools
-from configs.config import Config
+from py_thoth.configs.config import Config
 import random
 from py_thoth.proto import mathop_pb2_grpc
 
