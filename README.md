@@ -44,7 +44,7 @@ It is not important which node you send the task to as all nodes are equal in th
 
 ```python
 import random
-from py_thoth.operations.vector import list_average
+from py_thoth.operations.vector import ThothVector
 from py_thoth.operations.matrices import matrix_multiply
 from py_thoth.settings.connections import change_remote_address
 
@@ -54,7 +54,8 @@ change_remote_address(remote_addresses)
 
 # Example: Compute average of a large list
 list_to_compute = [random.randint(1, 100) for _ in range(1000)]
-average_result = list_average(list_to_compute)
+thoth_vector = ThothVector(list_to_compute)
+average_result = thoth_vector.list_average()
 print(f"Computed average: {average_result:.2f}")
 
 # Validate result with Python's built-in calculation
@@ -79,11 +80,6 @@ print("All tests passed successfully!")
 For API documentation, please refer to the [API Documentation](docs/api.md) document.
 
 ## Benchmarks
-
-
-The following benchmarks were conducted on a machine with the following specifications:
-![Benchmark](Assets/benchmark_list_avg.png)
-
 
 For detailed benchmark results and comparisons, please refer to the [Benchmark Results](docs/benchmarks.md) document.
 
