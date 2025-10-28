@@ -172,7 +172,7 @@ impl Gatherer {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
-                        info!("Received: {:?}", value);
+                        // info!("Received: {:?}", value);
                         if duties_maps.get(&value.step_id).is_none(){
                             warn!("Received a step_id that is not in duties map: {}", value.step_id);
                             continue;
@@ -224,7 +224,7 @@ impl Gatherer {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
-                        info!("Received: {:?}", value);
+                        // info!("Received: {:?}", value);
                         if duties_maps.get(&value.step_id).is_none(){
                             warn!("Received a step_id that is not in duties map: {}", value.step_id);
                             continue;
@@ -268,7 +268,7 @@ impl Gatherer {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
-                        info!("Received: {:?}", value);
+                        // info!("Received: {:?}", value);
                         if duties_maps.get(&value.step_id).is_none(){
                             warn!("Received a step_id that is not in duties map: {}", value.step_id);
                             continue;
@@ -352,7 +352,7 @@ impl Gatherer {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
-                        info!("Received: {:?}", value);
+                        // info!("Received: {:?}", value);
                         if duties_maps.get(&value.step_id).is_none(){
                             warn!("Received a step_id that is not in duties map: {}", value.step_id);
                             continue;
@@ -390,7 +390,7 @@ impl Gatherer {
              result = self.reciever_ch.recv() => {
                  match result {
                      Some(value) => {
-                        info!("Received: {:?}", value);
+                        // info!("Received: {:?}", value);
                         if duties_maps.get(&value.step_id).is_none(){
                             warn!("Received a step_id that is not in duties map: {}", value.step_id);
                             continue;
