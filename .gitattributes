@@ -4,3 +4,5 @@
 *.jpeg binary
 *.gif binary
 *.svg text
+
+*.ipynb linguist-vendored
