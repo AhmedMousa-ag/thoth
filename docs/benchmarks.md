@@ -39,7 +39,7 @@ Four key operations used for the metrics:
 
 We have performed benchmarks on the two and three machines cluster configuration.
 
-Thoth outperforms PySpark in all tested operations on small to average datasizes and struggles exponentialy with the the increase of the data size.
+Thoth outperforms PySpark in all tested operations on small to average datasizes and struggles exponentially with the increase of the data size.
 
 Clearly Spark sorting algorithm is more optimized for large datasets compared to Thoth.
 
@@ -49,22 +49,22 @@ For the three machines cluster configuration, Thoth shows a potential for better
 
 #### Average Calculation
 
-![Average Time Comparison - 2 Machines](./assets/benchmarks/two_machines/avg_time_comparison.png)
+![Average Time Comparison - 2 Machines](../assets/benchmarks/two_machines/avg_time_comparison.png)
 
 
-##### Minimum Calculation
+#### Minimum Calculation
 
-![Minimum Time Comparison - 2 Machines](./assets/benchmarks/two_machines/min_time_comparison.png)
-
-
-##### Maximum Calculation
-
-![Maximum Time Comparison - 2 Machines](./assets/benchmarks/two_machines/max_time_comparison.png)
+![Minimum Time Comparison - 2 Machines](../assets/benchmarks/two_machines/min_time_comparison.png)
 
 
-##### Sorting Performance
+#### Maximum Calculation
 
-![Sort Ascending Comparison - 2 Machines](./assets/benchmarks/two_machines/sort_asc_time_comparison.png)
+![Maximum Time Comparison - 2 Machines](../assets/benchmarks/two_machines/max_time_comparison.png)
+
+
+#### Sorting Performance
+
+![Sort Ascending Comparison - 2 Machines](../assets/benchmarks/two_machines/sort_asc_time_comparison.png)
 
 
 
@@ -72,19 +72,19 @@ For the three machines cluster configuration, Thoth shows a potential for better
 
 #### Average Calculation
 
-![Small Dataset Comparison - 3 Machines](./assets/benchmarks/three_machines/avg_time_comparison.png)
+![Small Dataset Comparison - 3 Machines](../assets/benchmarks/three_machines/avg_time_comparison.png)
 
 #### Minimum Calculation
 
-![Medium Dataset Comparison - 3 Machines](./assets/benchmarks/three_machines/min_time_comparison.png)
+![Medium Dataset Comparison - 3 Machines](../assets/benchmarks/three_machines/min_time_comparison.png)
 
 #### Maximum Calculation
 
-![Large Dataset Comparison - 3 Machines](./assets/benchmarks/three_machines/max_time_comparison.png)
+![Large Dataset Comparison - 3 Machines](../assets/benchmarks/three_machines/max_time_comparison.png)
 
 #### Sorting Calculation
 
-![Sort Ascending Comparison - 3 Machines](./assets/benchmarks/three_machines/sort_asc_time_comparison.png)
+![Sort Ascending Comparison - 3 Machines](../assets/benchmarks/three_machines/sort_asc_time_comparison.png)
 
 
 ### Combined Analysis 
@@ -94,25 +94,25 @@ In the combined analysis, the performance of adding extra nodes to Thoth and Spa
 
 ##### Comparison of small dataset
 
-![Combined Small Dataset](./assets/benchmarks/combined/combined_comparison_small.png)
+![Combined Small Dataset](../assets/benchmarks/combined/combined_comparison_small.png)
 
 
 ##### Comparison of medium dataset
-![Combined Medium Dataset](./assets/benchmarks/combined/combined_comparison_medium.png)
+![Combined Medium Dataset](../assets/benchmarks/combined/combined_comparison_medium.png)
 
 
 ##### Comparison of large dataset
-![Combined Large Dataset](./assets/benchmarks/combined/combined_comparison_large.png)
+![Combined Large Dataset](../assets/benchmarks/combined/combined_comparison_large.png)
 
 ##### Comparison of extra large dataset
-![Combined Extra Large Dataset](./assets/benchmarks/combined/combined_comparison_extra.png)
+![Combined Extra Large Dataset](../assets/benchmarks/combined/combined_comparison_extra.png)
 
 
 ##### Comparison of double extra large dataset
-![Combined Double XL Dataset](./assets/benchmarks/combined/combined_comparison_double.png)
+![Combined Double XL Dataset](../assets/benchmarks/combined/combined_comparison_double.png)
 
 ## Future Work
 
-Due to limited time and resources, Thoth I didn't have time to fully optimize Thoth for these benchmarks. Nevertheless, Thoth demonstrates potential in distributed data processing. Further optimization of individual algorithms is necessary to make it competitive with established frameworks like Spark.
+Due to limited time and resources, I didn't have time to fully optimize Thoth for these benchmarks. Nevertheless, Thoth demonstrates potential in distributed data processing. Further optimization of individual algorithms is necessary to make it competitive with established frameworks like Spark.
 
 Planned future enhancements include support for SQL queries, integration of machine learning libraries, and real-time data processing capabilities. These features aim to improve Thoth's usability and performance across diverse data processing scenarios.
